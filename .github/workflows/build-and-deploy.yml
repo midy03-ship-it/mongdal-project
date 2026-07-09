@@ -1,0 +1,79 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: pip install pillow
+
+      - name: Build full + light HTML
+        working-directory: mongdal
+        run: |
+          $env:PYTHONUTF8 = "1"
+          python build.py
+          python build.py --light
+
+      - name: Assemble Pages site
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path public | Out-Null
+          Copy-Item mongdal-fixed.html public/mongdal-fixed.html
+          Copy-Item mongdal-light.html public/mongdal-light.html
+          $commit = "$env:GITHUB_SHA".Substring(0,7)
+          $indexHtml = @"
+          <!DOCTYPE html>
+          <html lang="ko">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>몽달퇴마록 빌드</title>
+          <style>
+            body{font-family:sans-serif;background:#0a0814;color:#e8d8ff;display:flex;flex-direction:column;
+              align-items:center;justify-content:center;min-height:100vh;margin:0;gap:16px;text-align:center;}
+            a{display:block;padding:14px 28px;background:#3a2050;border:1px solid #a070d0;border-radius:10px;
+              color:#e0c8ff;text-decoration:none;font-size:16px;min-width:220px;}
+            a:active{background:#5a3070;}
+            p{color:#a090c0;font-size:12px;}
+          </style>
+          </head>
+          <body>
+            <h2>몽달퇴마록</h2>
+            <a href="mongdal-fixed.html">전체 빌드 (실제 플레이)</a>
+            <a href="mongdal-light.html">경량 빌드 (로직/디버깅용)</a>
+            <p>commit $commit</p>
+          </body>
+          </html>
+          "@
+          Set-Content -Path public/index.html -Value $indexHtml -Encoding UTF8
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
