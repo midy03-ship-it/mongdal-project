@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mongdal-static",
+      "runtimeExecutable": "C:\\Users\\midy0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8749"],
+      "port": 8749
+    }
+  ]
+}
