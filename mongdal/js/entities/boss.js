@@ -54,9 +54,12 @@ class Boss {
     const baseHp  = chDef?.hp  || def.hp;
     const baseDmg = chDef?.dmg || def.dmg;
     const baseSpd = chDef?.spd || def.spd;
-    this.hp    = Math.floor(baseHp  * (1 + wave * 0.12) * (CONFIG.DEV_MODE ? 0.1 : 1));
+    // [UPDATE 2026-07-10] 초반 진입장벽 완화: 챕터1 대폭/챕터2 소폭/챕터3 아주 조금 하향 (일반 스테이지 전용, 보스러시 등 제외)
+    const _bch = window._curChapterForEnemyScale || 0;
+    const bossChapterEase = _bch===1 ? 0.5 : _bch===2 ? 0.75 : _bch===3 ? 0.9 : 1.0;
+    this.hp    = Math.floor(baseHp  * (1 + wave * 0.12) * bossChapterEase); // [UPDATE 2026-07-09] 개발모드 체력 90% 감소 제거 — 실제 밸런스로 테스트
     this.maxHp = this.hp;
-    this.dmg   = Math.floor(baseDmg * (1 + wave * 0.08));
+    this.dmg   = Math.floor(baseDmg * (1 + wave * 0.08) * bossChapterEase);
     this.baseSpd = baseSpd;
     this.spd   = baseSpd;
     this.size  = def.size;

@@ -45,6 +45,7 @@ const DevScene = (() => {
               { label:'진행도만',      color:'#206080', fn:'DevScene.resetProgress()' },
               { label:'해금만',        color:'#605020', fn:'DevScene.resetUnlocks()' },
               { label:'건물만',        color:'#204060', fn:'DevScene.resetBuildings()' },
+              { label:'무기만',        color:'#602060', fn:'DevScene.resetWeapons()' },
             ].map(b => `
               <button onclick="${b.fn}" style="
                 background:${b.color};border:none;color:#fff;
@@ -203,6 +204,18 @@ const DevScene = (() => {
     refresh();
   }
 
+  // [UPDATE 2026-07-09] 무기만 초기화 (강화/각성/초월/장착 전부 리셋, 동료·펫은 그대로)
+  function resetWeapons() {
+    const sd = Save.load();
+    sd.unlockedWeapons = ['talisman'];
+    sd.weaponLevels = {};
+    sd.weaponTranscend = {};
+    sd.selectedMainWeapons = ['talisman'];
+    sd.selectedMainWeapon = 'talisman';
+    Save.save(sd);
+    refresh();
+  }
+
   function clearStagesUpTo(targetId) {
     const sd = Save.load();
     if (!sd.clearedStages) sd.clearedStages = [];
@@ -256,5 +269,5 @@ const DevScene = (() => {
   function enter(el) { render(el); }
   function exit() {}
 
-  return { enter, exit, resetAll, resetCurrency, resetProgress, resetUnlocks, resetBuildings, clearStagesUpTo, addCurrency, setDifficulty };
+  return { enter, exit, resetAll, resetCurrency, resetProgress, resetUnlocks, resetBuildings, resetWeapons, clearStagesUpTo, addCurrency, setDifficulty };
 })();

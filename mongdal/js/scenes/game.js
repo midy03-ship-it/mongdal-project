@@ -25,7 +25,7 @@ const GameScene = (() => {
   let bossRushIndex = 0;   // 보스 러쉬 진행 인덱스
   let infiniteWave = 0;    // 무한 모드 웨이브
   let zoom = 1.0;  // 줌 레벨 (0.5 ~ 2.0)
-  let killTarget = CONFIG.DEV_MODE ? 30 : 300, kills = 0;
+  let killTarget = 300, kills = 0; // [UPDATE 2026-07-09] init()에서 즉시 덮어써지는 초기값 — 개발모드 축소 제거
   let killTargetReached = false, bossSpawned = false;
   let farmingTimer = 0;
   let elapsed = 0, timeLeft = 300;
@@ -62,7 +62,7 @@ const GameScene = (() => {
       const si = getStageInfo(stageId);
       isBossStage = !!(si?.isBoss || si?.isMidBoss);
       bossType    = si?.isBoss ? 'chapter_boss' : si?.isMidBoss ? 'mid_boss' : null;
-      killTarget  = Math.floor((si?.killTarget || 300) * (CONFIG.DEV_MODE ? 0.1 : 1)
+      killTarget  = Math.floor((si?.killTarget || 300) // [UPDATE 2026-07-09] 개발모드 킬수 10% 축소 제거 — 실제 밸런스로 테스트
         * (difficulty==='easy'?0.7:difficulty==='hard'?1.5:1.0));
       currentChapter = MONSTERS.getChapterFromStage(stageId);
       timeLeft = CONFIG.GAME.TIME_LIMIT || 300;
@@ -139,6 +139,11 @@ const GameScene = (() => {
     // 이번 런 획득 재화 추적
     window._runGold = 0;
     window._runSpecial = 0;
+    // [UPDATE 2026-07-10] 데미지 미터 초기화 (이전 런 잔여 데이터 방지) — 누적 총데미지 + 최근 3초 로그로 부드러운 DPS 계산
+    window._dpsTotal = {};
+    window._dpsLog = [];
+    window._dpsDisplay = {};
+    window._gameElapsed = 0;
     player._damageReduction = 0;
     player._critChance=0; player._critMult=1.5;
     player._atkBuff=1; player._atkBuffTime=0;
@@ -552,6 +557,30 @@ const GameScene = (() => {
     }
     if(state!=='playing') return;
     elapsed+=dt; timeLeft-=dt;
+
+    // [UPDATE 2026-07-10] 무기별 데미지 미터 — 최근 3초 로그를 매 프레임 정리해서 부드러운 DPS 계산 (1초 단위로 뚝뚝 끊기지 않게)
+    window._gameElapsed = elapsed;
+    window._curChapterForEnemyScale = (gameMode==='normal') ? currentChapter : 0; // [UPDATE 2026-07-10] 초반 챕터 완화용 — 일반 스테이지에서만 적용(무한던전 등은 currentChapter=1 고정 버그라 제외)
+    if (window._dpsLog && window._dpsLog.length) {
+      const DPS_WINDOW = 3.0;
+      const cutoff = elapsed - DPS_WINDOW;
+      let _li = 0;
+      while (_li < window._dpsLog.length && window._dpsLog[_li].t < cutoff) _li++;
+      if (_li > 0) window._dpsLog.splice(0, _li);
+      const _sums = {};
+      for (const e of window._dpsLog) _sums[e.k] = (_sums[e.k]||0) + e.d;
+      const _disp = {};
+      for (const k in _sums) _disp[k] = _sums[k] / DPS_WINDOW;
+      window._dpsDisplay = _disp;
+    }
+    // [UPDATE 2026-07-10] hitEnemy() 우회 경로(체인/귀신손/신검 경로판정/장판aoe/독도트)용 DPS 기록 헬퍼
+    window._trackDps = window._trackDps || function(srcType, dmg) {
+      if (!srcType || !dmg) return;
+      if (!window._dpsTotal) window._dpsTotal = {};
+      window._dpsTotal[srcType] = (window._dpsTotal[srcType]||0) + dmg;
+      if (!window._dpsLog) window._dpsLog = [];
+      window._dpsLog.push({ t: window._gameElapsed||0, k: srcType, d: dmg });
+    };
     if(player._invincible > 0) player._invincible -= dt;
     if(player.dead){endGame(false);return;}
     if(timeLeft<=0){timeLeft=0;endGame(false);return;}
@@ -782,8 +811,9 @@ const GameScene = (() => {
           if(e.dead||p.chainHit.has(e)) continue;
           if(Math.hypot(e.x-p.x,e.y-p.y)<p.radius+e.size){
             e.takeDamage(p.damage);
+            window._trackDps(p._srcType||p.type, p.damage); // [UPDATE 2026-07-10]
             if(p.slow){ e._slowed=p.slowDur||2.0; e._slowFactor=(1-p.slow); }
-            if(p.dotDmg){ e._poison=p.dotDmg; e._poisonTick=p.dotTick||0.5; e._poisonDur=p.dotDur||3.0; e._poisonTimer=0; }
+            if(p.dotDmg){ e._poison=p.dotDmg; e._poisonTick=p.dotTick||0.5; e._poisonDur=p.dotDur||3.0; e._poisonTimer=0; e._poisonSrc=p._srcType||p.type; }
             p.chainHit.add(e);
             p.damage=Math.max(1,Math.floor(p.damage*0.95));
             const _next=enemies.filter(x=>!x.dead&&!p.chainHit.has(x))
@@ -804,8 +834,10 @@ const GameScene = (() => {
         if(!p._ghHitDone){
           p._ghHitDone=true;
           for(const e of enemies){
-            if(!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<p.radius+e.size)
+            if(!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<p.radius+e.size){
               e.takeDamage(p.damage);
+              window._trackDps(p._srcType||p.type, p.damage); // [UPDATE 2026-07-10]
+            }
           }
         }
         p.update(dt); continue;
@@ -832,6 +864,7 @@ const GameScene = (() => {
             const t=Math.max(0,Math.min(1,(_ex*dx+_ey*dy)/lenSq));
             if(Math.hypot(e.x-(ox+t*dx),e.y-(oy+t*dy))<hitW+e.size){
               e.takeDamage(p.damage);
+              window._trackDps(p._srcType||p.type, p.damage); // [UPDATE 2026-07-10]
               p.chainHit.add(e);
             }
           }
@@ -844,7 +877,11 @@ const GameScene = (() => {
         p.radius=p.aoe;
         for(const e of enemies){
           if(!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<p.radius+e.size){
-            if(p.damage>0) e.takeDamage(p.damage*dt*3);
+            if(p.damage>0){
+              const _aoeDmg=p.damage*dt*3;
+              e.takeDamage(_aoeDmg);
+              window._trackDps(p._srcType||p.type, _aoeDmg); // [UPDATE 2026-07-10]
+            }
             // 저주 인형: 범위 내 적에게 받는 데미지 증폭 디버프
             if(p.debuffMult&&p.debuffDur){
               e._markedDmgMult=p.debuffMult;
@@ -868,7 +905,7 @@ const GameScene = (() => {
           let dAng=tAng-Math.atan2(p.vy,p.vx);
           while(dAng>Math.PI)dAng-=Math.PI*2;
           while(dAng<-Math.PI)dAng+=Math.PI*2;
-          const turnRate=p._homingWeak?1.2:5.0; // [UPDATE 2026-07-08] 신궁 초월 8성 약한 유도용 완만한 회전
+          const turnRate=p._homingVeryWeak?0.6:p._homingWeak?1.2:5.0; // [UPDATE 2026-07-09] 신궁 기본공격(아주 약함)/초월8성(약함) 단계별 회전 속도
           const turn=Math.sign(dAng)*Math.min(Math.abs(dAng),turnRate*dt);
           const nAng=Math.atan2(p.vy,p.vx)+turn;
           p.vx=Math.cos(nAng)*sp; p.vy=Math.sin(nAng)*sp;
@@ -1001,6 +1038,7 @@ const GameScene = (() => {
       if(e._poisonDur<=0){ e._poison=0; e._poisonTimer=0; continue; }
       if(e._poisonTimer>=e._poisonTick){
         e.takeDamage(e._poison);
+        window._trackDps(e._poisonSrc||'poison', e._poison); // [UPDATE 2026-07-10]
         e._poisonTimer=0;
       }
     }
@@ -1354,7 +1392,7 @@ const GameScene = (() => {
       const diffLabel = _isEnHud
         ? {easy:'🌿Easy', normal:'⚔️Normal', hard:'🔥Hard'}[difficulty]||''
         : {easy:'🌿이지', normal:'⚔️노말',   hard:'🔥하드'}[difficulty]||'';
-      const label = si ? `${chName} · ${_siName}  ${diffLabel}` : '';
+      const label = si ? `${stageId}. ${chName} · ${_siName}  ${diffLabel}` : ''; // [UPDATE 2026-07-10] 몇 번 맵인지 스테이지 번호 표시
       ctx.font='10px sans-serif';
       ctx.fillStyle='rgba(200,180,255,0.6)';
       ctx.fillText(label, W/2, 32);
@@ -1494,6 +1532,58 @@ const GameScene = (() => {
       const _stWpn = _st ? {defId:_st.id, icon:_stIcon, lv:_st.lv} : null;
       drawSlot(_sy, slotImgStat, _stWpn, !_st);
       _sy += SLOT_H + SLOT_GAP;
+    }
+
+    // [UPDATE 2026-07-10] 좌측 하단 데미지 미터 — 무기별 누적 총데미지(도파민용) + 부드러운 최근 3초 DPS
+    {
+      const _dpsSrc = window._dpsDisplay || {};
+      const _totalSrc = window._dpsTotal || {};
+      // 투사체 type이 무기 defId와 다른 경우 매핑 (영혼낫: type='scythe' → defId='scythe_main')
+      const DPS_KEY_ALIAS = { scythe_main: 'scythe' };
+      const _fmtNum = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n);
+      const _dpsWeapons = [...(window.mainWeapons||[]).filter(Boolean), ...(window.subWeapons||[]).filter(Boolean)];
+      const _dpsRows = _dpsWeapons.map(w => {
+        const key = DPS_KEY_ALIAS[w.defId] || w.defId;
+        return { w, total: _totalSrc[key] || 0, dps: _dpsSrc[key] || 0 };
+      }).filter(r => r.total > 0).sort((a,b) => b.total - a.total);
+      if (_dpsRows.length > 0) {
+        const _grandTotal = _dpsRows.reduce((s,r) => s+r.total, 0) || 1;
+        // 무기별 고정 색상 (정렬 순서 바뀌어도 같은 무기는 항상 같은 색)
+        const DPS_COLORS = ['#ff6060','#60c0ff','#60ff90','#ffcc40','#c080ff','#ff9040','#40e0d0'];
+        const _colorFor = defId => {
+          let h=0; for(let c=0;c<defId.length;c++) h=(h*31+defId.charCodeAt(c))>>>0;
+          return DPS_COLORS[h%DPS_COLORS.length];
+        };
+        const DR_H = 32, DR_W = 130, DR_X = 4;
+        const panelH = _dpsRows.length * DR_H + 6;
+        const panelY = H - panelH - 4;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.beginPath(); ctx.roundRect(DR_X, panelY, DR_W, panelH, 6); ctx.fill();
+        _dpsRows.forEach((r, i) => {
+          const ry = panelY + 4 + i * DR_H;
+          const wImgSrc = (typeof CARD_IMGS!=='undefined'&&CARD_IMGS[r.w.defId]) || null;
+          const wImg = wImgSrc ? SpriteLoader.get(wImgSrc) : null;
+          if (wImg?.complete && wImg.naturalWidth>0) {
+            ctx.drawImage(wImg, DR_X+4, ry+2, 18, 18);
+          } else {
+            ctx.font='14px sans-serif'; ctx.fillText(r.w.icon||'?', DR_X+4, ry+15);
+          }
+          ctx.font='bold 12px sans-serif'; ctx.fillStyle='#ffd878';
+          ctx.fillText(_fmtNum(r.total), DR_X+26, ry+10);
+          ctx.font='9px sans-serif'; ctx.fillStyle='rgba(200,200,200,0.75)';
+          ctx.fillText(`${_fmtNum(Math.round(r.dps))}/s`, DR_X+26, ry+21);
+          // [UPDATE 2026-07-10] 무기별 데미지 점유율(%) 게이지 바
+          const pct = r.total / _grandTotal;
+          const barX = DR_X+4, barY = ry+24, barW = DR_W-38, barH = 5;
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fillRect(barX, barY, barW, barH);
+          ctx.fillStyle = _colorFor(r.w.defId);
+          ctx.fillRect(barX, barY, barW*pct, barH);
+          ctx.font='bold 8px sans-serif'; ctx.fillStyle='#fff'; ctx.textAlign='right';
+          ctx.fillText(`${Math.round(pct*100)}%`, DR_X+DR_W-4, ry+21);
+          ctx.textAlign='left';
+        });
+      }
     }
 
     // 우측 상단 재화 HUD
@@ -1641,7 +1731,7 @@ const GameScene = (() => {
       :`<div style="font-size:30px;width:52px;text-align:center;flex-shrink:0">${icon}</div>`;
 
     const _cw = cardW || 'width:100%;max-width:320px';
-    return `<div onclick="GameScene.pickLevelUp('${cat}',${idx})"
+    return `<div id="lvup-card-${cat}-${idx}" onclick="GameScene.confirmPick(this,'${cat}',${idx})"
       onmouseenter="this.style.background='${bgHov}'"
       onmouseleave="this.style.background='${bg}'"
       style="${_cw};background:${bg};
@@ -1709,21 +1799,36 @@ const GameScene = (() => {
     // 자동 모드: 3초 후 티어 우선순위로 자동 선택
     if (autoMode === 2) {
       // 티어 정의 (낮을수록 우선)
+      // [UPDATE 2026-07-10] 실제 무기 id와 안 맞던 오타 수정 (healing_incense→heal_incense, karma_orb→karma_bead,
+      // divine_shield→spirit_shield, passport→hopaetag) — 의도한 우선순위가 실제로는 전혀 적용 안 되고 있었음.
+      // lightning은 어느 무기를 뜻했는지 불명확해 thunder_drum으로 추정 매핑 (필요시 조정)
+      // [UPDATE 2026-07-10] 사용자 지정 세부 티어 (0=최우선 ~ 6=그 외)
+      // 0: 피흡수 / 1: 치유향·도깨비불·독안개·번개장판 / 2: 저승낫·독침·천둥북·공격력·공속
+      // 2.5: (조건부) 보조무기 슬롯 미충족 시 신규 보조무기 우선
+      // 3: 쿨감 / 3.5: (조건부) 스탯 슬롯 미충족 시 신규 스탯 우선
+      // 4: 특수강화·각성 / 5: 주무기 강화 / 6: 그 외
       const _SUB_TIER  = {
-        healing_incense:1, goblin_fire:1,
-        sealing_amulet:2, holy_water:2, karma_orb:2, scythe_sub:2, lightning:2,
-        divine_shield:3, shaman_drum:3, poison_needle:3, curse_doll:3, goblin_axe:3, ice_amulet:3,
-        passport:4,
+        heal_incense:1, goblin_fire:1, poison_mist:1, lightning_trap:1,
+        scythe_sub:2, poison_needle:2, thunder_drum:2,
       };
-      const _STAT_TIER = { atk:2, spd:2, def:3, mov:3, eva:4 };
+      const _STAT_TIER = { vampire:0, atk:2, spd:2, cd:3 };
       function _getTier(c) {
-        if (c.type==='special') return 1;       // 특수강화
-        if (c.type==='ascend')  return 1;       // 각성
-        if (c.type==='upgrade' && c._cat==='main') return 2; // 주무기 강화
         const id = c.weaponId || c.weapon?.defId;
         if (id && _SUB_TIER[id]!=null) return _SUB_TIER[id];
-        if (c.type==='stat') return _STAT_TIER[c.statId] || 3;
-        return 3;
+        if (c.type==='stat' && _STAT_TIER[c.statId]!=null) return _STAT_TIER[c.statId];
+        if (c.type==='special') return 4;       // 특수강화
+        if (c.type==='ascend')  return 4;       // 각성
+        if (c.type==='upgrade' && c._cat==='main') return 5; // 주무기 강화
+        // [UPDATE 2026-07-10] 보조무기 슬롯이 비어있으면 신규 보조무기 우선(2~3티어 사이, DPS상 항상 이득)
+        if (c.type==='new_sub' && (window.subWeapons||[]).length < 3) return 2.5;
+        // [UPDATE 2026-07-10] 스탯 슬롯이 비어있으면(4칸 미만) 신규 스탯 종류 획득 우선(3~4티어 사이) —
+        // 이미 보유한 스탯 강화(=슬롯을 새로 안 채움)는 여기 해당 안 되고 그 외(6티어)로 감
+        if (c.type==='stat') {
+          const _statSlots = (window.statSlots||[]).filter(s=>!s.isSpecial);
+          const _already = _statSlots.some(s=>s.id===c.statId);
+          if (!_already && _statSlots.length < 4) return 3.5;
+        }
+        return 6;
       }
       function _autoBestPick(choices) {
         const all = [
@@ -1743,13 +1848,41 @@ const GameScene = (() => {
         if (_cd <= 0) {
           clearInterval(_iv);
           const _best = _autoBestPick(levelUpChoices);
-          if (_best) pickLevelUp(_best._cat, _best._idx);
+          if (_best) {
+            // [UPDATE 2026-07-10] 자동 선택도 어떤 카드가 뽑혔는지 깜빡임으로 표시
+            const _bestEl = document.getElementById(`lvup-card-${_best._cat}-${_best._idx}`);
+            if (_bestEl) confirmPick(_bestEl, _best._cat, _best._idx);
+            else pickLevelUp(_best._cat, _best._idx);
+          }
           else pickLevelUp('none', 0);
         } else {
           _el.textContent = _lvIsEn ? `Auto-select in ${_cd}s...` : `자동 선택 ${_cd}초 후...`;
         }
       }, 1000);
     }
+  }
+
+  // [UPDATE 2026-07-10] 레벨업 카드 클릭 시 뭘 골랐는지 보이도록 깜빡임 확인 연출 후 실제 적용
+  function confirmPick(el, cat, idx){
+    if(!el || el.dataset.picked) return; // 중복 클릭 방지
+    el.dataset.picked = '1';
+    // 나머지 카드는 흐리게 + 클릭 막기
+    const container = document.getElementById('gameUI');
+    if(container) container.style.pointerEvents='none';
+    el.style.pointerEvents='none';
+    el.style.animation = 'lvupPickFlash 0.35s ease-in-out 3';
+    el.style.boxShadow = '0 0 0 3px #ffe070, 0 0 20px rgba(255,224,112,.8)';
+    if(!document.getElementById('lvup-pick-flash-style')){
+      const s=document.createElement('style'); s.id='lvup-pick-flash-style';
+      s.textContent = `@keyframes lvupPickFlash{0%,100%{filter:brightness(1)}50%{filter:brightness(1.9)}}`;
+      document.head.appendChild(s);
+    }
+    // 체크마크 오버레이
+    const check=document.createElement('div');
+    check.textContent='✓';
+    check.style.cssText='position:absolute;top:4px;right:8px;font-size:20px;font-weight:900;color:#ffe070;text-shadow:0 0 6px rgba(0,0,0,.8);';
+    el.appendChild(check);
+    setTimeout(() => pickLevelUp(cat, idx), 420);
   }
 
   // cat: 'main'|'sub'|'stat'|'none', idx: 숫자
@@ -2191,5 +2324,5 @@ const GameScene = (() => {
     }
   }
 
-  return{enter,exit,pickLevelUp,togglePause,resumeGame,toggleMute,goLobby,zoomIn,zoomOut,cycleSpeed,cycleAutoMode};
+  return{enter,exit,pickLevelUp,confirmPick,togglePause,resumeGame,toggleMute,goLobby,zoomIn,zoomOut,cycleSpeed,cycleAutoMode};
 })();

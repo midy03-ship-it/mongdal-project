@@ -47,6 +47,7 @@ class Projectile {
     this._maxAlpha       = cfg._maxAlpha != null ? cfg._maxAlpha : 1.0; // 최대 불투명도 (잔상 등)
     this._homing         = cfg._homing || false; // 호밍: 가장 가까운 적 방향으로 유도
     this._homingWeak     = cfg._homingWeak || false; // [UPDATE 2026-07-08] 약한 유도(신궁 초월 8성) — 회전 속도 대폭 하향
+    this._homingVeryWeak = cfg._homingVeryWeak || false; // [UPDATE 2026-07-09] 아주 약한 유도(신궁 기본 공격) — 이동 중 사격 시 조준 어긋남만 살짝 보정
     // 바운스(저승낫 등): 맞으면 근처 적으로 튕김
     this._bounce         = cfg._bounce      || false;
     this._initLife       = cfg._initLife    || this.life;
@@ -120,6 +121,15 @@ class Projectile {
     }
     const actualDmg=Math.floor(dmg);
     enemy.takeDamage(actualDmg);
+    // [UPDATE 2026-07-10] 무기별 데미지 미터용: 누적 총데미지 + 최근 3초 로그(부드러운 DPS 계산용)
+    // 동료 공격은 srcType이 companion_*이라 무기 목록에 안 잡혀 자동 제외됨
+    if(typeof window!=='undefined'){
+      const _dk=this._srcType||this.type;
+      if(!window._dpsTotal) window._dpsTotal={};
+      window._dpsTotal[_dk]=(window._dpsTotal[_dk]||0)+actualDmg;
+      if(!window._dpsLog) window._dpsLog=[];
+      window._dpsLog.push({t:window._gameElapsed||0, k:_dk, d:actualDmg});
+    }
     if(isCrit&&typeof showFloatingText==='function'){
       showFloatingText(enemy.x,enemy.y,'💥'+actualDmg,'#ffdd00');
     }
@@ -233,6 +243,9 @@ class Projectile {
         const _growProg = Math.min(1, 1 - this.life/this.maxLife);
         _fieldScaleX = _fieldScaleY = 1 + _growProg * 1.5; // 1배 → 2.5배
         _fieldAlpha = Math.min(1, this.life * 2) * 0.9;
+      } else if(this.type==='goblin_axe'){
+        // [UPDATE 2026-07-09] life:0.08(매 프레임 재생성 트릭값)가 알파 계산에도 쓰여 24%로만 보이던 버그 — 거의 불투명하게 고정
+        _fieldAlpha = 0.95;
       }
       if(_fieldScaleX!==1||_fieldScaleY!==1) ctx.scale(_fieldScaleX,_fieldScaleY);
       // 신검 등 baseAng 지정 무기는 baseAng 방향, 압축 베기는 정지 각도+흔들림, 나머지는 진행방향 회전
@@ -410,10 +423,10 @@ const MAIN_WEAPON_DEFS = {
     specialStat:{ id:'talisman_tadak', name:'특수 강화', icon:'📜+', desc:'0.12초 후 부적 +1발', max:4 },
     maxLevel:4,
     levels:[
-      {cooldown:0, mainCd:1.2, damage:12, pierce:0, speed:280, radius:7, life:2.0},
-      {cooldown:0, mainCd:1.0, damage:16, pierce:0, speed:300, radius:7, life:2.0},
-      {cooldown:0, mainCd:1.0, damage:18, pierce:0, speed:300, radius:7, life:2.2},
-      {cooldown:0, mainCd:0.85,damage:22, pierce:1, speed:320, radius:8, life:2.5},
+      {cooldown:0, mainCd:1.2, damage:12, pierce:0, speed:280, radius:14, life:2.0}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32px)의 절반에 맞춤 — 기존 7은 그림보다 훨씬 작아 스쳐도 안 맞는 체감 버그
+      {cooldown:0, mainCd:1.0, damage:16, pierce:0, speed:300, radius:15, life:2.0},
+      {cooldown:0, mainCd:1.0, damage:18, pierce:0, speed:300, radius:16, life:2.2},
+      {cooldown:0, mainCd:0.85,damage:22, pierce:1, speed:320, radius:16, life:2.5},
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
@@ -446,7 +459,9 @@ const MAIN_WEAPON_DEFS = {
           q.targets.forEach(t=>{
             const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
             projs.push(new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
-              {pierce:lvl.pierce+t8Pierce,radius:lvl.radius,life:lvl.life,type:'talisman',color:'#e04040',glow:'rgba(220,60,40,.5)'}));
+              {pierce:lvl.pierce+t8Pierce,radius:lvl.radius,life:lvl.life,type:'talisman',
+               _homing:true,_homingVeryWeak:true, // [UPDATE 2026-07-10]
+               color:'#e04040',glow:'rgba(220,60,40,.5)'}));
           });
         }
       }
@@ -494,7 +509,9 @@ const MAIN_WEAPON_DEFS = {
         targets.forEach(e=>{
           const dx=e.x-player.x,dy=e.y-player.y,d=Math.hypot(dx,dy)||1;
           projs.push(new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
-            {pierce:lvl.pierce,radius:lvl.radius,life:lvl.life,type:'talisman',color:'#e04040',glow:'rgba(220,60,40,.5)'}));
+            {pierce:lvl.pierce+t8Pierce,radius:lvl.radius,life:lvl.life,type:'talisman', // [UPDATE 2026-07-10] 메인 발사에 초월8성 관통+1 누락돼있던 것 수정
+             _homing:true,_homingVeryWeak:true, // [UPDATE 2026-07-10] 부적도 투척 무기라 아주 약한 유도 부여 (신궁과 동일)
+             color:'#e04040',glow:'rgba(220,60,40,.5)'}));
         });
         // 타닥 큐 추가 (메인 발사 시점 기준, 0.12초 간격)
         if(bonus>0){
@@ -564,7 +581,7 @@ const MAIN_WEAPON_DEFS = {
         const baseAng=tgt?Math.atan2(tgt.y-player.y,tgt.x-player.x):(player.facing>=0?0:Math.PI);
         const angleStep=Math.PI*2/swordCount;
         const _spd=lvl.range/0.25;
-        const t8HitWidth=35*((this._transcendRank||0)>=8?1.5:1); // [UPDATE 2026-07-08] 초월 8성: 히트 판정 폭 +50%
+        const t8HitWidth=44*((this._transcendRank||0)>=8?1.5:1); // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32×2.77)의 절반에 맞춤, 초월 8성은 +50%
         for(let i=0;i<swordCount;i++){
           const ang=baseAng+angleStep*i;
           const _mp=new Projectile(player.x,player.y-30,
@@ -590,10 +607,10 @@ const MAIN_WEAPON_DEFS = {
     specialStat:{ id:'bow_split', name:'특수 강화', icon:'🎯', desc:'3초마다 유도 분열 화살', max:4 },
     maxLevel:4,
     levels:[
-      {cooldown:0,mainCd:1.0,damage:20,speed:480,radius:6,life:1.6},
-      {cooldown:0,mainCd:0.9,damage:26,speed:500,radius:6,life:1.6},
-      {cooldown:0,mainCd:0.8,damage:34,speed:520,radius:7,life:1.8},
-      {cooldown:0,mainCd:0.7,damage:44,speed:550,radius:8,life:2.0},
+      {cooldown:0,mainCd:1.0,damage:20,speed:480,radius:14,life:1.6}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32px)의 절반에 맞춤
+      {cooldown:0,mainCd:0.9,damage:26,speed:500,radius:15,life:1.6},
+      {cooldown:0,mainCd:0.8,damage:34,speed:520,radius:15,life:1.8},
+      {cooldown:0,mainCd:0.7,damage:44,speed:550,radius:16,life:2.0},
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
@@ -615,13 +632,14 @@ const MAIN_WEAPON_DEFS = {
         const spread=awk*30*Math.PI/180; // 각성마다 좌우 15°씩 추가
         const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)); // [UPDATE 2026-07-08] 무기 초월 데미지 배율 적용
         const t8Homing=(this._transcendRank||0)>=8; // [UPDATE 2026-07-08] 초월 8성: 화살에 약한 유도 부여
+        // [UPDATE 2026-07-09] 기본 공격에도 아주 약한 유도 부여 — 이동 중 발사 시 조준 지점과 적 위치가 어긋나 빗나가는 체감 완화
         const arr=[];
         for(let i=0;i<count;i++){
           const ang=count===1?baseAng:baseAng-spread/2+spread/(count-1)*i;
           arr.push(new Projectile(player.x,player.y-30,
             Math.cos(ang)*lvl.speed,Math.sin(ang)*lvl.speed,dmg,
             {pierce:1,radius:lvl.radius,life:lvl.life,type:'bow',
-             _homing:t8Homing,_homingWeak:true,
+             _homing:true,_homingWeak:t8Homing,_homingVeryWeak:!t8Homing,
              color:'#f0e040',glow:'rgba(240,220,60,.5)'}));
         }
         return arr;
@@ -672,10 +690,10 @@ const MAIN_WEAPON_DEFS = {
     specialStat:{ id:'staff_orbs', name:'특수 강화', icon:'🔮', desc:'외부 궤도 오브 +1', max:4 },
     maxLevel:4,
     levels:[
-      {cooldown:0,damage:14,rotSpeed:1.8,orbRadius:70,hitRadius:9},
-      {cooldown:0,damage:18,rotSpeed:2.0,orbRadius:80,hitRadius:9},
-      {cooldown:0,damage:24,rotSpeed:2.2,orbRadius:90,hitRadius:10},
-      {cooldown:0,damage:30,rotSpeed:2.4,orbRadius:100,hitRadius:11},
+      {cooldown:0,damage:14,rotSpeed:1.8,orbRadius:70,hitRadius:15}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32px)의 절반에 맞춤
+      {cooldown:0,damage:18,rotSpeed:2.0,orbRadius:80,hitRadius:15},
+      {cooldown:0,damage:24,rotSpeed:2.2,orbRadius:90,hitRadius:16},
+      {cooldown:0,damage:30,rotSpeed:2.4,orbRadius:100,hitRadius:16},
     ],
     _angle:0,
     _staffShootCd:0,
@@ -949,10 +967,10 @@ const SUB_WEAPON_DEFS = {
     desc:'도끼가 주인공을 중심으로 왕복 진동한다. 레벨업마다 축이 추가된다.',
     maxLevel:4,
     levels:[
-      {cooldown:0,damage:30,speed:350,range:195,hitRadius:14},
-      {cooldown:0,damage:42,speed:370,range:208,hitRadius:15},
-      {cooldown:0,damage:56,speed:390,range:221,hitRadius:16},
-      {cooldown:0,damage:74,speed:410,range:234,hitRadius:17},
+      {cooldown:0,damage:30,speed:350,range:195,hitRadius:48}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(아래 drawScale 3.1875 기준 102px)의 절반에 맞춤 — 기존 14~17은 그림보다 훨씬 작았음
+      {cooldown:0,damage:42,speed:370,range:208,hitRadius:50},
+      {cooldown:0,damage:56,speed:390,range:221,hitRadius:52},
+      {cooldown:0,damage:74,speed:410,range:234,hitRadius:54},
     ],
     fire(player,enemies){
       const lvl=this.curLevel;
@@ -978,7 +996,7 @@ const SUB_WEAPON_DEFS = {
           Math.cos(ax.ang)*vel,Math.sin(ax.ang)*vel,
           dmg,{orb:true,pierce:99,radius:lvl.hitRadius,life:0.08,
                baseAng:ax.spinAng,
-               type:'goblin_axe',drawScaleX:3.75,drawScaleY:3.75,
+               type:'goblin_axe',drawScaleX:3.1875,drawScaleY:3.1875, // [UPDATE 2026-07-09] 그림이 너무 커 보인다는 피드백 — 15% 축소 (3.75→3.1875)
                color:'#c07820',glow:'rgba(200,120,30,.38)'});
         projs.push(p);
       }
@@ -1076,10 +1094,10 @@ const SUB_WEAPON_DEFS = {
     desc:'랜덤 위치 땅에서 귀신 손이 솟아오른다.',
     maxLevel:4,
     levels:[
-      {cooldown:4.0,damage:22,radius:28,count:2,life:1.5},
-      {cooldown:4.0,damage:30,radius:30,count:4,life:1.6},
-      {cooldown:4.0,damage:40,radius:32,count:6,life:1.8},
-      {cooldown:4.0,damage:52,radius:35,count:8,life:2.0},
+      {cooldown:4.0,damage:22,radius:38,count:2,life:1.5}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32×2.5=80px)의 절반에 맞춤
+      {cooldown:4.0,damage:30,radius:39,count:4,life:1.6},
+      {cooldown:4.0,damage:40,radius:40,count:6,life:1.8},
+      {cooldown:4.0,damage:52,radius:40,count:8,life:2.0},
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
@@ -1103,10 +1121,10 @@ const SUB_WEAPON_DEFS = {
     desc:'범위 내 랜덤 위치에 번개가 떨어진다.',
     maxLevel:4,
     levels:[
-      {cooldown:4.0,damage:6, radius:20,range:150,count:2,life:1.5},
-      {cooldown:4.0,damage:8, radius:22,range:170,count:3,life:1.6},
-      {cooldown:4.0,damage:10,radius:24,range:190,count:3,life:1.8},
-      {cooldown:4.0,damage:14,radius:26,range:210,count:4,life:2.0},
+      {cooldown:4.0,damage:6, radius:50,range:150,count:2,life:1.5}, // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32×3.5=112px)의 절반에 맞춤
+      {cooldown:4.0,damage:8, radius:52,range:170,count:3,life:1.6},
+      {cooldown:4.0,damage:10,radius:54,range:190,count:3,life:1.8},
+      {cooldown:4.0,damage:14,radius:56,range:210,count:4,life:2.0},
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];

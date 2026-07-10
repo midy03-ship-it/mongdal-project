@@ -36,11 +36,15 @@ class Enemy {
     const hpScale    = isDungeon ? 0.667 : 0.4;
     const speedScale = isDungeon ? 9     : 5;
 
+    // [UPDATE 2026-07-10] 초반 진입장벽 완화: 챕터1 대폭/챕터2 소폭/챕터3 아주 조금 하향 (일반 스테이지 전용, 던전류 제외)
+    const _ch = isDungeon ? 0 : (window._curChapterForEnemyScale || 0);
+    const chapterEase = _ch===1 ? 0.5 : _ch===2 ? 0.75 : _ch===3 ? 0.9 : 1.0;
+
     this.type     = typeName;
     this.name     = t.name;
-    this.hp       = Math.floor(t.hp    * (1 + wave * hpScale) * dungeonMult);
+    this.hp       = Math.floor(t.hp    * (1 + wave * hpScale) * dungeonMult * chapterEase);
     this.maxHp    = this.hp;
-    this.damage   = Math.floor(t.damage* (1 + wave * 0.18)    * dungeonMult);
+    this.damage   = Math.floor(t.damage* (1 + wave * 0.18)    * dungeonMult * chapterEase);
     this.speed    = t.speed  + wave * speedScale;
     this.xpValue  = t.xp;
     this.goldValue = Math.floor((t.gold||1)*(1+wave*0.10));

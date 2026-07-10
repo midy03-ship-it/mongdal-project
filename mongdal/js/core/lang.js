@@ -48,6 +48,10 @@ const Lang = (() => {
         player:      '캐릭터',
         sinmok:      '신목',
       },
+      onboarding: { // [UPDATE 2026-07-09] 초반 온보딩 유도 문구
+        tapStage: '여기를 눌러봐!',
+        tapStage1: '스테이지 1을 눌러봐!',
+      },
       currency: {
         gold:           '골드',
         gems:           '다이아',
@@ -331,6 +335,10 @@ const Lang = (() => {
         petTooltip:  'Dragon Pond',
         player:      'Character',
         sinmok:      'Sacred Tree',
+      },
+      onboarding: { // [UPDATE 2026-07-09]
+        tapStage: 'Tap here!',
+        tapStage1: 'Try Stage 1!',
       },
       currency: {
         gold:           'Gold',

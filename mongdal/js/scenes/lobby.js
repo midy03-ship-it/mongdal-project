@@ -911,6 +911,9 @@ const LobbyScene = (() => {
       { id:'nav_player',    imgKey:'character',  get label(){ return Lang.t('nav','player');    }, scene:'playerScene', always:true  },
     ];
 
+    // [UPDATE 2026-07-09] 초반 온보딩: 전투 입장 이력 0회일 때 스테이지 버튼 펄스+말풍선으로 유도
+    const _isFirstTime = (saveData.clearedStages||[]).length === 0 && (saveData.runs||0) === 0;
+
     nav.innerHTML = ALL_BTNS.map(btn => {
       const isUnlocked = btn.always || unlocked.has(btn.id);
       const imgSrc = SPRITES.lobbyIcons[btn.imgKey].src;
@@ -921,8 +924,10 @@ const LobbyScene = (() => {
           <span class="nav-label">${btn.label}</span>
         </button>`;
       }
-      return `<button class="nav-btn${btn.main?' nav-btn-stage':''}"
+      const isGuideTarget = _isFirstTime && btn.id === 'nav_stage';
+      return `<button class="nav-btn${btn.main?' nav-btn-stage':''}${isGuideTarget?' onboard-pulse':''}"
         onclick="SceneManager.go('${btn.scene}')">
+        ${isGuideTarget ? `<span class="onboard-hint">${Lang.t('onboarding','tapStage')}</span>` : ''}
         <span class="nav-icon">${imgTag}</span>
         <span class="nav-label">${btn.label}</span>
       </button>`;

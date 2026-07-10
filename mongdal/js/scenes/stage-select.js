@@ -321,10 +321,14 @@ const StageSelectScene = (() => {
                                      : 'transparent';
 
                   const canEnter = unlocked && canAfford;
+                  // [UPDATE 2026-07-09] 초반 온보딩: 전투 입장 이력 0회일 때 스테이지 1 펄스+말풍선으로 유도
+                  const isGuideTarget = canEnter && stage.id === 1
+                    && (saveData.clearedStages||[]).length === 0 && (saveData.runs||0) === 0;
                   return `
                     <button
                       onclick="${canEnter ? `StageSelectScene.startStage(${stage.id})` : ''}"
                       ${!canEnter ? 'disabled' : ''}
+                      class="${isGuideTarget ? 'onboard-pulse' : ''}"
                       style="
                         position:relative;padding:0;min-height:${stage.isBoss||stage.isMidBoss?68:56}px;
                         background:${cardSrc?'transparent':fallbackBg};
@@ -332,6 +336,7 @@ const StageSelectScene = (() => {
                         border-radius:6px;cursor:${canEnter?'pointer':'default'};
                         overflow:hidden;font-family:inherit;
                       ">
+                      ${isGuideTarget ? `<span class="onboard-hint">${Lang.t('onboarding','tapStage1')}</span>` : ''}
                       ${cardSrc ? `<img src="${cardSrc}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;">` : ''}
                       ${portraitSrc && (stage.isBoss||stage.isMidBoss) ? `<img src="${portraitSrc}" style="position:absolute;bottom:9px;left:50%;transform:translateX(-50%);height:${stage.isBoss?82:68}%;width:auto;object-fit:contain;image-rendering:pixelated;">` : ''}
                       ${stageIcon && !portraitSrc ? `<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);font-size:${stage.isBoss?20:16}px;z-index:1;">${stageIcon}</span>` : ''}
