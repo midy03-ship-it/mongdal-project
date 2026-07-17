@@ -68,8 +68,11 @@ const BlacksmithScene = (() => {
     return `${starStr}${dmgBonus}Lv.${g.lv}`;
   }
 
-  function getWeaponImg(id) {
-    const sc = SPRITES?.weapons?.[id];
+  // [UPDATE 2026-07-13] 260713_MTOPC.md 17번: 9~10성(완전체) 도달 시 대장간 목록/슬롯바 아이콘도 완전체 이미지로 교체
+  function getWeaponImg(id, rank) {
+    const soulKey = id + '_soul';
+    const useSoul = (rank || 0) >= 9 && SPRITES?.weapons?.[soulKey];
+    const sc = useSoul ? SPRITES.weapons[soulKey] : SPRITES?.weapons?.[id];
     if (!sc) return null;
     return SpriteLoader.get(sc.src);
   }
@@ -107,7 +110,9 @@ const BlacksmithScene = (() => {
     const selectedMains  = saveData.selectedMainWeapons || [saveData.selectedMainWeapon || 'talisman'];
     const gold           = saveData.gold        || 0;
     const ganghwa        = saveData.ganghwaseok || 0;
-    const yeongon        = saveData.yeongonseok || 0;
+    // [UPDATE 2026-07-17] 무기초월 재료를 yeongonseok(획득 경로 없어 영원히 0이던 유령 재화)에서
+    // soulStones(명부강화와 동일, 드랍+차원상인 교환으로 실제 모을 수 있는 재화)로 통합
+    const yeongon        = saveData.soulStones || 0;
     const chaewon        = saveData.chaewonseok || 0;
     const levels         = saveData.weaponLevels || {};
     const transcend       = saveData.weaponTranscend || {};
@@ -115,12 +120,21 @@ const BlacksmithScene = (() => {
 
     const _hasNormal  = (saveData.clearedStagesNormal || []).length > 0;
     const _hasHard    = (saveData.clearedStagesHard   || []).length > 0;
-    const _slotCount  = _hasHard ? 3 : _hasNormal ? 2 : 1;
+    // [UPDATE 2026-07-11] 이지 전용 슬롯 확장(챕터5/시즌1클리어)도 반영 — 노말/하드 안 거쳐도 이지로 슬롯 늘어난 만큼은 여기서도 풀어줘야 인게임 활성 슬롯수와 안 어긋남
+    const _easySlots  = (typeof StageSelectScene !== 'undefined') ? StageSelectScene.getEasySlotCount(saveData) : 1;
+    const _slotCount  = Math.max(_hasHard ? 3 : _hasNormal ? 2 : 1, _easySlots);
     const _unlockLabels = ['', Lang.t('character','slotUnlockNormal'), Lang.t('character','slotUnlockHard')];
     const _diffColors = ['#60c060', '#f0c040', '#ff6040'];
 
     // _activeSlot이 현재 슬롯 수를 벗어나지 않도록 보정
     if (_activeSlot >= _slotCount) _activeSlot = 0;
+
+    // [UPDATE 2026-07-11] 오행 펜타그램용 — 지금 선택 중인 슬롯 원소(반전강조) vs 다른 슬롯들의 원소(비교 대상)
+    const _activeSlotEl = selectedMains[_activeSlot] ? MAIN_WEAPON_DEFS[selectedMains[_activeSlot]]?.element : null;
+    const _otherSlotEls = selectedMains
+      .slice(0, _slotCount)
+      .map((wid, i) => (i !== _activeSlot && wid) ? MAIN_WEAPON_DEFS[wid]?.element : null)
+      .filter(Boolean);
 
     // 슬롯 바 HTML
     const slotBarHTML = (() => {
@@ -131,7 +145,7 @@ const BlacksmithScene = (() => {
           const active  = !locked && i === _activeSlot;
           const wid     = selectedMains[i];
           const wdef    = wid ? WEAPON_LIST.find(w => w.id === wid) : null;
-          const img     = wid ? getWeaponImg(wid) : null;
+          const img     = wid ? getWeaponImg(wid, transcend[wid]) : null;
           return `<div onclick="${!locked ? `BlacksmithScene.selectSlot(${i})` : ''}"
             style="flex:1;border-radius:10px;padding:6px 4px;text-align:center;cursor:${locked?'default':'pointer'};
               border:2px solid ${active ? _diffColors[i] : locked ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)'};
@@ -177,22 +191,31 @@ const BlacksmithScene = (() => {
           <div style="font-size:13px;color:#f0c840;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
             <span>${_cimg('gold')} ${gold.toLocaleString()}</span>
             <span style="color:#c0e0ff;">${_cimg('ganghwaseok')} ${ganghwa}</span>
-            <span style="color:#d0a0ff;">${_cimg('yeongonseok')} ${yeongon}</span>
+            <span style="color:#d0a0ff;">${_cimg('soulStones')} ${yeongon}</span>
           </div>
         </div>
 
         <!-- 슬롯 바 -->
         ${slotBarHTML}
 
+        <!-- [UPDATE 2026-07-11] 오행 펜타그램 — 해쉬태그 리스트 대신 상생/상극 관계를 직관적으로 시각화 -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
+          background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
+          <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
+            ${isEn?'Element Relations (highlighted = current slot)':'오행 상생상극 (반전 = 선택한 슬롯)'}
+          </div>
+          ${elementPentagramSVG(_otherSlotEls, _activeSlotEl, 150)}
+        </div>
+
         <!-- 무기 목록 -->
-        <div id="bs-weapon-list" style="flex:1;overflow-y:auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:12px;">
-          ${WEAPON_LIST.map(w => weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, _slotCount, isEn?['Slot 1','Slot 2','Slot 3']:['슬롯 1','슬롯 2','슬롯 3'], _diffColors, transcend, yeongon, chaewon)).join('')}
+        <div id="bs-weapon-list" class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:12px;">
+          ${WEAPON_LIST.map(w => weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, _slotCount, isEn?['Slot 1','Slot 2','Slot 3']:['슬롯 1','슬롯 2','슬롯 3'], _diffColors, transcend, yeongon, chaewon, _otherSlotEls)).join('')}
         </div>
       </div>
     `;
   }
 
-  function weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, slotCount, diffLabels, diffColors, transcend, yeongon, chaewon) {
+  function weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, slotCount, diffLabels, diffColors, transcend, yeongon, chaewon, otherSlotEls) {
     const isOwned    = unlocked.includes(w.id);
     const canBuy     = !isOwned && gold >= WEAPON_PRICE;
     const name       = isEn ? w.nameEn : w.name;
@@ -210,10 +233,19 @@ const BlacksmithScene = (() => {
       .filter(i => i >= 0);
     const isEquippedInActive = equippedSlots.includes(_activeSlot);
 
-    const img = getWeaponImg(w.id);
-    const imgHtml = img
+    const _wTRank = transcend[w.id] || 0;
+    const img = getWeaponImg(w.id, _wTRank);
+    // [UPDATE 2026-07-11] 오행 배지
+    const _wElement = (typeof MAIN_WEAPON_DEFS!=='undefined' && MAIN_WEAPON_DEFS[w.id]?.element) || null;
+    const _wBadge = _wElement ? elementBadgeHTML(_wElement) : '';
+    // [UPDATE 2026-07-11] 다른 슬롯들과의 상생/상극 관계 — 카드 테두리 초록/빨강으로 직관적 표시
+    const _wRelation = (!isEquippedInActive) ? elementRelation(_wElement, otherSlotEls) : null;
+    // [UPDATE 2026-07-13] 260713_MTOPC.md 17번: 초월 랭크 구간별 카드 아이콘 발광 강도(1~4/5~8/9~10성)
+    const _wGlow = _wTRank>=9 ? '0 0 14px 3px rgba(255,215,120,0.7)' : _wTRank>=5 ? '0 0 9px 1px rgba(255,215,120,0.4)' : _wTRank>=1 ? '0 0 5px 0px rgba(255,215,120,0.2)' : 'none';
+    const imgHtml = `<div style="position:relative;width:52px;height:52px;flex-shrink:0;border-radius:8px;box-shadow:${_wGlow};">` + (img
       ? `<img src="${img.src}" style="width:52px;height:52px;object-fit:contain;image-rendering:pixelated;">`
-      : `<div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:30px;">${w.icon}</div>`;
+      : `<div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:30px;">${w.icon}</div>`
+      ) + `${_wBadge}</div>`;
 
     // 각성 색상
     const awakeColors = ['#888','#4a90d9','#7ab648','#e8a020','#c060d0','#ff4060'];
@@ -233,6 +265,12 @@ const BlacksmithScene = (() => {
       actionBtn = `<div style="font-size:11px;padding:5px 10px;border-radius:7px;
         background:rgba(100,200,120,0.2);border:1px solid rgba(120,220,140,0.5);
         color:#80f0a0;">✓ ${diffLabels[_activeSlot]} ${isEn?'Equipped':'장착중'}</div>`;
+    } else if (isOwned && equippedSlots.length > 0) {
+      // [UPDATE 2026-07-11] 이미 다른 슬롯에 장착된 무기는 선택 불가 — 캐릭터 화면과 동일한 규칙.
+      // (예전엔 여기서 선택 허용 → 원래 슬롯이 조용히 비워져서, 오행 슬롯매칭 시너지가 인덱스 밀림으로 꼬이는 원인이 됨)
+      actionBtn = `<div style="font-size:10px;padding:5px 10px;border-radius:7px;
+        background:rgba(80,80,80,0.15);border:1px solid rgba(255,255,255,0.08);color:#6a5a4a;">
+        🔒 ${isEn?`In ${diffLabels[equippedSlots[0]]}`:`${diffLabels[equippedSlots[0]]}에 장착중`}</div>`;
     } else if (isOwned) {
       actionBtn = `<button onclick="BlacksmithScene.selectWeapon('${w.id}')" style="
         font-size:11px;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;
@@ -261,7 +299,7 @@ const BlacksmithScene = (() => {
       : '';
 
     // [UPDATE 2026-07-08] 초월 섹션 (5각 Lv4 도달 후 노출)
-    const tRank = transcend[w.id] || 0;
+    const tRank = _wTRank; // [UPDATE 2026-07-13] 위에서 이미 계산한 값 재사용
     const tUnlocked = isOwned && isTranscendUnlocked(lv);
     let transcendHtml = '';
     if (tUnlocked) {
@@ -272,7 +310,7 @@ const BlacksmithScene = (() => {
         yeongon >= tCost.soul && gold >= tCost.gold &&
         ganghwa >= tCost.ganghwa && chaewon >= tCost.chaewon;
       const tCostLabel = tCost
-        ? `${_cimg('yeongonseok')}${tCost.soul} ${_cimg('gold')}${tCost.gold.toLocaleString()}`
+        ? `${_cimg('soulStones')}${tCost.soul} ${_cimg('gold')}${tCost.gold.toLocaleString()}`
           + (tCost.ganghwa ? ` ${_cimg('ganghwaseok')}${tCost.ganghwa}` : '')
           + (tCost.chaewon ? ` ${_cimg('chaewonseok')}${tCost.chaewon}` : '')
         : '';
@@ -304,10 +342,19 @@ const BlacksmithScene = (() => {
         </div>`;
     }
 
+    // [UPDATE 2026-07-11] 상생=초록/상극=빨강 테두리 (장착중인 슬롯 강조가 최우선)
+    const _cardBorder = isEquippedInActive ? `${diffColors[_activeSlot]}55`
+      : _wRelation==='gen'   ? 'rgba(94,194,106,0.7)'
+      : _wRelation==='clash' ? 'rgba(192,72,72,0.7)'
+      : isOwned ? 'rgba(200,160,255,0.2)' : 'rgba(255,255,255,0.07)';
+    const _cardBg = isEquippedInActive ? 'rgba(100,200,120,0.06)'
+      : _wRelation==='gen'   ? 'rgba(94,194,106,0.06)'
+      : _wRelation==='clash' ? 'rgba(192,72,72,0.06)'
+      : 'rgba(255,255,255,0.04)';
     return `
       <div style="
-        background:${isEquippedInActive?'rgba(100,200,120,0.06)':'rgba(255,255,255,0.04)'};
-        border:1px solid ${isEquippedInActive?`${diffColors[_activeSlot]}55`:isOwned?'rgba(200,160,255,0.2)':'rgba(255,255,255,0.07)'};
+        background:${_cardBg};
+        border:1px solid ${_cardBorder};
         border-radius:14px;padding:12px 14px;
         opacity:${isOwned?1:0.75};
       ">
@@ -354,6 +401,7 @@ const BlacksmithScene = (() => {
     if (_activeSlot === 0) saveData.selectedMainWeapon = weaponId;
     if (!saveData.weaponLevels) saveData.weaponLevels = {};
     saveData.weaponLevels[weaponId] = saveData.weaponLevels[weaponId] || 1;
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData);
     rerender(saveData);
   }
@@ -363,12 +411,13 @@ const BlacksmithScene = (() => {
     const unlocked = saveData.unlockedWeapons || ['talisman'];
     if (!unlocked.includes(weaponId)) return;
     if (!saveData.selectedMainWeapons) saveData.selectedMainWeapons = [saveData.selectedMainWeapon || 'talisman'];
-    // 다른 슬롯에 이미 같은 무기가 있으면 그 슬롯을 비움
-    saveData.selectedMainWeapons = saveData.selectedMainWeapons.map((wid, i) =>
-      i !== _activeSlot && wid === weaponId ? null : wid
-    );
+    // [UPDATE 2026-07-11] 이미 다른 슬롯에 장착된 무기는 선택 불가 (캐릭터 화면과 동일 규칙) —
+    // 예전처럼 조용히 다른 슬롯을 비우면 슬롯 인덱스가 밀려서 오행 슬롯매칭 시너지 계산이 꼬임
+    const usedInOtherSlot = saveData.selectedMainWeapons.some((wid, i) => i !== _activeSlot && wid === weaponId);
+    if (usedInOtherSlot) return;
     saveData.selectedMainWeapons[_activeSlot] = weaponId;
     if (_activeSlot === 0) saveData.selectedMainWeapon = weaponId;
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData);
     rerender(saveData);
   }
@@ -401,12 +450,12 @@ const BlacksmithScene = (() => {
     const rank = saveData.weaponTranscend[weaponId] || 0;
     if (rank >= TRANSCEND_MAX_RANK) return;
     const cost = getTranscendCost(rank + 1);
-    if ((saveData.yeongonseok || 0) < cost.soul) return;
+    if ((saveData.soulStones || 0) < cost.soul) return;
     if ((saveData.gold || 0) < cost.gold) return;
     if ((saveData.ganghwaseok || 0) < cost.ganghwa) return;
     if ((saveData.chaewonseok || 0) < cost.chaewon) return;
 
-    saveData.yeongonseok -= cost.soul;
+    saveData.soulStones -= cost.soul;
     saveData.gold        -= cost.gold;
     saveData.ganghwaseok -= cost.ganghwa;
     saveData.chaewonseok -= cost.chaewon;

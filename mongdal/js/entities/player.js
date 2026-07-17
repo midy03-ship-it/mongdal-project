@@ -68,7 +68,8 @@ class Player {
   }
 
   // ── 최종 스탯 ──
-  get totalAtk() { return Math.floor((this.stats.atk + this.tempStats.atk) * (this._atkBuffTime>0 ? (this._atkBuff||1) : 1) * (1 + (this._extraDmgPct||0)/100)); }
+  // [UPDATE 2026-07-17] 도깨비주사위(_diceAtkMult) — 시즌3 스테이지 입장 시 런 전체에 적용되는 배율
+  get totalAtk() { return Math.floor((this.stats.atk + this.tempStats.atk) * (this._atkBuffTime>0 ? (this._atkBuff||1) : 1) * (1 + (this._extraDmgPct||0)/100) * (this._diceAtkMult||1)); }
   get totalSpd() { return this.stats.spd + this.tempStats.spd; }
   get totalMov() { return this.stats.mov + this.tempStats.mov; }
   get totalDef() { return this.stats.def + this.tempStats.def; }
@@ -76,6 +77,11 @@ class Player {
   get speed()    { return CONFIG.PLAYER.BASE_SPEED * (this.totalMov / 100); }
 
   update(dt, dir) {
+    // [UPDATE 2026-07-15] 260714_MTOPC.md 시즌3 confuse_field 패턴 — 필드 내 조작 일시 반전
+    if (this._controlReversed > 0) {
+      this._controlReversed -= dt;
+      dir = { x: -dir.x, y: -dir.y };
+    }
     const moving = dir.x !== 0 || dir.y !== 0;
     this.isMoving = moving;
     this.x += dir.x * this.speed * dt;
@@ -103,6 +109,8 @@ class Player {
     }
     const reduction = Math.min(this.totalDef / CONFIG.DEF.DIVISOR, CONFIG.DEF.MAX_REDUCTION)
                     + this._damageReduction;
+    dmg = dmg * (1 + (this._elementClashDmgTaken||0)); // [UPDATE 2026-07-11] 오행 상극 조합 장착 시 받는 피해 증가
+    dmg = dmg * (1 + (this._diceDmgTakenMult||0)); // [UPDATE 2026-07-17] 도깨비주사위(저주/대박) 받는피해 보정
     const finalDmg  = Math.max(1, Math.floor(dmg * (1 - Math.min(reduction, 0.9))));
     this.hp    -= finalDmg;
     this.iframe = CONFIG.PLAYER.IFRAME_SEC;
@@ -212,30 +220,6 @@ class Player {
       ctx.rotate(this.tilt * (this.facing > 0 ? 1 : -1));
       ctx.translate(0, 28);        // 다시 원위치
     }
-    // ── 무기: 플레이어 뒤에 렌더 (얼굴 안 가리게) ──
-    // 주무기만 손에 그림 (보조무기는 제외)
-    const _mainOnly = window.mainWeapon ? [window.mainWeapon] : [];
-    if (_mainOnly.length) {
-      const wPositions = [
-        { x: 28, y: -18 },   // 주무기: 오른쪽 옆
-      ];
-      for (let i = 0; i < Math.min(_mainOnly.length, 1); i++) {
-        const w = _mainOnly[i];
-        const _baseWid = w.defId || w.id;
-        // [UPDATE 2026-07-08] 초월 9성 이상이면 완전체 그래픽으로 교체
-        const ws = ((w._transcendRank||0)>=9 && SPRITES?.weapons?.[_baseWid+'_soul'])
-          || SPRITES?.weapons?.[_baseWid] || SPRITES?.weapons?.[w.id];
-        if (!ws) continue;
-        const wImg = SpriteLoader.get(ws.src);
-        if (!wImg?.complete || !wImg.naturalWidth) continue;
-        const pos = wPositions[i];
-        ctx.save();
-        ctx.globalAlpha = 0.95;
-        ctx.drawImage(wImg, pos.x - ws.drawW/2, pos.y - ws.drawH + bob, ws.drawW, ws.drawH);
-        ctx.restore();
-      }
-    }
-
     const ox=this.spriteOX||(-22), oy=this.spriteOY||(-44);
     const sw=this.spriteW||(44),  sh=this.spriteH||(50);
     if (this.img.complete && this.img.naturalWidth > 0) {
@@ -245,6 +229,75 @@ class Player {
       ctx.beginPath(); ctx.arc(0,-42+bob,10,0,Math.PI*2);
       ctx.fillStyle='#e8dcc8'; ctx.fill();
     }
+
+    // ── 무기: [UPDATE 2026-07-12] 캐릭터 위에 보이도록 몸 그림 다음으로 이동 (예전엔 몸 뒤라 가려짐) ──
+    // 주무기만 손에 그림 (보조무기는 제외)
+    const _mainOnly = window.mainWeapon ? [window.mainWeapon] : [];
+    if (_mainOnly.length) {
+      const wPositions = [
+        { x: 28, y: -18 },   // 주무기: 오른쪽 옆
+      ];
+      // [UPDATE 2026-07-12] 정정: 어제 각도/위치/좌우반전 튜닝(신검 60도, 신궁 반전 등)은 전부 "완전체(초월 9~10성)"를
+      // 보면서 맞춘 값이었음 — 일반(비초월) 무기에는 적용된 적이 없었는데 코드가 공유하고 있어서 일반 무기가 망가져 보였던 것.
+      // 그래서 튜닝값은 전부 "_soul" 키로 옮기고, 일반 무기는 깃허브(최신 push)에 있던 원래 방식(회전/반전 없이 중앙-바닥 기준 배치)으로 되돌림.
+      const _WEAPON_HOLD_TWEAK = {
+        // ── 완전체(초월 9~10성) 전용 — 어제 실제로 확인하며 튜닝한 값 ──
+        sword_soul:        { angle: Math.PI/3, dx: 19, dy: -25 },
+        talisman_soul:      { dx: 12, dy: -15 },
+        bow_soul:           { flip: true, dy: -10 },
+        staff_soul:         { dy: -18 },
+        scythe_main_soul:   { angle: Math.PI/6, dy: -10 },
+      };
+      // [UPDATE 2026-07-12] 일반(비초월) 무기 손 표시 크기 배율 — 신검이 너무 얇아서(drawW:10) 잘 안 보인다는 피드백
+      const _REGULAR_WEAPON_SCALE = { sword: 1.8 };
+      for (let i = 0; i < Math.min(_mainOnly.length, 1); i++) {
+        const w = _mainOnly[i];
+        const _baseWid = w.defId || w.id;
+        const _tRank = w._transcendRank || 0;
+        // [UPDATE 2026-07-08] 초월 9성 이상이면 완전체 그래픽으로 교체
+        const _isSoul = _tRank>=9 && !!SPRITES?.weapons?.[_baseWid+'_soul'];
+        const ws = (_isSoul && SPRITES.weapons[_baseWid+'_soul'])
+          || SPRITES?.weapons?.[_baseWid] || SPRITES?.weapons?.[w.id];
+        if (!ws) continue;
+        const wImg = SpriteLoader.get(ws.src);
+        if (!wImg?.complete || !wImg.naturalWidth) continue;
+        const pos = wPositions[i];
+        const _tweak = _isSoul ? _WEAPON_HOLD_TWEAK[_baseWid+'_soul'] : null;
+
+        if (!_tweak) {
+          // [UPDATE 2026-07-12] 일반 무기(튜닝 없음) — 깃허브 원본 방식 그대로: 회전/반전 없이 중앙-바닥 기준 배치
+          // (1~8성 발광은 여기서도 그대로 유지 — 완전체 전용 분기가 아니라고 발광까지 같이 없어지면 안 됨)
+          const _regScale = _REGULAR_WEAPON_SCALE[_baseWid] || 1;
+          const _rw = ws.drawW*_regScale, _rh = ws.drawH*_regScale;
+          if (_tRank > 0 && typeof _drawTranscendGlow === 'function') {
+            _drawTranscendGlow(ctx, pos.x, pos.y - _rh/2 + bob, _tRank, this.breatheT);
+          }
+          ctx.save();
+          ctx.globalAlpha = 0.95;
+          ctx.drawImage(wImg, pos.x - _rw/2, pos.y - _rh + bob, _rw, _rh);
+          ctx.restore();
+          continue;
+        }
+
+        // 완전체 전용 — 어제 튜닝한 회전/피벗 방식
+        const _rankScale = _tRank>=9 ? 1.35 : _tRank>=5 ? 1.15 : _tRank>=1 ? 1.05 : 1;
+        const _holdAngle = _tweak.angle != null ? _tweak.angle : 0;
+        const _px = pos.x + (_tweak.dx || 0), _py = pos.y + (_tweak.dy || 0);
+        const _hx = (ws.drawW/2) * _rankScale;
+        const _hy = (ws.drawH/2) * _rankScale;
+        if (_tRank > 0 && typeof _drawTranscendGlow === 'function') {
+          _drawTranscendGlow(ctx, _px, _py + bob, _tRank, this.breatheT);
+        }
+        ctx.save();
+        ctx.globalAlpha = 0.95;
+        ctx.translate(_px, _py + bob);
+        ctx.rotate(_holdAngle);
+        if (_tweak.flip) ctx.scale(-1, 1);
+        ctx.drawImage(wImg, -_hx, -_hy, ws.drawW*_rankScale, ws.drawH*_rankScale);
+        ctx.restore();
+      }
+    }
+
     ctx.restore();
     // 보호막 중엔 빨간 피격 타원 표시 안 함
     if (this.iframe > 0.5 && this._shieldHp <= 0) {

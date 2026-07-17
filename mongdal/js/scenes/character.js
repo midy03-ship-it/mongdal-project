@@ -1,9 +1,12 @@
 // character.js - 동료 편성 화면
 const CharacterScene = (() => {
   let saveData = null;
+  let _expandedId = null; // [UPDATE 2026-07-13] 탭하면 동료 설명을 큰 글씨로 펼쳐 보여주는 카드 id
 
+  // [UPDATE 2026-07-11] 260711_MTOPC.md 1번: 4단계 → 7단계 등급 사다리로 확장 (에픽/레전더리/미소스는 향후 콘텐츠용)
   const RARITY_COLOR = {
-    common:'#aaa', rare:'#4a90d9', epic:'#c060d0', special:'#ffb020'
+    common:'#aaa', uncommon:'#60a060', rare:'#4a90d9', unique:'#a040e0',
+    epic:'#c060d0', legendary:'#e8a020', mythos:'#ff4060', special:'#ffb020',
   };
   function rarityLabel(r) { return Lang.t('character', 'rarity_' + r) || r; }
 
@@ -32,6 +35,8 @@ const CharacterScene = (() => {
     const awakenings = saveData.companionAwakening || {};
     const uniFrags = saveData.universalFragments || 0;
     const list     = GAME_DATA.companions;
+    // [UPDATE 2026-07-11] 펜타그램/카드 테두리용 — 현재 편성된 동료들의 오행 목록
+    const _activeCompEls = active.map(id => list.find(c=>c.id===id)?.element).filter(Boolean);
 
     el.innerHTML = `
       <div class="char-root">
@@ -47,7 +52,9 @@ const CharacterScene = (() => {
         ${(() => {
           const _hasNormal = (saveData.clearedStagesNormal||[]).length > 0;
           const _hasHard   = (saveData.clearedStagesHard||[]).length > 0;
-          const _slotCount = _hasHard ? 3 : _hasNormal ? 2 : 1;
+          // [UPDATE 2026-07-11] 이지 전용 슬롯 확장도 반영
+          const _easySlots = (typeof StageSelectScene !== 'undefined') ? StageSelectScene.getEasySlotCount(saveData) : 1;
+          const _slotCount = Math.max(_hasHard ? 3 : _hasNormal ? 2 : 1, _easySlots);
           const _diffLabels = ['🌿','⚔️','🔥'];
           const _diffColors = ['#60c060','#f0c040','#ff6040'];
           return `<div class="formation-bar">
@@ -68,6 +75,15 @@ const CharacterScene = (() => {
             }).join('')}
           </div>`;
         })()}
+
+        <!-- [UPDATE 2026-07-11] 오행 펜타그램 — 현재 편성된 동료들의 속성을 색 링으로 표시 -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
+          background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
+          <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
+            ${Lang.getCurrent()==='en'?'Element Relations (colored = deployed)':'오행 상생상극 (색상 = 편성 중)'}
+          </div>
+          ${elementPentagramSVG(_activeCompEls, null, 150)}
+        </div>
 
         <!-- 상점 바로가기 -->
         <div style="padding:8px 14px;border-bottom:1px solid rgba(200,160,255,0.1);">
@@ -93,9 +109,15 @@ const CharacterScene = (() => {
               const awk      = awakenings[c.id] || 0;
               const canUnlock = !isOwned && f >= 10;
               const pct      = isOwned ? 100 : Math.min(f / 10 * 100, 100);
+              // [UPDATE 2026-07-11] 편성 중인 동료들과의 상생/상극 — 카드 테두리로 표시 (편성 안 된 카드에만)
+              const _cRelation = (isOwned && !isActive) ? elementRelation(c.element, _activeCompEls) : null;
+              const _cBorderStyle = _cRelation==='gen' ? 'border-color:rgba(94,194,106,0.7);'
+                : _cRelation==='clash' ? 'border-color:rgba(192,72,72,0.7);' : '';
 
+              const _expanded = _expandedId === c.id;
               return `
-                <div class="companion-card ${isOwned?'owned':'locked'} ${isActive?'active':''}">
+                <div class="companion-card ${isOwned?'owned':'locked'} ${isActive?'active':''}" style="${_cBorderStyle}"
+                  ${isOwned?`onclick="CharacterScene.toggleExpand('${c.id}')"`:''}>
                   <div class="card-rarity-bar" style="background:${rc}"></div>
                   <div class="card-sprite-wrap" style="height:110px;display:flex;align-items:center;
                     justify-content:center;overflow:hidden;position:relative;">
@@ -108,6 +130,7 @@ const CharacterScene = (() => {
                       font-size:9px;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:4px;color:${rc};">
                       ${rl}
                     </div>` : ''}
+                    ${c.element ? elementBadgeHTML(c.element,14,'top:2px;left:2px;') : ''}
                   </div>
                   <div class="card-info">
                     <div class="card-name" style="color:${isOwned?rc:'#555'}">${Lang.getCurrent()!=='ko'?(c.nameEn||c.name):c.name}</div>
@@ -118,7 +141,8 @@ const CharacterScene = (() => {
                         ${starBar(st, awk)}
                       </div>
                       <!-- 각성 효과 전체 목록 (해금=분홍, 잠김=회색) -->
-                      <div style="font-size:9px;line-height:1.5;margin-bottom:3px;">
+                      <!-- [UPDATE 2026-07-13] 카드 탭 시 큰 글씨로 펼쳐 보기 -->
+                      <div style="font-size:${_expanded?13:9}px;line-height:1.6;margin-bottom:3px;">
                         ${(c.awakening||[]).map((a,i) => {
                           const lbl = Lang.getCurrent()!=='ko'?(a.labelEn||a.label):a.label;
                           return i < Math.max(st, awk)
@@ -150,14 +174,14 @@ const CharacterScene = (() => {
                           ${Lang.t('character','summonBtn')}
                         </button>` : ''}
                       ${isOwned && !isActive ? `
-                        <button onclick="CharacterScene.addCompanion('${c.id}')" style="
+                        <button onclick="event.stopPropagation();CharacterScene.addCompanion('${c.id}')" style="
                           width:100%;padding:3px 0;border-radius:6px;font-size:10px;
                           background:rgba(100,160,220,0.2);border:1px solid rgba(100,160,220,0.5);
                           color:#80b8f0;cursor:pointer;">
                           ${Lang.t('character','deploy')}
                         </button>` : ''}
                       ${isOwned && uniFrags >= 5 && awk < 5 ? `
-                        <button onclick="CharacterScene.useUniversalFragment('${c.id}')" style="
+                        <button onclick="event.stopPropagation();CharacterScene.useUniversalFragment('${c.id}')" style="
                           width:100%;padding:3px 0;border-radius:6px;font-size:10px;
                           background:rgba(96,200,255,0.15);border:1px solid rgba(96,200,255,0.4);
                           color:#60c8ff;cursor:pointer;">
@@ -197,6 +221,7 @@ const CharacterScene = (() => {
     const active = saveData.activeCompanions || [];
     if (active.includes(id) || active.length >= 3) return;
     saveData.activeCompanions = [...active, id];
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData); render(document.getElementById('app'));
   }
   function removeSlot(i) {
@@ -204,10 +229,13 @@ const CharacterScene = (() => {
     if (!active[i]) return;
     active.splice(i, 1);
     saveData.activeCompanions = active;
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData); render(document.getElementById('app'));
   }
-  function enter(el) { saveData = Save.load(); render(el); }
+  function enter(el) { saveData = Save.load(); _expandedId = null; render(el); }
   function exit() {}
+  // [UPDATE 2026-07-13] 카드 탭 → 각성 설명 확대/축소 토글
+  function toggleExpand(id) { _expandedId = (_expandedId===id) ? null : id; render(document.getElementById('app')); }
 
-  return { enter, exit, addCompanion, removeSlot, unlockWithFragments, useUniversalFragment };
+  return { enter, exit, addCompanion, removeSlot, unlockWithFragments, useUniversalFragment, toggleExpand };
 })();

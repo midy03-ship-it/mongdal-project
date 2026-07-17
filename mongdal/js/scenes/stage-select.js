@@ -4,10 +4,14 @@ const StageSelectScene = (() => {
   let selectedDiff = 'easy';
   let selectedSeason = 1;
 
+  // [UPDATE 2026-07-14] 260714_MTOPC.md 4번: 건물/캐릭터 해금 트리거 스테이지 — 난이도 무관 미클리어 시 무지개 테두리 표시
+  const UNLOCK_PENDING_STAGE_IDS = [5, 10, 15, 20, 25, 30, 100, 110, 160, 200];
+
   const SEASON_DATA = [
     {
       season: 1,
-      nameKo: '현계', nameEn: 'Living World',
+      // [UPDATE 2026-07-14] WORLDBUILDING.md 확정 명칭표와 통일 (기존 "Living World" → "Mortal Realm")
+      nameKo: '현계', nameEn: 'Mortal Realm',
       subtitleKo: '귀인국을 되살려라', subtitleEn: 'Restore the Kingdom',
       chaptersKo: '챕터 1~10', chaptersEn: 'Ch. 1~10',
       color: '#60c0a0', icon: '⛩️',
@@ -21,12 +25,14 @@ const StageSelectScene = (() => {
       color: '#8080ff', icon: '💀',
       lockedFn: (save) => !(save.season1Clear),
     },
+    // [UPDATE 2026-07-14] 시즌3(망랑계) 콘텐츠 등록 완료 — 챕터21~30, 시즌2 클리어 후 해금
     {
       season: 3,
-      nameKo: '원계 · 어계 · 황계', nameEn: 'Primordial Realms',
+      nameKo: '망랑계', nameEn: 'Chaos Realm',
+      subtitleKo: '혼돈과 요술의 문을 넘어라', subtitleEn: 'Cross the Gate of Chaos and Illusion',
       chaptersKo: '챕터 21~30', chaptersEn: 'Ch. 21~30',
-      color: '#c06040', icon: '☯️',
-      locked: true,
+      color: '#c06040', icon: '👹',
+      lockedFn: (save) => !(save.season2Clear),
     },
   ];
 
@@ -78,6 +84,27 @@ const StageSelectScene = (() => {
       gridBorder:   'rgba(60,80,160,0.15)',
       stageNumColor:'#a0b0d0',
     },
+    // [UPDATE 2026-07-17] 시즌3 전용 테마 누락 — SEASON_THEME[3]이 없어서 SEASON_THEME[1]로 폴백되며
+    // 난이도 아이콘(🌿⚔️🔥)까지 시즌1과 똑같이 보이던 문제 수정. 망랑계(혼돈·요술) 컨셉에 맞춰 새로 설계.
+    3: {
+      bg:         '#140a08',
+      headerBorder: 'rgba(224,128,64,0.15)',
+      accent:     '#e08850',
+      chapterColors: [
+        'rgba(60,25,15,0.5)','rgba(50,20,40,0.5)','rgba(55,30,10,0.5)',
+        'rgba(45,15,35,0.5)','rgba(60,20,20,0.5)',
+      ],
+      diff: {
+        easy:   { color:'#d0a050', icon:'🎭', ko:'이지',  en:'Easy'   },
+        normal: { color:'#c06858', icon:'🦊', ko:'노말',  en:'Normal' },
+        hard:   { color:'#a03020', icon:'👹', ko:'하드',  en:'Hard'   },
+      },
+      chapterLabel: 'rgba(224,150,100,0.6)',
+      chNameColor:  '#e8c8b0',
+      gridBg:       'rgba(40,15,10,0.35)',
+      gridBorder:   'rgba(224,128,64,0.15)',
+      stageNumColor:'#f0c8a0',
+    },
   };
 
   const DIFF_CONFIG = {
@@ -88,6 +115,21 @@ const StageSelectScene = (() => {
 
   function getBossStageId(chapter) {
     return chapter * 10;
+  }
+
+  // [UPDATE 2026-07-11] 260711_MTOPC.md 3번: 이지 난이도 슬롯 동적 확장
+  // 챕터5(스테이지50) 이지 클리어 → 2슬롯, 시즌1(스테이지100) 이지 전체클리어 → 3슬롯
+  function getEasySlotCount(sd) {
+    if (sd?.season1Clear) return 3;
+    if ((sd?.clearedStagesEasy||[]).includes(50)) return 2;
+    return 1;
+  }
+  // 난이도별 실제 슬롯 수 반영된 DIFF_CONFIG 조회 (이지는 동적 계산)
+  function getDiffConfig(diff, sd) {
+    const base = DIFF_CONFIG[diff];
+    if (diff !== 'easy') return base;
+    const n = getEasySlotCount(sd);
+    return { ...base, slotMain: n, slotComp: n, slotPet: n };
   }
 
   // 해당 챕터에서 선택된 난이도를 플레이할 수 있는지
@@ -138,7 +180,7 @@ const StageSelectScene = (() => {
     saveData = Save.load();
     const stages = GAME_DATA.stages;
     const isKo   = Lang.getCurrent() === 'ko';
-    const dc     = DIFF_CONFIG[selectedDiff];
+    const dc     = getDiffConfig(selectedDiff, saveData); // [UPDATE 2026-07-11] 이지는 동적 슬롯수 반영
     const _hexRgb = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `${r},${g},${b}`; };
     // lockedFn이 있으면 동적 평가, 없으면 locked 필드 사용
     const seasonList = SEASON_DATA.map(s => ({
@@ -230,7 +272,7 @@ const StageSelectScene = (() => {
         </div>
 
         <!-- 스테이지 목록 -->
-        <div style="flex:1;overflow-y:auto;padding:12px 14px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:12px 14px;">
           ${stages.filter(ch => {
             const s = ch.season || 1;
             return s === selectedSeason;
@@ -324,11 +366,13 @@ const StageSelectScene = (() => {
                   // [UPDATE 2026-07-09] 초반 온보딩: 전투 입장 이력 0회일 때 스테이지 1 펄스+말풍선으로 유도
                   const isGuideTarget = canEnter && stage.id === 1
                     && (saveData.clearedStages||[]).length === 0 && (saveData.runs||0) === 0;
+                  // [UPDATE 2026-07-14] 260714_MTOPC.md 4번: 해금 트리거 스테이지 + 난이도 무관 미클리어 시 무지개 테두리
+                  const isUnlockPending = UNLOCK_PENDING_STAGE_IDS.includes(stage.id) && !Unlock.cleared(saveData, stage.id);
                   return `
                     <button
                       onclick="${canEnter ? `StageSelectScene.startStage(${stage.id})` : ''}"
                       ${!canEnter ? 'disabled' : ''}
-                      class="${isGuideTarget ? 'onboard-pulse' : ''}"
+                      class="${isGuideTarget ? 'onboard-pulse' : ''} ${isUnlockPending ? 'unlock-pending' : ''}"
                       style="
                         position:relative;padding:0;min-height:${stage.isBoss||stage.isMidBoss?68:56}px;
                         background:${cardSrc?'transparent':fallbackBg};
@@ -391,5 +435,5 @@ const StageSelectScene = (() => {
 
   function exit() {}
 
-  return { enter, exit, setDiff, setSeason, startStage, DIFF_CONFIG };
+  return { enter, exit, setDiff, setSeason, startStage, DIFF_CONFIG, getEasySlotCount, getDiffConfig };
 })();

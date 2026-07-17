@@ -56,6 +56,17 @@ const CONFIG = {
     CRIT_BASE_MULT: 1.2,  // 치명타 기본 배율
   },
 
+  // [UPDATE 2026-07-16] 260716_MTOPC.md 2번②③: 던전강화 프레스티지 — 무한던전 시작 킬수를 밀어서
+  // "1만킬 이후 ×200배 몬스터" 구간부터 바로 시작 가능하게 하는 영구강화. 상한 없음(계속 이어짐).
+  // [UPDATE 2026-07-16] 비용 재화를 강화석→천운석(건물강화 재화)으로 변경 — 사용자 지시
+  DUNGEON_UPGRADE: {
+    KILLS_PER_LEVEL: 1000,   // 강화 1레벨당 시작 킬수 +1000
+    BASE_COST_GOLD: 5000,
+    COST_MULT: 1.5,
+    BASE_COST_CHEONUNSEOK: 50,
+    CHEONUNSEOK_COST_MULT: 1.35,
+  },
+
   // [UPDATE 2026-07-06] 명부 영구강화 (시즌2 확장판, 영혼석 소모)
   SINMOK_S2: {
     BASE_COST: 3,   // 시작 비용 (영혼석)

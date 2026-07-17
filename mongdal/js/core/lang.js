@@ -18,7 +18,8 @@ const Lang = (() => {
         { lines: ['귀-인-국 (鬼人國)', '신령이 균형을 잡고,', '귀인이 인간과 함께 살아가던 세상.'], accent: true },
         { lines: ['그러나...', '하늘 밖에서 정체불명의 존재가 왔다.'] },
         { lines: ['기어오는 혼돈.', '세상의 법칙을 뒤틀어버리는 외신.', '귀-인-국은 무너졌다.'], shake: true },
-        { lines: ['모든 것이 폐허가 된 지금,', '삼신할머니가 마지막 무당을 깨웠다.'] },
+        // [UPDATE 2026-07-15] 260715_MTOPC.md 6번: 삼신할매 태몽 한 줄 추가 (스포일러 없이 은유)
+        { lines: ['모든 것이 폐허가 된 지금,', '삼신할머니가 마지막 무당을 깨웠다.', '— 하나였던 달이 둘로 갈라지더니, 다시 하나로 겹쳐지는 꿈이었다.'] },
         { lines: ['"애기씨,"', '"흩어진 귀-인을 모아라."', '"멸망한 나라를 되살려라."'], accent: true },
         { lines: ['기어오는 혼돈을 봉인하고,', '귀-인-국을 다시 세울 자.', '그것이 당신이다.'] },
       ],
@@ -51,6 +52,8 @@ const Lang = (() => {
       onboarding: { // [UPDATE 2026-07-09] 초반 온보딩 유도 문구
         tapStage: '여기를 눌러봐!',
         tapStage1: '스테이지 1을 눌러봐!',
+        zoomHint: '두 손가락으로도 확대/축소할 수 있어요', // [UPDATE 2026-07-13] 260713_MTOPC.md 20번
+        atkUpgradeHint: '공격력 강화가 가능해요!', // [UPDATE 2026-07-15] 스테이지1 클리어 직후 온보딩
       },
       currency: {
         gold:           '골드',
@@ -60,6 +63,8 @@ const Lang = (() => {
         cheonryeonggwa: '천령과',
         taegeukseok:    '태극석',
         chaewonseok:    '차원석',
+        hondonseok:     '혼돈석', // [UPDATE 2026-07-15] 260715_MTOPC.md 4/9번
+        sullriseok:     '순리석',
       },
       dungeon: {
         ganghwaseok:    '강화석 던전',
@@ -68,6 +73,8 @@ const Lang = (() => {
         cheonunseok:    '천운석 던전',
         cheonryeonggwa: '천령과 던전',
         taegeukseok:    '태극석 던전',
+        hondonseok:     '혼돈석 던전', // [UPDATE 2026-07-15] 260715_MTOPC.md 4/9번
+        sullriseok:     '순리석 던전',
         title:          '던전',
         infiniteTitle:  '무한 모드',
         infiniteDesc:   '끝없는 파도를 버텨라',
@@ -153,6 +160,19 @@ const Lang = (() => {
         bgm:      '배경음악',
         version:  '버전',
         tutorial: '도움말',
+        redeemCode: '코드 입력', // [UPDATE 2026-07-15] 260715_MTOPC.md 2번
+        redeemCodePlaceholder: '코드를 입력하세요',
+        redeemCodeSubmit: '확인',
+        // [UPDATE 2026-07-16] 설정 - 초기화(리부트) 버튼
+        reboot: '🔄 리부트',
+        rebootWarn1: '경고: 어떠한 보상도 없습니다. 처음부터 다시 게임을 하기 위한 버튼일 뿐입니다.\n계속 하시겠습니까?',
+        rebootWarn2: '경고: 진짜 아무런 보상 없이 처음부터 다시 시작됩니다. 히든 요소도 없습니다.',
+        rebootWarn3: '경고: 마지막 경고입니다. 처음부터 게임을 하는 용도 외 어떠한 용도도 없습니다.',
+        rebootYes: '예',
+        rebootNo: '아니오',
+        rebootDone: '게임이 처음부터 다시 시작됩니다.',
+        rebootBonus: '🎉 히든 업적 달성: 초기화의 결단 — 다이아 +5000! (1회성)',
+        rebootConfirmClose: '확인',
       },
 
       // ── 튜토리얼 ──
@@ -191,8 +211,12 @@ const Lang = (() => {
         slotUnlockNormal: '노말 해금',
         slotUnlockHard:   '하드 해금',
         rarity_common:    '커먼',
+        rarity_uncommon:  '언커먼',
         rarity_rare:      '레어',
+        rarity_unique:    '유니크',
         rarity_epic:      '에픽',
+        rarity_legendary: '레전더리',
+        rarity_mythos:    '미소스',
         rarity_special:   '★스페셜',
         role_tank:      '탱커',
         role_dps:       '딜러',
@@ -223,6 +247,7 @@ const Lang = (() => {
         stat_mov: { label:'이동속도', desc:'플레이어 이동 속도' },
         stat_def: { label:'방어력',   desc:'받는 피해 감소' },
         stat_eva: { label:'회피율',   desc:'피해 회피 확률 (최대 40%)' },
+        stat_hp:  { label:'체력',     desc:'최대 체력 증가' }, // [UPDATE 2026-07-16] 260716_MTOPC.md 3번: 백엔드는 이미 있었는데 UI 노출이 빠져있던 항목
       },
 
       // ── 신목 강화 ──
@@ -306,7 +331,8 @@ const Lang = (() => {
         { lines: ['Gwi-In-Guk (鬼人國)', 'Where divine spirits kept the balance,', 'and the Gwi-In walked alongside the living.'], accent: true },
         { lines: ['But then...', 'An unknown force arrived from beyond the sky.'] },
         { lines: ['The Creeping Chaos.', 'A god that twists the very laws of existence.', 'Gwi-In-Guk fell.'], shake: true },
-        { lines: ['Now, as all lies in ruin,', 'the Grandmother of Fate has awakened the last shaman.'] },
+        // [UPDATE 2026-07-15] 260715_MTOPC.md #6: Samsin Halmoni's prophetic dream, one added line (no spoilers)
+        { lines: ['Now, as all lies in ruin,', 'the Grandmother of Fate has awakened the last shaman.', '— She had dreamed of a single moon splitting in two, then merging back into one.'] },
         { lines: ['"Aegissi,"', '"Gather the scattered Gwi-In."', '"Restore the fallen kingdom."'], accent: true },
         { lines: ['To seal the Creeping Chaos,', 'to rebuild Gwi-In-Guk —', 'that is your destiny.'] },
       ],
@@ -339,6 +365,8 @@ const Lang = (() => {
       onboarding: { // [UPDATE 2026-07-09]
         tapStage: 'Tap here!',
         tapStage1: 'Try Stage 1!',
+        zoomHint: 'You can pinch to zoom too', // [UPDATE 2026-07-13] 260713_MTOPC.md #20
+        atkUpgradeHint: 'You can upgrade your ATK now!', // [UPDATE 2026-07-15] Onboarding right after Stage 1 clear
       },
       currency: {
         gold:           'Gold',
@@ -348,6 +376,8 @@ const Lang = (() => {
         cheonryeonggwa: 'Spirit Fruit',
         taegeukseok:    'Taeguk Stone',
         chaewonseok:    'Dimensional Stone',
+        hondonseok:     'Chaos Stone', // [UPDATE 2026-07-15] 260715_MTOPC.md #4/#9
+        sullriseok:     'Sunri Stone',
       },
       dungeon: {
         ganghwaseok:    'Enhancement Dungeon',
@@ -356,6 +386,8 @@ const Lang = (() => {
         cheonunseok:    'Heavenly Stone Dungeon',
         cheonryeonggwa: 'Spirit Fruit Dungeon',
         taegeukseok:    'Taeguk Stone Dungeon',
+        hondonseok:     'Chaos Stone Dungeon', // [UPDATE 2026-07-15] 260715_MTOPC.md #4/#9
+        sullriseok:     'Sunri Stone Dungeon',
         title:          'Dungeon',
         infiniteTitle:  'Endless Mode',
         infiniteDesc:   'Survive endless waves',
@@ -441,6 +473,19 @@ const Lang = (() => {
         bgm:      'Music',
         version:  'Version',
         tutorial: 'Help',
+        redeemCode: 'Redeem Code', // [UPDATE 2026-07-15] 260715_MTOPC.md #2
+        redeemCodePlaceholder: 'Enter code',
+        redeemCodeSubmit: 'Confirm',
+        // [UPDATE 2026-07-16] Settings - Reboot (full reset) button
+        reboot: '🔄 Re-boot',
+        rebootWarn1: 'Warning: There is no reward whatsoever. This button only lets you start the game over from scratch.\nDo you want to continue?',
+        rebootWarn2: 'Warning: Truly no reward for starting over. No hidden content either.',
+        rebootWarn3: 'Warning: This is your final warning. This serves no purpose other than restarting the game from the beginning.',
+        rebootYes: 'Yes',
+        rebootNo: 'No',
+        rebootDone: 'The game will restart from the beginning.',
+        rebootBonus: '🎉 Hidden Achievement Unlocked: The Resolve to Restart — +5000 Gems! (one-time)',
+        rebootConfirmClose: 'OK',
       },
 
       // ── Tutorial ──
@@ -479,8 +524,12 @@ const Lang = (() => {
         slotUnlockNormal: 'Normal Unlock',
         slotUnlockHard:   'Hard Unlock',
         rarity_common:    'Common',
+        rarity_uncommon:  'Uncommon',
         rarity_rare:      'Rare',
+        rarity_unique:    'Unique',
         rarity_epic:      'Epic',
+        rarity_legendary: 'Legendary',
+        rarity_mythos:    'Mythos',
         rarity_special:   '★Special',
         role_tank:      'Tank',
         role_dps:       'DPS',
@@ -509,6 +558,7 @@ const Lang = (() => {
         stat_mov: { label:'MOV',    desc:'Player movement speed' },
         stat_def: { label:'DEF',    desc:'Reduces damage taken' },
         stat_eva: { label:'EVA',    desc:'Chance to evade damage (max 40%)' },
+        stat_hp:  { label:'HP',     desc:'Increases max HP' }, // [UPDATE 2026-07-16] 260716_MTOPC.md #3
         slotLabel:     'Weapon Slot',
         slotDeselect:  '(click to deselect)',
       },

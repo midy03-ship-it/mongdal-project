@@ -11,51 +11,69 @@ const ShopScene = (() => {
   const GEM_COST_1    = 80;
   const GEM_COST_10   = 800;
 
-  // ── 뽑기 풀 ──
+  // ── 뽑기 풀 ── [UPDATE 2026-07-11] 260711_MTOPC.md 1번: 정성굿(골드)=커먼·언커먼·레어 / 대신굿(다이아)=레어·유니크, 레어는 양쪽에 겹쳐 포함
   const GOLD_FULL_WEIGHTS = [
-    { id:'ggeogsoe', rarity:'common', weight:50 },
-    { id:'dochi',    rarity:'rare',   weight:20 },
-    { id:'aram',     rarity:'rare',   weight:20 },
-    { id:'danbi',    rarity:'rare',   weight:20 },
-    { id:'gaon',     rarity:'epic',   weight:10 },
+    { id:'ggeogsoe', rarity:'common',   weight:24 },
+    // [UPDATE 2026-07-17] 도깨비 계열 신규 동료 — 커먼 풀은 꺽쇠와 나눠가짐(합산 비중 유지)
+    { id:'baksu',    rarity:'common',   weight:20 },
+    { id:'dochi',    rarity:'uncommon', weight:8  },
+    { id:'aram',     rarity:'uncommon', weight:8  },
+    { id:'danbi',    rarity:'uncommon', weight:8  },
+    { id:'gaon',     rarity:'uncommon', weight:8  },
+    { id:'cheolgap', rarity:'uncommon', weight:8  },
+    { id:'mugsa',    rarity:'uncommon', weight:8  },
+    { id:'janggu_aebi', rarity:'uncommon', weight:8 },
+    { id:'cheonga',  rarity:'rare',     weight:4  },
+    { id:'sohee',    rarity:'rare',     weight:4  },
   ];
   const DIAMOND_FULL_WEIGHTS = [
-    { id:'dochi',    rarity:'rare',    weight:20 },
-    { id:'aram',     rarity:'rare',    weight:20 },
-    { id:'danbi',    rarity:'rare',    weight:20 },
-    { id:'gaon',     rarity:'epic',    weight:10 },
-    { id:'cheonga',  rarity:'special', weight:4  },
-    { id:'geumgang', rarity:'special', weight:4  },
-    { id:'baekho',   rarity:'special', weight:4  },
-    { id:'sohee',    rarity:'special', weight:4  },
-    { id:'mugsa',    rarity:'special', weight:4  },
-    { id:'cheolgap', rarity:'special', weight:4  },
+    { id:'cheonga',  rarity:'rare',   weight:10 },
+    { id:'sohee',    rarity:'rare',   weight:10 },
+    { id:'geumgang', rarity:'unique', weight:20 },
+    { id:'baekho',   rarity:'unique', weight:20 },
   ];
   // [UPDATE 2026-07-06] 시즌2 해금(시즌1 클리어) 후 다이아 풀에 추가되는 동료
   const S2_DIAMOND_WEIGHTS = [
-    { id:'haewonmaek', rarity:'special', weight:4 },
+    { id:'haewonmaek', rarity:'rare', weight:10 },
+  ];
+  // [UPDATE 2026-07-16] 강림차사는 스테이지160 클리어 시 스토리로 확정 지급되는 동료(game.js) — 그 전엔
+  // 뽑기 풀에 아예 없어야 하는데 조건 없이 항상 풀에 있어서 스토리 해금 전에도 뽑혀버리던 버그 수정.
+  // 해금 이후엔(이미 보유 중) 다른 동료처럼 중복 뽑기 시 파편으로 전환되도록 그때만 풀에 포함.
+  const GANGNIM_DIAMOND_WEIGHTS = [
+    { id:'gangnim',  rarity:'unique', weight:20 },
   ];
   function diamondPool() {
-    return saveData?.season1Clear ? [...DIAMOND_FULL_WEIGHTS, ...S2_DIAMOND_WEIGHTS] : DIAMOND_FULL_WEIGHTS;
+    let pool = [...DIAMOND_FULL_WEIGHTS];
+    if (saveData?.season1Clear) pool = pool.concat(S2_DIAMOND_WEIGHTS);
+    if (Unlock.cleared(saveData, 160)) pool = pool.concat(GANGNIM_DIAMOND_WEIGHTS);
+    return pool;
   }
   const GOLD_FRAG_WEIGHTS = [
     { rarity:'common',    weight:45 },
-    { rarity:'rare',      weight:30 },
-    { rarity:'epic',      weight:10 },
+    { rarity:'uncommon',  weight:30 },
+    { rarity:'rare',      weight:10 },
     { rarity:'universal', weight:5  },
   ];
   const DIAMOND_FRAG_WEIGHTS = [
-    { rarity:'rare',      weight:40 },
-    { rarity:'epic',      weight:25 },
-    { rarity:'special',   weight:10 },
+    { rarity:'rare',      weight:55 },
+    { rarity:'unique',    weight:20 },
     { rarity:'universal', weight:5  },
   ];
 
+  // [UPDATE 2026-07-11] 7단계 등급 라벨/색상 추가
   const RARITY_LABEL = {
-    common:'커먼', rare:'레어', epic:'에픽', special:'★스페셜', universal:'만능'
+    common:'커먼', uncommon:'언커먼', rare:'레어', unique:'유니크',
+    epic:'에픽', legendary:'레전더리', mythos:'미소스', special:'★스페셜', universal:'만능'
   };
+  // [UPDATE 2026-07-12] 영어 모드에서도 한글 등급 라벨이 그대로 보이던 버그 수정 — 영어 라벨 추가
+  const RARITY_LABEL_EN = {
+    common:'Common', uncommon:'Uncommon', rare:'Rare', unique:'Unique',
+    epic:'Epic', legendary:'Legendary', mythos:'Mythos', special:'★Special', universal:'Universal'
+  };
+  const _rarityLabel = (rarity, isEn) => (isEn ? RARITY_LABEL_EN : RARITY_LABEL)[rarity] || '';
   const RARITY_COLOR = {
-    common:'#aaa', rare:'#4a90d9', epic:'#c060d0', special:'#ffb020', universal:'#60c8ff'
+    common:'#aaa', uncommon:'#60a060', rare:'#4a90d9', unique:'#a040e0',
+    epic:'#c060d0', legendary:'#e8a020', mythos:'#ff4060', special:'#ffb020', universal:'#60c8ff'
   };
 
   // ── 유틸 ──
@@ -181,7 +199,7 @@ const ShopScene = (() => {
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
         ${headerHTML(isEn?'🏪 Shop':'🏪 상점', "SceneManager.go('lobby')")}
-        <div style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
           ${SHOP_CATEGORIES.map(cat => `
             <button onclick="ShopScene.goView('${cat.id}')" style="
               width:100%;padding:20px 18px;border-radius:16px;font-family:inherit;cursor:pointer;
@@ -234,7 +252,7 @@ const ShopScene = (() => {
             </button>`).join('')}
         </div>
 
-        <div style="flex:1;overflow-y:auto;padding:14px 16px 32px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:14px 16px 32px;">
           <!-- 뽑기 패널 -->
           <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(200,160,255,0.15);
             border-radius:14px;padding:14px;margin-bottom:14px;">
@@ -272,7 +290,7 @@ const ShopScene = (() => {
               <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:8px;">
                 ══ ${isEn?`Results (${lastResults.length})`:`뽑기 결과 (${lastResults.length}개)`} ══
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
+              <div class="scroll-pan-y" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
                 ${lastResults.map(r => resultRow(r, allComp)).join('')}
               </div>
             </div>` : ''}
@@ -303,7 +321,7 @@ const ShopScene = (() => {
                   <div style="width:6px;height:36px;border-radius:3px;background:${rc};flex-shrink:0;"></div>
                   <div style="flex:1;min-width:0;">
                     <div style="font-size:10px;color:${rc};font-weight:bold;margin-bottom:2px;">
-                      ${isEn?(c.nameEn||c.name):c.name} <span style="color:#888;font-weight:normal;">${RARITY_LABEL[c.rarity]||''}</span>
+                      ${isEn?(c.nameEn||c.name):c.name} <span style="color:#888;font-weight:normal;">${_rarityLabel(c.rarity,isEn)}</span>
                     </div>
                     ${!isOwned
                       ? `<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
@@ -325,12 +343,23 @@ const ShopScene = (() => {
   // ── 재화 교환 ──
   function renderExchange(el) {
     const isEn = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
+    // [UPDATE 2026-07-16] 재화 교환 비율 전면 개편 — 기존엔 다이아 2~5개로 재화 겨우 1개를 주는 구조라
+    // "다이아로 재화를 대량 교환"이라는 취지와 반대였음(사용자 지적). 다이아 1개 = 재화 10~50개로 재설계,
+    // 흔한(파밍 쉬운) 재화일수록 많이, 희귀한 재화일수록 적게 주도록 티어링. 누락돼있던 태극석/차원석/
+    // 영혼석/혼돈석/순리석도 교환 목록에 추가.
     const EXCHANGE_ITEMS = [
-      { icon:'🪙', spriteKey:'gold',           name:'골드',    nameEn:'Gold',              key:'gold',              cost:1, amount:500  },
-      { icon:'🔧', spriteKey:'ganghwaseok',     name:'강화석',  nameEn:'Enhance Stone',     key:'ganghwaseok',        cost:2, amount:1   },
-      { icon:'☁️', spriteKey:'cheonunseok',     name:'천운석',  nameEn:'Sky Stone',         key:'cheonunseok',        cost:5, amount:1   },
-      { icon:'✨',                               name:'만능파편', nameEn:'Universal Fragment',key:'universalFragments', cost:3, amount:1   },
-      { icon:'🍇', spriteKey:'cheonryeonggwa',  name:'천령과',  nameEn:'Spirit Fruit',      key:'cheonryeonggwa',     cost:4, amount:1   },
+      { icon:'🪙', spriteKey:'gold',           name:'골드',     nameEn:'Gold',               key:'gold',              cost:1, amount:500 },
+      { icon:'🔧', spriteKey:'ganghwaseok',    name:'강화석',   nameEn:'Enhance Stone',      key:'ganghwaseok',       cost:1, amount:50  },
+      { icon:'☁️', spriteKey:'cheonunseok',    name:'천운석',   nameEn:'Sky Stone',          key:'cheonunseok',       cost:1, amount:40  },
+      { icon:'🍇', spriteKey:'cheonryeonggwa', name:'천령과',   nameEn:'Spirit Fruit',       key:'cheonryeonggwa',    cost:1, amount:35  },
+      { icon:'🔷', spriteKey:'taegeukseok',    name:'태극석',   nameEn:'Taeguk Stone',       key:'taegeukseok',       cost:1, amount:20  },
+      { icon:'🌀', spriteKey:'chaewonseok',    name:'차원석',   nameEn:'Dimension Stone',    key:'chaewonseok',       cost:1, amount:20  },
+      // [UPDATE 2026-07-17] 전용 아이콘 반입
+      { icon:'🌪️', spriteKey:'hondonseok', name:'혼돈석',       nameEn:'Chaos Stone',        key:'hondonseok',        cost:1, amount:15  },
+      { icon:'🌊', spriteKey:'sullriseok', name:'순리석',        nameEn:'Sunri Stone',        key:'sullriseok',        cost:1, amount:15  },
+      // [UPDATE 2026-07-17] yeongonseok(유령 재화) → soulStones로 통합
+      { icon:'💜', name:'영혼석',               nameEn:'Soul Stone',                         key:'soulStones',        cost:1, amount:10  },
+      { icon:'✨', name:'만능파편',              nameEn:'Universal Fragment',                 key:'universalFragments',cost:1, amount:5   },
     ];
 
     el.innerHTML = `
@@ -338,7 +367,7 @@ const ShopScene = (() => {
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
         ${headerHTML(isEn?'🔄 Currency Exchange':'🔄 재화 교환', "ShopScene.goView('main')")}
-        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
           <div style="font-size:11px;color:rgba(200,160,255,0.5);padding:0 4px;">
             ${isEn?`💎 Exchange Diamonds for resources · Have 💎 ${saveData.gems||0}`:`💎 다이아몬드로 재화를 교환합니다 · 보유 💎 ${saveData.gems||0}`}
           </div>
@@ -399,7 +428,7 @@ const ShopScene = (() => {
         </span>
         <span style="font-size:9px;padding:1px 5px;border-radius:6px;
           background:${rc}22;border:1px solid ${rc};color:${rc};">
-          ${RARITY_LABEL[r.rarity]||''}
+          ${_rarityLabel(r.rarity,isEn)}
         </span>
       </div>`;
     }
@@ -407,7 +436,7 @@ const ShopScene = (() => {
       <span style="font-size:14px;">🎴</span>
       <span style="font-size:11px;color:${rc};">${name} ${isEn?'Frag':'파편'} ×${r.amount}</span>
       <span style="font-size:9px;padding:1px 4px;border-radius:5px;
-        background:${rc}18;border:1px solid ${rc}55;color:${rc};">${RARITY_LABEL[r.rarity]||''}</span>
+        background:${rc}18;border:1px solid ${rc}55;color:${rc};">${_rarityLabel(r.rarity,isEn)}</span>
     </div>`;
   }
 

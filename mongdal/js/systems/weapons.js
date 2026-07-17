@@ -1,5 +1,39 @@
 // weapons.js - 무기 시스템 + 진화 무기
 
+// [UPDATE 2026-07-12] 무기 초월 등급별 발광 연출 — 기본 glow 위에 랭크별 추가 발광 레이어를 얹음.
+// 1~4성: 랭크 비례로 점점 밝아짐 / 5~8성: 상시 발광(느린 맥동) / 9~10성: 가장 강한 흰빛 발광(빠른 맥동)
+// [UPDATE 2026-07-12] mult: 다발성 무기(투사체 여러 개가 동시에 나가는 무기)는 발광이 겹겹이 쌓여 뭉개지므로 축소 배율 전달
+function _drawTranscendGlow(ctx, sx, sy, rank, t, mult) {
+  mult = mult != null ? mult : 1;
+  let alpha, radius, color;
+  if (rank <= 4) {
+    const p = rank/4;
+    alpha = 0.10 + p*0.22;
+    radius = 10 + p*6;
+    color = '255,224,140';
+  } else if (rank <= 8) {
+    const p = (rank-4)/4;
+    const pulse = 0.85 + Math.sin(t*3)*0.15;
+    alpha = (0.32 + p*0.2) * pulse;
+    radius = 16 + p*6;
+    color = '255,190,90';
+  } else {
+    const p = (rank-8)/2;
+    const pulse = 0.8 + Math.sin(t*5)*0.2;
+    alpha = (0.55 + p*0.2) * pulse;
+    radius = 22 + p*6;
+    color = '255,245,210';
+  }
+  radius *= mult; alpha *= mult;
+  const g = ctx.createRadialGradient(sx,sy,0,sx,sy,radius);
+  g.addColorStop(0, `rgba(${color},${alpha})`);
+  g.addColorStop(1, 'transparent');
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(sx,sy,radius,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
 // ── 발사체 클래스 ──
 class Projectile {
   constructor(x, y, vx, vy, dmg, cfg) {
@@ -57,6 +91,7 @@ class Projectile {
     this.dotTick         = cfg.dotTick      || 0.5;
     this.dotDur          = cfg.dotDur       || 0;
     this._poisonTrail    = cfg._poisonTrail || false;
+    this._fireBoosted    = cfg._fireBoosted || false; // [UPDATE 2026-07-17] 히든 시너지: 도깨비불 시각 크기 2배 플래그
     this.debuffMult      = cfg.debuffMult   || 0;
     this.debuffDur       = cfg.debuffDur    || 0;
     this.charmDur        = cfg.charmDur     || 0;
@@ -68,6 +103,9 @@ class Projectile {
     this.laser      = cfg.laser      || false;
     this.laserAngle = cfg.laserAngle || 0;
     this.laserLen   = cfg.laserLen   || 0;
+    // [UPDATE 2026-07-12] 레이저형 동료 공격이 항상 대상까지의 실거리만큼 두껍게 그려져서 "너무 크다"는 피드백 —
+    // 두께 비율을 별도로 받아서 동료 쪽에서 atkEffectScale만큼 얇게 줄일 수 있게 함 (길이는 실제 거리라 그대로 유지)
+    this.laserThickness = cfg.laserThickness != null ? cfg.laserThickness : 0.55;
     this.field      = cfg.field      || false;
   }
 
@@ -120,7 +158,11 @@ class Projectile {
       isCrit=true;
     }
     const actualDmg=Math.floor(dmg);
-    enemy.takeDamage(actualDmg);
+    enemy.takeDamage(actualDmg,isCrit,this._srcType||this.type); // [UPDATE 2026-07-11] srcType 전달 — 오행 시너지(영혼낫 처치→신검 쿨감) 귀속용. isCrit 누락돼 크리티컬 이펙트 항상 hit_normal이던 것도 같이 수정
+    // [UPDATE 2026-07-11] 신검+지팡이 오행 시너지: 신검 크리티컬 시 20% 확률로 지팡이 오브 임시추가(3초)
+    if(this.type==='sword' && isCrit && window._synSwordCritOrb && Math.random()<0.2){
+      window._synStaffBonusOrbTimer = 3.0;
+    }
     // [UPDATE 2026-07-10] 무기별 데미지 미터용: 누적 총데미지 + 최근 3초 로그(부드러운 DPS 계산용)
     // 동료 공격은 srcType이 companion_*이라 무기 목록에 안 잡혀 자동 제외됨
     if(typeof window!=='undefined'){
@@ -137,6 +179,14 @@ class Projectile {
       const heal=Math.max(1,Math.floor(actualDmg*p._vampire));
       p.hp=Math.min(p.hp+heal,p.maxHp);
     }
+    // [UPDATE 2026-07-11] 일반 hitEnemy() 경로에서는 dotDmg가 전혀 처리 안 되던 버그 수정 (기존엔 _bounce 전용 경로에서만 적용됨)
+    if(this.dotDmg){
+      enemy._poison=this.dotDmg; enemy._poisonTick=this.dotTick||0.5;
+      enemy._poisonDur=this.dotDur||3.0; enemy._poisonTimer=0;
+      enemy._poisonSrc=this._srcType||this.type;
+    }
+    // [UPDATE 2026-07-13] 정화의 소금(salt_scatter) — 맞은 적 잠시 정지
+    if(this.stunDur){ enemy._stunned=Math.max(enemy._stunned||0,this.stunDur); }
     this.pierced++;
     if(this.pierced>this.pierce) this.dead=true;
     return true;
@@ -147,10 +197,20 @@ class Projectile {
     const r=this.radius;
     // 투척형 신검: 등장 전(hideTime)에는 발광/도트 모두 그리지 않음
     if(this._throwSword && this.t<this._throwHideTime) return;
-    // 발광
-    const grd=ctx.createRadialGradient(sx,sy,0,sx,sy,r*2.5);
+
+    // [UPDATE 2026-07-12] 무기 초월 등급별 발광 연출 — 주무기(talisman/sword/bow/staff/scythe) 투사체에만 적용.
+    // 1~4성: 랭크가 오를수록 점점 밝아짐 / 5~8성: 상시 발광(살짝 맥동) / 9~10성: 가장 강한 흰빛 발광(빠른 맥동)
+    const _tRank = (typeof window!=='undefined' && window._transcendRankByType?.[this._srcType]) || 0;
+
+    // [UPDATE 2026-07-12] 영혼낫처럼 투사체가 다발로 나가는 무기는 발광이 겹겹이 쌓여 뭉개져서 축소 배율 적용
+    const _glowMult = (this._srcType==='scythe') ? 0.4 : 1;
+
+    // 발광 (초월 랭크가 있으면 기본 발광 범위도 살짝 키움)
+    const _glowR = r*2.5 * (_tRank>0 ? 1+Math.min(_tRank,10)*0.06 : 1) * _glowMult;
+    const grd=ctx.createRadialGradient(sx,sy,0,sx,sy,_glowR);
     grd.addColorStop(0,this.glow); grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(sx,sy,r*2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(sx,sy,_glowR,0,Math.PI*2); ctx.fill();
+    if(_tRank>0) _drawTranscendGlow(ctx,sx,sy,_tRank,this.t,_glowMult);
 
     // ── 스프라이트 이펙트 매핑 ──
     const PROJ_SPRITES = {
@@ -184,7 +244,7 @@ class Projectile {
       ctx.rotate(this.laserAngle);
       ctx.globalAlpha=Math.min(1,this.life*10)*0.9;
       const _lw=this.laserLen;
-      const _lh=Math.round(this._weaponImg.naturalHeight/this._weaponImg.naturalWidth*_lw*0.55);
+      const _lh=Math.round(this._weaponImg.naturalHeight/this._weaponImg.naturalWidth*_lw*this.laserThickness);
       ctx.drawImage(this._weaponImg,0,-_lh/2,_lw,_lh);
       ctx.restore();
       return;
@@ -224,7 +284,8 @@ class Projectile {
         _fieldAlpha = Math.max(0, 1 - _explodeProg*1.2) * 0.85; // 골드/영혼석 가림 완화를 위해 살짝 낮춤
       } else if(_isFire){
         // 도깨비불: 처음부터 가로4배 세로4배 크게 시작, 시간이 지날수록 점점 어두워짐 (잔류 1초간 불씨로 남아 지속 데미지)
-        _fieldScaleX = _fieldScaleY = 4.0;
+        // [UPDATE 2026-07-17] 히든 시너지 활성 시 시각 크기 추가 2배(총 8배)
+        _fieldScaleX = _fieldScaleY = this._fireBoosted ? 8.0 : 4.0;
         const _ageProg = Math.min(1, (this.maxLife-this.life)/Math.max(0.4,this.maxLife-1.0));
         _fieldBrightness = 1.0 - _ageProg*0.6; // 1.0(밝음) → 0.4(어두움)
         _fieldAlpha = (this.life<1.0 ? Math.max(0,this.life) : 1) * 0.8; // 골드/영혼석 가림 완화를 위해 살짝 낮춤
@@ -418,7 +479,7 @@ const SUB_WEAPON_IMGS = {};
 const MAIN_WEAPON_DEFS = {
 
   talisman: {
-    id:'talisman', name:'부적', icon:'📜', rarity:'common',
+    id:'talisman', name:'부적', icon:'📜', rarity:'common', element:'fire', // [UPDATE 2026-07-11] 오행 배정
     desc:'귀신을 봉인하는 부적을 가장 가까운 적에게 날린다.',
     specialStat:{ id:'talisman_tadak', name:'특수 강화', icon:'📜+', desc:'0.12초 후 부적 +1발', max:4 },
     maxLevel:4,
@@ -434,7 +495,7 @@ const MAIN_WEAPON_DEFS = {
       const bonus=this._bonus||0; // 타닥 추가 발사 수
       const spdScale=(player.totalSpd||100)/100;
       const cdr=player._cdReduction||0;
-      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)); // [UPDATE 2026-07-08] 무기 초월 데미지 배율 적용
+      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-11] 오행 상극 데미지 배율 추가
       const t8Pierce=(this._transcendRank||0)>=8?1:0; // [UPDATE 2026-07-08] 초월 8성: 전 발사체 관통 +1
       // 일반 부적 수: lv + (각성 있으면 awk+1 추가)
       const count=this.lv+(awk>0?awk+1:0);
@@ -503,7 +564,7 @@ const MAIN_WEAPON_DEFS = {
 
       // ── 메인 발사 ──
       if(this._mainCd<=0){
-        this._mainCd=lvl.mainCd/spdScale;
+        this._mainCd=lvl.mainCd/spdScale*(1-(this._synChainCdBonus||0)); // [UPDATE 2026-07-11] 오행 체인 쿨감
         const targets=findNearestEnemies(player.x,player.y,enemies,count);
         if(!targets.length) targets.push({x:player.x,y:player.y-1});
         targets.forEach(e=>{
@@ -527,15 +588,15 @@ const MAIN_WEAPON_DEFS = {
   },
 
   sword:{
-    id:'sword', name:'신검', icon:'⚔️', rarity:'common',
+    id:'sword', name:'신검', icon:'⚔️', rarity:'common', element:'metal', // [UPDATE 2026-07-11] 오행 배정
     desc:'사거리 내 적을 향해 베는 강력한 신의 검.',
     specialStat:{ id:'sword_range', name:'특수 강화', icon:'✨', desc:'잔상 +1개 (3초마다)', max:4 },
     maxLevel:4,
     levels:[
-      {cooldown:0,mainCd:1.00,damage:28,range:64},
-      {cooldown:0,mainCd:0.67,damage:36,range:64},
-      {cooldown:0,mainCd:0.50,damage:46,range:64},
-      {cooldown:0,mainCd:0.33,damage:60,range:64}, // [UPDATE 2026-07-08] ⚠️ 실효 주기는 fire()의 클램프 0.5s가 지배 (테이블값 0.33은 미도달)
+      {cooldown:0,mainCd:1.00,damage:28,range:100}, // [UPDATE 2026-07-13] 사거리 64→100
+      {cooldown:0,mainCd:0.67,damage:36,range:100},
+      {cooldown:0,mainCd:0.50,damage:46,range:100},
+      {cooldown:0,mainCd:0.33,damage:60,range:100}, // [UPDATE 2026-07-08] ⚠️ 실효 주기는 fire()의 클램프 0.5s가 지배 (테이블값 0.33은 미도달)
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
@@ -573,28 +634,50 @@ const MAIN_WEAPON_DEFS = {
         }
       }
 
+      // [UPDATE 2026-07-11] 영혼낫+신검 오행 시너지: 낫 처치마다 신검 쿨감 스택(-3%, 최대5=-15%), 8초 미처치 시 초기화
+      if(this._synKillStackEnabled){
+        this._killStackTimer=(this._killStackTimer||0)-dt;
+        if(this._killStackTimer<=0 && this._killStacks>0) this._killStacks=0;
+      }
+      const _killStackMult = this._synKillStackEnabled ? (1-Math.min(5,this._killStacks||0)*0.03) : 1;
       // ── 메인 검 발사 (각성에 따라 다방향) ──
+      // [UPDATE 2026-07-13] 칼이 여러 개일 때 전부 한 프레임에 "샥!" 동시 스폰되던 걸,
+      // "샤사사사삭!"처럼 순차 스폰되도록 큐 방식으로 변경. 공속이 빨라 다음 공격 주기가 먼저 오면
+      // 이전 시퀀스의 남은 칼과 자연스럽게 겹쳐서 나감(별도 처리 불필요 — 큐에 그냥 같이 쌓임).
+      if(this._bladeQueue===undefined) this._bladeQueue=[];
       if(this._mainCd<=0){
-        this._mainCd=Math.max(0.5, lvl.mainCd/spdScale); // [UPDATE 2026-07-08] 최소 0.5s (초당 2회 상한) — 5각 DPS 1091→720 밸런스 조정 (낫 538과 격차 축소)
+        this._mainCd=Math.max(0.5, lvl.mainCd/spdScale*_killStackMult)*(1-(this._synChainCdBonus||0)); // [UPDATE 2026-07-08/11] 최소 0.5s + 처치스택·체인 쿨감
         const swordCount=awk+1;
         const tgt=findNearestEnemies(player.x,player.y,enemies,1)[0];
         const baseAng=tgt?Math.atan2(tgt.y-player.y,tgt.x-player.x):(player.facing>=0?0:Math.PI);
         const angleStep=Math.PI*2/swordCount;
+        const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-08/11] 6각+데미지·초월·상극 배율
+        // 칼 개수가 많을수록 스폰 간격은 좁아짐 (2개=0.15s ~ 6개 이상=0.05s)
+        const spawnInterval = Math.max(0.05, 0.15 - Math.max(0,swordCount-2)*0.025);
+        for(let i=0;i<swordCount;i++){
+          this._bladeQueue.push({ ang: baseAng+angleStep*i, dmg, delay: i*spawnInterval });
+        }
+      }
+      // 큐에 쌓인 칼들 중 딜레이가 다 된 것만 이번 프레임에 스폰
+      if(this._bladeQueue.length){
         const _spd=lvl.range/0.25;
         const t8HitWidth=44*((this._transcendRank||0)>=8?1.5:1); // [UPDATE 2026-07-09] 판정을 실제 그림 크기(32×2.77)의 절반에 맞춤, 초월 8성은 +50%
-        for(let i=0;i<swordCount;i++){
-          const ang=baseAng+angleStep*i;
+        const _stillQueued=[];
+        for(const b of this._bladeQueue){
+          b.delay-=dt;
+          if(b.delay>0){ _stillQueued.push(b); continue; }
           const _mp=new Projectile(player.x,player.y-30,
-            Math.cos(ang)*_spd,Math.sin(ang)*_spd,
-            Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)), // [UPDATE 2026-07-08] 신검 메인 발사도 6각+ 데미지 보너스·초월 배율 반영 (기존엔 누락)
+            Math.cos(b.ang)*_spd,Math.sin(b.ang)*_spd,
+            b.dmg,
             {radius:8,life:0.6,type:'sword',
-             baseAng:ang,
+             baseAng:b.ang,
              throwSword:true,throwRange:lvl.range,throwHideTime:0.2,throwFadeDur:0.15,
              throwHitWidth:t8HitWidth,drawScaleX:2.77,drawScaleY:2.28,
              color:'#c0e0ff',glow:'rgba(180,220,255,.6)'});
           _mp._originX=player.x; _mp._originY=player.y-30;
           projs.push(_mp);
         }
+        this._bladeQueue=_stillQueued;
       }
 
       return projs;
@@ -602,7 +685,7 @@ const MAIN_WEAPON_DEFS = {
   },
 
   bow:{
-    id:'bow', name:'신궁', icon:'🏹', rarity:'common',
+    id:'bow', name:'신궁', icon:'🏹', rarity:'common', element:'wood', // [UPDATE 2026-07-11] 오행 배정
     desc:'정면으로 화살을 쏜다. 레벨업 시 연사, 각성 시 다발 발사.',
     specialStat:{ id:'bow_split', name:'특수 강화', icon:'🎯', desc:'3초마다 유도 분열 화살', max:4 },
     maxLevel:4,
@@ -630,16 +713,20 @@ const MAIN_WEAPON_DEFS = {
       const fireVolley=(baseAng)=>{
         const count=awk*2+1;          // 0각=1, 1각=3, 2각=5, 3각=7, 4각=9
         const spread=awk*30*Math.PI/180; // 각성마다 좌우 15°씩 추가
-        const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)); // [UPDATE 2026-07-08] 무기 초월 데미지 배율 적용
+        const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-08/11] 초월·상극 배율
         const t8Homing=(this._transcendRank||0)>=8; // [UPDATE 2026-07-08] 초월 8성: 화살에 약한 유도 부여
         // [UPDATE 2026-07-09] 기본 공격에도 아주 약한 유도 부여 — 이동 중 발사 시 조준 지점과 적 위치가 어긋나 빗나가는 체감 완화
+        // [UPDATE 2026-07-11] 지팡이+신궁 오행 시너지: 사거리(수명) +15% / 신궁+부적 시너지: 적중 시 화상 DoT(데미지 10%, 2초)
+        const _synLife=lvl.life*(this._synLifeMult||1);
+        const _fireDot=this._synFireDot ? { dotDmg:Math.floor(dmg*0.10), dotTick:0.5, dotDur:2.0 } : null;
         const arr=[];
         for(let i=0;i<count;i++){
           const ang=count===1?baseAng:baseAng-spread/2+spread/(count-1)*i;
           arr.push(new Projectile(player.x,player.y-30,
             Math.cos(ang)*lvl.speed,Math.sin(ang)*lvl.speed,dmg,
-            {pierce:1,radius:lvl.radius,life:lvl.life,type:'bow',
+            {pierce:1,radius:lvl.radius,life:_synLife,type:'bow',
              _homing:true,_homingWeak:t8Homing,_homingVeryWeak:!t8Homing,
+             ...(_fireDot||{}),
              color:'#f0e040',glow:'rgba(240,220,60,.5)'}));
         }
         return arr;
@@ -671,7 +758,7 @@ const MAIN_WEAPON_DEFS = {
 
       // 메인 발사
       if(this._mainCd<=0){
-        this._mainCd=lvl.mainCd/spdScale; // [UPDATE 2026-07-08] 다른 4무기(부적/신검/낫/지팡이)와 통일 — 메인 공격엔 쿨감 미적용, 공속만 적용 (기존엔 신궁만 쿨감+공속 이중 혜택)
+        this._mainCd=lvl.mainCd/spdScale*(1-(this._synChainCdBonus||0)); // [UPDATE 2026-07-08/11] 다른 4무기와 통일(쿨감 미적용, 공속만) + 오행 체인 쿨감
         const tgt=findNearestEnemies(player.x,player.y,enemies,1)[0]||{x:player.x,y:player.y-1};
         const baseAng=Math.atan2(tgt.y-player.y,tgt.x-player.x);
         projs.push(...fireVolley(baseAng));
@@ -685,7 +772,7 @@ const MAIN_WEAPON_DEFS = {
   },
 
   staff:{
-    id:'staff', name:'무당 지팡이', icon:'🪄', rarity:'common',
+    id:'staff', name:'무당 지팡이', icon:'🪄', rarity:'common', element:'water', // [UPDATE 2026-07-11] 오행 배정
     desc:'주변을 맴도는 오브를 소환한다. 각성 시 오브를 발사한다.',
     specialStat:{ id:'staff_orbs', name:'특수 강화', icon:'🔮', desc:'외부 궤도 오브 +1', max:4 },
     maxLevel:4,
@@ -702,7 +789,9 @@ const MAIN_WEAPON_DEFS = {
       const awk=this._awakLv||0;
       const bonus=this._bonus||0;
       // 내부 궤도 오브 수 = 각성단계 + 2 + (lv-1)
-      const rotCount=awk+2+(this.lv-1);
+      // [UPDATE 2026-07-11] 신검+지팡이 오행 시너지: 신검 크리티컬 20% 확률로 오브 1개 임시추가(3초)
+      if(window._synStaffBonusOrbTimer>0) window._synStaffBonusOrbTimer=Math.max(0,window._synStaffBonusOrbTimer-0.016);
+      const rotCount=awk+2+(this.lv-1)+(window._synStaffBonusOrbTimer>0?1:0);
       // 외부 궤도 오브 수 = 특강 횟수 (별도 반경)
       const outerCount=bonus;
       // 발사 오브 수 = 각성단계 (고정)
@@ -716,7 +805,7 @@ const MAIN_WEAPON_DEFS = {
       this._outerAngle=(this._outerAngle||0)+lvl.rotSpeed*0.016*spdScale*(1+cdr);
 
       const _cx=player.x+8, _cy=player.y-30;
-      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)); // [UPDATE 2026-07-08] 무기 초월 데미지 배율 적용
+      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-08/11] 초월·상극 배율
       const projs=[];
 
       // 미싱 슬롯 타이머 감소: 날아간 슬롯이 0.4초 후 다시 궤도에 나타남
@@ -800,7 +889,7 @@ const MAIN_WEAPON_DEFS = {
   },
 
   scythe_main:{
-    id:'scythe_main', name:'영혼낫', icon:'🌙', rarity:'common',
+    id:'scythe_main', name:'영혼낫', icon:'🌙', rarity:'common', element:'earth', // [UPDATE 2026-07-11] 오행 배정
     desc:'주변에 낫 이펙트를 뿌린다. 낫이 자체 회전하며 사라진다.',
     specialStat:{ id:'scythe_speed', name:'특수 강화', icon:'🌀', desc:'회오리 낫 (2.5초)', max:4 },
     maxLevel:4,
@@ -824,15 +913,15 @@ const MAIN_WEAPON_DEFS = {
 
       const cdr=player._cdReduction||0;
       const count=awk*2+this.lv;              // [UPDATE 2026-07-08] 각성당 +2 (기존 +1은 주기 증가와 상쇄되어 DPS 역성장) — 0각Lv4=4, 5각=14
-      const scytheLife=0.5+awk*0.15;          // 각성마다 유지력 증가
+      const scytheLife=(0.5+awk*0.15)*(this._synDurationMult||1); // [UPDATE 2026-07-11] 부적+영혼낫 오행 시너지: 지속시간 +15%
       const scaleBase=1.0+awk*0.35;           // 각성마다 크기 증가
-      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)); // [UPDATE 2026-07-08] 무기 초월 데미지 배율 적용
+      const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-08/11] 초월·상극 배율
 
       this._scytheCd-=dt;
 
       // ── 낫 뿌리기 (몸에서 바깥으로 방사형 발사) ──
       if(this._scytheCd<=0){
-        this._scytheCd=scytheLife*0.75/spdScale;
+        this._scytheCd=scytheLife*0.75/spdScale*(1-(this._synChainCdBonus||0)); // [UPDATE 2026-07-11] 오행 체인 쿨감
         const baseOffset=Math.random()*Math.PI*2; // 매번 다른 기준 각도
         for(let i=0;i<count;i++){
           // 균등 각도 + 랜덤 오프셋 ±20°
@@ -1040,6 +1129,9 @@ const SUB_WEAPON_DEFS = {
     fire(player){
       const lvl=this.levels[this.lv-1];
       const spawnR=400;
+      // [UPDATE 2026-07-17] 히든 시너지(도깨비 동료+펫 동시 장착, game.js 참고): 지속시간·크기 2배
+      const _boost=player._dokkaebiFireBoost?2:1;
+      const _radius=lvl.radius*_boost, _life=lvl.life*_boost;
       return Array.from({length:lvl.count},()=>{
         const ang=Math.random()*Math.PI*2;
         const dist=Math.random()*spawnR;
@@ -1047,7 +1139,7 @@ const SUB_WEAPON_DEFS = {
         const ty=player.y+Math.sin(ang)*dist;
         return new Projectile(tx,ty,0,0,
           Math.floor(lvl.damage*(player.totalAtk/100)),
-          {aoe:lvl.radius,radius:lvl.radius,life:lvl.life,dot:true,type:'goblin_fire',color:'#ff6020',glow:'rgba(255,80,20,.6)'});
+          {aoe:_radius,radius:_radius,life:_life,dot:true,type:'goblin_fire',color:'#ff6020',glow:'rgba(255,80,20,.6)',_fireBoosted:_boost>1});
       });
     },
   },
@@ -1086,6 +1178,37 @@ const SUB_WEAPON_DEFS = {
       return [new Projectile(player.x,player.y,0,0,
         Math.floor(lvl.damage*(player.totalAtk/100)),
         {aoe:lvl.radius,radius:lvl.radius,life:lvl.life,dot:true,type:'holy_water',color:'#80d0ff',glow:'rgba(100,200,255,.5)'})];
+    },
+  },
+
+  // [UPDATE 2026-07-13] 신규 서브무기 — 260713_MTOPC.md 21번 (itch.io 유저 제안: 소금도 정화·퇴마 문화권 공통 인식)
+  // 성수웅덩이(고정 장판형)와 겹치지 않게 애기씨 주변 즉발 파티클 방사형 컨셉으로 차별화. 메인딜이 아니라 견제+CC용.
+  salt_scatter:{
+    id:'salt_scatter', name:'정화의 소금', icon:'🧂', category:'area', rarity:'common',
+    desc:'소금을 사방에 흩뿌려 적을 맞히고, 맞은 적을 잠시 멈춘다.',
+    maxLevel:4,
+    levels:[
+      // [UPDATE 2026-07-13] 범위 2배 확대(90→180 등) + 파티클별 도달 거리도 랜덤화해서 흩뿌리는 느낌 강화
+      {cooldown:3.5, particleCount:12, particleDmg:3, stunDur:0.3,  scatterRadius:180},
+      {cooldown:3.2, particleCount:15, particleDmg:4, stunDur:0.35, scatterRadius:200},
+      {cooldown:2.9, particleCount:18, particleDmg:5, stunDur:0.4,  scatterRadius:220},
+      {cooldown:2.6, particleCount:20, particleDmg:6, stunDur:0.45, scatterRadius:240},
+    ],
+    fire(player){
+      const lvl=this.levels[this.lv-1];
+      const dmg=Math.floor(lvl.particleDmg*(player.totalAtk/100)*(this._overAwkDmg||1));
+      const life=0.35;
+      const projs=[];
+      for(let i=0;i<lvl.particleCount;i++){
+        const ang=Math.random()*Math.PI*2;
+        // [UPDATE 2026-07-13] 파티클마다 도달 거리를 40~100% 범위로 랜덤화 — 일정한 원형이 아니라 흩뿌려지는 모양으로
+        const dist=lvl.scatterRadius*(0.4+Math.random()*0.6);
+        const speed=dist/life;
+        projs.push(new Projectile(player.x,player.y-20,Math.cos(ang)*speed,Math.sin(ang)*speed,
+          dmg,{radius:4,life,type:'salt_scatter',stunDur:lvl.stunDur,
+            color:'#ffffff',glow:'rgba(255,255,255,.85)'}));
+      }
+      return projs;
     },
   },
 
@@ -1340,6 +1463,360 @@ const SUB_WEAPON_DEFS = {
 };
 
 // ══════════════════════════════════════════
+// [UPDATE 2026-07-11] 오행(五行) 시너지 시스템 (260711_MTOPC.md 2번)
+// [UPDATE 2026-07-11] 2-6: 오행 배지 UI 메타(한자+색상) — 언어중립적 표기
+const ELEMENT_META = {
+  metal: { char:'金', bg:'#f0f0f0', fg:'#202020' },
+  wood:  { char:'木', bg:'#2050a0', fg:'#ffffff' },
+  fire:  { char:'火', bg:'#c02020', fg:'#ffffff' },
+  water: { char:'水', bg:'#202040', fg:'#ffffff' },
+  earth: { char:'土', bg:'#d0a020', fg:'#202020' },
+};
+function elementBadgeHTML(element, size, pos) {
+  // [UPDATE 2026-07-11] pos 파라미터 추가 — 기존 .replace() 문자열치환 방식은 이중 wrapping 시
+  // 부모 div가 0크기로 collapse되어 배지가 안 보이는 버그가 있었음 (character.js/pet.js에서 발견)
+  const m = ELEMENT_META[element]; if (!m) return '';
+  size = size || 15;
+  pos = pos || 'top:-3px;right:-3px;';
+  return `<span style="position:absolute;${pos}width:${size}px;height:${size}px;border-radius:50%;
+    background:${m.bg};color:${m.fg};font-size:${Math.round(size*0.65)}px;font-weight:900;line-height:${size}px;
+    text-align:center;box-shadow:0 0 3px rgba(0,0,0,.6);z-index:5;">${m.char}</span>`;
+}
+const ELEMENT_GENERATES = { water:'wood', wood:'fire', fire:'earth', earth:'metal', metal:'water' }; // 상생(生)
+const ELEMENT_OVERCOMES = { wood:'earth', earth:'water', water:'fire', fire:'metal', metal:'wood' };  // 상극(克)
+
+// [UPDATE 2026-07-11] 오행상성표 아트(사용자 제공 PNG, 상생/상극 화살표 이미 그려져 있음) 기준 좌표.
+// image_total/sprites/ui/element_chart.png(714x789)에 격자를 씌워 실측. 모든 좌표/반지름은 "이미지 가로폭 기준 %" 단일 단위로
+// 통일(세로를 세로폭 기준 %로 따로 재면 종횡비 때문에 원이 타원처럼 계산돼 상생 원호 위치가 틀어짐).
+const ELEMENT_CHART_ASPECT = 789/714; // height/width
+const ELEMENT_CHART_POS = {
+  wood:  { x:49.6, y:16.6 },
+  fire:  { x:84.3, y:39.8 },
+  earth: { x:74,   y:77.3 },
+  metal: { x:23.3, y:76.2 },
+  water: { x:16,   y:39.8 },
+};
+// 상생 화살표(바깥 초록 원호)가 그려진 링의 중심/반지름 — 초록 픽셀 자동 검출로 실측(가로폭 기준 %)
+const ELEMENT_RING_CX = 50, ELEMENT_RING_CY = 47.5, ELEMENT_RING_R1 = 33, ELEMENT_RING_R2 = 45;
+function _chartAngle(el) {
+  const p = ELEMENT_CHART_POS[el];
+  return Math.atan2(p.y-ELEMENT_RING_CY, p.x-ELEMENT_RING_CX) * 180/Math.PI;
+}
+function _polarPct(cx,cy,r,angDeg) {
+  const a = angDeg*Math.PI/180;
+  return { x: cx+r*Math.cos(a), y: cy+r*Math.sin(a) };
+}
+// elA→elB 사이 상생 원호 구간을 도넛 웨지(부채꼴 링) SVG path로 — 원본 이미지를 이 모양대로 오려서 밝게 씌우는 용도
+// [UPDATE 2026-07-11] 사용자 확인 결과 "완벽하다"고 확인된 원래 방식 — 화살촉 마커 추가가 오히려 어긋나 보여서 화살촉만 빼고 이 방식으로 원복
+function _chartWedgePath(elA, elB, size, height) {
+  let a1 = _chartAngle(elA), a2 = _chartAngle(elB);
+  const diff = a2-a1;
+  if (diff>180) a1+=360; else if (diff<-180) a2+=360;
+  if (a2<a1) { const t=a1; a1=a2; a2=t; }
+  const sweepDeg = a2-a1;
+  const largeArc = sweepDeg>180 ? 1 : 0;
+  const scale = size/100; // %(가로폭 기준) → 렌더 px, x/y 공통
+  const toPx = p => ({ x:(p.x*scale).toFixed(1), y:(p.y*scale).toFixed(1) });
+  const po1 = toPx(_polarPct(ELEMENT_RING_CX, ELEMENT_RING_CY, ELEMENT_RING_R2, a1));
+  const po2 = toPx(_polarPct(ELEMENT_RING_CX, ELEMENT_RING_CY, ELEMENT_RING_R2, a2));
+  const pi1 = toPx(_polarPct(ELEMENT_RING_CX, ELEMENT_RING_CY, ELEMENT_RING_R1, a1));
+  const pi2 = toPx(_polarPct(ELEMENT_RING_CX, ELEMENT_RING_CY, ELEMENT_RING_R1, a2));
+  const r2px = (ELEMENT_RING_R2*scale).toFixed(1), r1px = (ELEMENT_RING_R1*scale).toFixed(1);
+  return `M${po1.x},${po1.y} A${r2px},${r2px} 0 ${largeArc} 1 ${po2.x},${po2.y} L${pi2.x},${pi2.y} A${r1px},${r1px} 0 ${largeArc} 0 ${pi1.x},${pi1.y} Z`;
+}
+// [UPDATE 2026-07-11] 가독성 개선 — 원본 이미지 화살촉이 작아서 안 보이는 문제. fromEl→toEl 방향으로 큼직한 화살촉을 별도로 그려 얹음. (상극 직선 전용 — 상생 곡선엔 어긋나 보여서 미적용)
+function _chartArrowHead(fromEl, toEl, size, color) {
+  const p1 = ELEMENT_CHART_POS[fromEl], p2 = ELEMENT_CHART_POS[toEl];
+  const scale = size/100;
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.hypot(dx,dy) || 1;
+  const ux = dx/len, uy = dy/len;
+  const nodeR = 8.5;   // 목표 노드 원 바로 바깥에 화살촉 끝이 오도록 살짝 뒤로 뺌 (% 단위)
+  const arrowLen = 7.5, arrowWing = 3.6; // 화살촉 크기 (% 단위) — 기존보다 큼직하게
+  const tip  = { x: p2.x-ux*nodeR,           y: p2.y-uy*nodeR };
+  const back = { x: tip.x-ux*arrowLen,       y: tip.y-uy*arrowLen };
+  const px = -uy, py = ux;
+  const w1 = { x: back.x+px*arrowWing, y: back.y+py*arrowWing };
+  const w2 = { x: back.x-px*arrowWing, y: back.y-py*arrowWing };
+  const toPx = p => `${(p.x*scale).toFixed(1)},${(p.y*scale).toFixed(1)}`;
+  return `<polygon points="${toPx(tip)} ${toPx(w1)} ${toPx(w2)}" fill="${color}" stroke="#fff" stroke-width="1" opacity="0.95" filter="url(#chartArrowGlow)"/>`;
+}
+// [UPDATE 2026-07-11] elA-elB 사이 상극 직선(안쪽 빨강 별) 구간을 두꺼운 띠(캡슐) SVG path로 —
+// 상생과 마찬가지로 원본 이미지를 이 모양대로 오려 밝게 씌워서, 글자에 가려지던 문제 없이 실제 화살표 픽셀 그대로 발광시킴
+function _chartCapsulePath(elA, elB, size, height, halfWidthPct) {
+  const p1 = ELEMENT_CHART_POS[elA], p2 = ELEMENT_CHART_POS[elB];
+  const scale = size/100;
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.hypot(dx,dy) || 1;
+  const nx = -dy/len*halfWidthPct, ny = dx/len*halfWidthPct;
+  const ext = 3; // 양 끝을 살짝 늘려서 노드 원 안쪽까지 확실히 덮음
+  const ex = dx/len*ext, ey = dy/len*ext;
+  const ax = p1.x-ex, ay = p1.y-ey, bx = p2.x+ex, by = p2.y+ey;
+  const pts = [[ax+nx,ay+ny],[bx+nx,by+ny],[bx-nx,by-ny],[ax-nx,ay-ny]]
+    .map(([x,y]) => `${(x*scale).toFixed(1)},${(y*scale).toFixed(1)}`);
+  return `M${pts[0]} L${pts[1]} L${pts[2]} L${pts[3]} Z`;
+}
+// otherElements: 비교 대상(다른 슬롯들)의 원소 배열 — 색 링으로 표시. highlightEl: 지금 선택/장착 중인 슬롯의 원소 — 흰 링으로 강조.
+function elementPentagramSVG(otherElements, highlightEl, size) {
+  size = size || 180;
+  const height = Math.round(size * ELEMENT_CHART_ASPECT);
+  const scale = size/100;
+  const others = new Set((otherElements||[]).filter(Boolean));
+  const src = (typeof SPRITES!=='undefined' && SPRITES.ui?.elementChart?.src) || '';
+  const ringSize = size * 0.16;
+
+  let overlay = '';
+  for (const el of Object.keys(ELEMENT_CHART_POS)) {
+    const pos = ELEMENT_CHART_POS[el];
+    const px = pos.x*scale, py = pos.y*scale;
+    const isOther = others.has(el);
+    const isHi = el === highlightEl;
+    if (!isHi && !isOther) {
+      // 관련 없는 노드는 살짝 어둡게 눌러서, 관련 있는 노드가 상대적으로 도드라지게
+      overlay += `<div style="position:absolute;left:${px}px;top:${py}px;width:${ringSize}px;height:${ringSize}px;
+        transform:translate(-50%,-50%);border-radius:50%;background:rgba(0,0,0,0.5);pointer-events:none;"></div>`;
+      continue;
+    }
+    const meta = ELEMENT_META[el];
+    const ringColor = isHi ? '#ffffff' : meta.bg;
+    overlay += `<div style="position:absolute;left:${px}px;top:${py}px;width:${ringSize}px;height:${ringSize}px;
+      transform:translate(-50%,-50%);border-radius:50%;
+      box-shadow:0 0 0 ${isHi?3:2}px ${ringColor}, 0 0 ${isHi?16:9}px ${isHi?5:2}px ${ringColor};
+      pointer-events:none;"></div>`;
+  }
+
+  // [UPDATE 2026-07-11] 현재 활성화된(하이라이트+비교대상) 원소들 사이 실제 상생/상극 화살표에 광원 오버레이.
+  // 상생/상극 둘 다 노드 사이 직선 띠 모양으로 원본 이미지를 오려 밝게 — 좌표 기반이라 항상 정확히 겹침.
+  // 상생: 도넛웨지(원본 곡선 화살표 그대로 오려서 밝게, 화살촉 마커는 미적용 — 사용자 확인상 이 조합이 "완벽"했음).
+  // 상극: 직선 캡슐 + 화살촉 마커(이쪽은 문제 없다고 확인됨).
+  const activeSet = [...new Set([highlightEl, ...others].filter(Boolean))];
+  let genClipPaths = '';
+  let clashClipPaths = '';
+  let arrowMarkers = '';
+  for (let i=0; i<activeSet.length; i++) {
+    for (let j=i+1; j<activeSet.length; j++) {
+      const a=activeSet[i], b=activeSet[j];
+      const isGen = ELEMENT_GENERATES[a]===b || ELEMENT_GENERATES[b]===a;
+      const isClash = !isGen && (ELEMENT_OVERCOMES[a]===b || ELEMENT_OVERCOMES[b]===a);
+      if (!isGen && !isClash) continue;
+      if (isGen) {
+        const clipId = `chartClip_${a}_${b}`;
+        genClipPaths += `<clipPath id="${clipId}"><path d="${_chartWedgePath(a,b,size,height)}"/></clipPath>`;
+      } else {
+        const clipId = `chartClashClip_${a}_${b}`;
+        clashClipPaths += `<clipPath id="${clipId}"><path d="${_chartCapsulePath(a,b,size,height,2.2)}"/></clipPath>`;
+        const from = ELEMENT_OVERCOMES[a]===b ? a : b, to = from===a ? b : a;
+        arrowMarkers += _chartArrowHead(from, to, size, '#ff5050');
+      }
+    }
+  }
+  // 상생/상극 구간 이미지 오려 밝게 — 클립된 <image> 여러 장을 겹쳐서 렌더
+  const _clipIdsOf = str => [...str.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);
+  let genImages = '', clashImages = '';
+  if (genClipPaths && src) {
+    genImages = _clipIdsOf(genClipPaths).map(id => `<image href="${src}" x="0" y="0" width="${size}" height="${height}"
+      clip-path="url(#${id})" filter="url(#chartGlowImg)" class="elChartGlowLine"/>`).join('');
+  }
+  if (clashClipPaths && src) {
+    clashImages = _clipIdsOf(clashClipPaths).map(id => `<image href="${src}" x="0" y="0" width="${size}" height="${height}"
+      clip-path="url(#${id})" filter="url(#chartGlowImgRed)" class="elChartGlowLine"/>`).join('');
+  }
+  const glowLayer = (genImages || clashImages || arrowMarkers) ? `<svg viewBox="0 0 ${size} ${height}" width="${size}" height="${height}"
+      style="position:absolute;left:0;top:0;pointer-events:none;">
+      <defs>
+        ${genClipPaths}
+        ${clashClipPaths}
+        <filter id="chartGlowImgRed" x="-50%" y="-50%" width="200%" height="200%">
+          <feColorMatrix type="saturate" values="2.4" result="sat"/>
+          <feComponentTransfer in="sat" result="bright"><feFuncR type="linear" slope="1.8"/><feFuncG type="linear" slope="1.2"/><feFuncB type="linear" slope="1.2"/></feComponentTransfer>
+          <feGaussianBlur in="bright" stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="bright"/></feMerge>
+        </filter>
+        <filter id="chartGlowImg" x="-50%" y="-50%" width="200%" height="200%">
+          <feColorMatrix type="saturate" values="3.2" result="sat"/>
+          <feComponentTransfer in="sat" result="bright"><feFuncR type="linear" slope="1.4" intercept="0.15"/><feFuncG type="linear" slope="2.1"/><feFuncB type="linear" slope="1.4" intercept="0.15"/></feComponentTransfer>
+          <feGaussianBlur in="bright" stdDeviation="3.4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="bright"/></feMerge>
+        </filter>
+        <filter id="chartArrowGlow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="1.6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      ${genImages}
+      ${clashImages}
+      ${arrowMarkers}
+    </svg>` : '';
+
+  return `<div style="position:relative;width:${size}px;height:${height}px;">
+    ${src ? `<img src="${src}" style="width:100%;height:100%;object-fit:contain;">` : ''}
+    ${glowLayer}
+    ${overlay}
+  </div>`;
+}
+// el과 otherEls(비교 대상 원소들) 사이 관계: 상생 있으면 'gen', 상극 있으면 'clash', 없으면 null. (방향 무관 — 표시 목적)
+function elementRelation(el, otherEls) {
+  if (!el || !otherEls || !otherEls.length) return null;
+  const others = otherEls.filter(o => o && o !== el);
+  for (const o of others) if (ELEMENT_GENERATES[el]===o || ELEMENT_GENERATES[o]===el) return 'gen';
+  for (const o of others) if (ELEMENT_OVERCOMES[el]===o || ELEMENT_OVERCOMES[o]===el) return 'clash';
+  return null;
+}
+
+// [UPDATE 2026-07-13] 삼위일체 발동 토스트 — 장비창(대장간/캐릭터/동료/펫)에서 슬롯 편성이 바뀔 때마다 호출.
+// applyElementSynergies와 달리 부작용(버프 적용) 없이 슬롯별 무기/동료/펫 오행 일치 여부만 순수 계산.
+function computeTrinitySlots(saveData) {
+  const mains = saveData.selectedMainWeapons || [saveData.selectedMainWeapon || 'talisman'];
+  const comps = saveData.activeCompanions || [];
+  const pets  = saveData.activePets || [];
+  const slots = [];
+  for (let i = 0; i < 3; i++) {
+    const wEl = WEAPON_DEFS[mains[i]]?.element;
+    const cEl = GAME_DATA.companions.find(d => d.id === comps[i])?.element;
+    const pEl = GAME_DATA.pets.find(d => d.id === pets[i])?.element;
+    slots.push(!!(wEl && cEl && pEl && wEl === cEl && cEl === pEl));
+  }
+  return slots;
+}
+
+// 직전 판정 상태와 비교해 새로 켜진(꺼짐→켜짐) 슬롯에만 토스트 표시. 장비창 4곳에서 편성 변경 시마다 호출.
+function checkTrinityToast(saveData) {
+  const cur = computeTrinitySlots(saveData);
+  const prev = window._trinityPreviewState || [false, false, false];
+  let newlyOnCount = 0;
+  for (let i = 0; i < 3; i++) {
+    if (cur[i] && !prev[i]) { showTrinityToast(i, newlyOnCount); newlyOnCount++; }
+  }
+  window._trinityPreviewState = cur;
+}
+
+function showTrinityToast(slotIdx, stackIdx) {
+  const el = document.createElement('div');
+  const label = Lang.getCurrent() === 'en' ? `Trinity (Slot ${slotIdx + 1}) Activated!` : `삼위일체 (${slotIdx + 1}슬롯) 발동!`;
+  el.textContent = label;
+  el.style.cssText = `position:fixed;left:50%;top:${12 + stackIdx * 8}%;transform:translateX(-50%);
+    background:rgba(20,10,30,0.92);border:1px solid #ffd700;color:#ffd700;
+    padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:.05em;
+    z-index:10000;pointer-events:none;opacity:0;transition:opacity .3s ease;`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 1800 + stackIdx * 300);
+}
+
+// 무기 상생 5조합: [생성원소weapon, 대상원소weapon] → 대상weapon에 고유 효과 플래그/배율 설정
+const WEAPON_SYNERGY_PAIRS = [
+  { from:'staff', to:'bow' },       // 水生木: 신궁 사거리(수명) +15%
+  { from:'bow', to:'talisman' },    // 木生火: 신궁 화살 적중 시 화상 DoT
+  { from:'talisman', to:'scythe_main' }, // 火生土: 영혼낫 지속시간 +15%
+  { from:'scythe_main', to:'sword' },    // 土生金: 낫 처치마다 신검 쿨감 스택
+  { from:'sword', to:'staff' },     // 金生水: 신검 크리티컬 시 지팡이 오브 임시추가
+];
+const WEAPON_CLASH_PAIRS = [['bow','scythe_main'],['scythe_main','staff'],['staff','talisman'],['talisman','sword'],['sword','bow']];
+
+function _isElementGenerateChain3(els) {
+  const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+  return perms.some(([i,j,k]) => ELEMENT_GENERATES[els[i]]===els[j] && ELEMENT_GENERATES[els[j]]===els[k]);
+}
+
+// 매 스테이지 진입 시 1회 호출 — 장착한 무기/동료/펫의 오행 상생·상극을 계산해 각 인스턴스/player에 배율·플래그로 반영
+function applyElementSynergies(mainWeapons, companions, activePetData, player) {
+  // 초기화 (재입장 대비 잔여값 제거)
+  for (const w of mainWeapons) {
+    w._synLifeMult=1; w._synFireDot=false; w._synDurationMult=1;
+    w._synKillStackEnabled=false; w._synClashMult=1; w._synChainCdBonus=0;
+  }
+  window._synSwordCritOrb = false;
+  window._elementTrinitySlots = []; // [UPDATE 2026-07-11] 삼위일체 달성 슬롯의 오행 목록 — 궤도 시각효과용
+  player._elementClashDmgTaken = 0;
+  player._compAtkMult = player._compAtkMult || 1; // (펫에서 이미 초기화됐을 수 있음 — 없으면 기본 1 유지)
+
+  const byId = {}; for (const w of mainWeapons) byId[w.defId] = w;
+  const has = (a,b) => byId[a] && byId[b];
+
+  for (const syn of WEAPON_SYNERGY_PAIRS) {
+    if (!has(syn.from, syn.to)) continue;
+    if (syn.from==='staff' && syn.to==='bow') byId.bow._synLifeMult = 1.15;
+    if (syn.from==='bow' && syn.to==='talisman') byId.bow._synFireDot = true;
+    if (syn.from==='talisman' && syn.to==='scythe_main') byId.scythe_main._synDurationMult = 1.15;
+    if (syn.from==='scythe_main' && syn.to==='sword') byId.sword._synKillStackEnabled = true;
+    if (syn.from==='sword' && syn.to==='staff') window._synSwordCritOrb = true;
+  }
+
+  let clashCount = 0;
+  for (const [a,b] of WEAPON_CLASH_PAIRS) {
+    if (!has(a,b)) continue;
+    byId[a]._synClashMult *= 1.08; byId[b]._synClashMult *= 1.08;
+    clashCount++;
+  }
+  if (clashCount > 0) {
+    player._elementClashDmgTaken = 0.05 * clashCount;
+  }
+
+  // 하드(3슬롯) 상생 연쇄 2단 완성: 참여 3무기 쿨타임 -5% 추가
+  if (mainWeapons.length === 3) {
+    const els = mainWeapons.map(w => w.def?.element).filter(Boolean);
+    if (els.length === 3 && _isElementGenerateChain3(els)) {
+      for (const w of mainWeapons) w._synChainCdBonus = 0.05;
+    }
+  }
+
+  // 동료 레이어: 2개 이상 상생 조합 존재 시 동료 공격력 +6%, 하드3슬롯 연쇄완성 시 +4% 추가 쿨감
+  if (companions && companions.length >= 2) {
+    const cEls = companions.map(c => GAME_DATA.companions.find(d=>d.id===c.id)?.element).filter(Boolean);
+    let compSynergy = false;
+    for (let i=0;i<cEls.length;i++) for (let j=0;j<cEls.length;j++) {
+      if (i!==j && ELEMENT_GENERATES[cEls[i]]===cEls[j]) compSynergy = true;
+    }
+    if (compSynergy) {
+      player._compAtkMult = (player._compAtkMult||1) * 1.06;
+    }
+    if (companions.length === 3 && cEls.length === 3 && _isElementGenerateChain3(cEls)) {
+      player._compCdBonus = (player._compCdBonus||0) + 0.04;
+    }
+  }
+
+  // 펫 레이어: 2개 이상 상생 조합 존재 시 펫 효과량 +6%, 하드3슬롯 연쇄완성 시 +4% 추가
+  if (activePetData && activePetData.length >= 2) {
+    const pEls = activePetData.map(p => p.element).filter(Boolean);
+    let petSynergy = false;
+    for (let i=0;i<pEls.length;i++) for (let j=0;j<pEls.length;j++) {
+      if (i!==j && ELEMENT_GENERATES[pEls[i]]===pEls[j]) petSynergy = true;
+    }
+    let petMult = petSynergy ? 1.06 : 1.0;
+    if (activePetData.length === 3 && pEls.length === 3 && _isElementGenerateChain3(pEls)) {
+      petMult *= 1.04;
+    }
+    if (petMult !== 1.0) for (const pd of activePetData) pd.value = pd.value * petMult;
+  }
+
+  // [UPDATE 2026-07-11] 2-3/2-4: 슬롯 번호 일치 크로스 시너지 — 같은 슬롯의 무기/동료/펫 오행이 맞을수록 보너스
+  const _maxSlots = Math.min(3, Math.max(mainWeapons.length, companions?.length||0, activePetData?.length||0));
+  for (let i=0; i<_maxSlots; i++) {
+    const wSlot = mainWeapons[i];
+    const cSlot = companions?.[i];
+    const pSlot = activePetData?.[i];
+    const wEl = wSlot?.def?.element;
+    const cEl = cSlot ? GAME_DATA.companions.find(d=>d.id===cSlot.id)?.element : null;
+    const pEl = pSlot?.element;
+    // 2종 일치(동료+펫): 해당 슬롯 동료 공격력 +8%
+    if (cSlot && cEl && pEl && cEl===pEl) {
+      cSlot.atkDmg = Math.floor(cSlot.atkDmg * 1.08);
+    }
+    // 3종 일치(삼위일체): 해당 오행 무기 데미지 +12% + 오행별 flavor
+    if (wSlot && wEl && cEl && pEl && wEl===cEl && cEl===pEl) {
+      wSlot._synClashMult = (wSlot._synClashMult||1) * 1.12;
+      switch (wEl) {
+        case 'metal': player._critChance = (player._critChance||0) + 8; break; // 크리티컬 확률 +8%p
+        case 'wood':  player._vampire = (player._vampire||0) * 1.25; break;    // 흡혈 효율 ×1.25 (미투자 시 무효과)
+        case 'fire':  wSlot._synChainCdBonus = (wSlot._synChainCdBonus||0) + 0.08; break; // 공격속도(쿨감) -8%
+        case 'water': player._elementClashDmgTaken = (player._elementClashDmgTaken||0) - 0.10; break; // 받는 피해 -10%
+        case 'earth': { const _b=Math.floor(player.maxHp*0.10); player.maxHp+=_b; player.hp+=_b; break; } // 최대 HP +10%
+      }
+      window._elementTrinitySlots.push(wEl); // [UPDATE 2026-07-11] 궤도 시각효과용 기록
+    }
+  }
+}
+
 // [UPDATE 2026-07-06] 무기 성장(강화+각성) 통합 계산 함수
 // 규칙: 0각Lv1~4 → 1각Lv1~4 → ... → 4각Lv1~4(총 20픽) → 5각Lv1(1픽, MAX) → 6각+(데미지+8%/픽)
 function computeWeaponGrowth(totalLv) {
@@ -1393,9 +1870,10 @@ function hasTranscend8(weaponId, rank) {
 }
 
 //  인게임 스탯 강화 정의 (패시브 슬롯 최대 4개)
-// [UPDATE 2026-07-06] 쿨감 통합 재계산: 스탯(공속/쿨타임) + 펫 효과를 합산해 상한 60% 적용
+// [UPDATE 2026-07-06] 쿨감 통합 재계산: 스탯(쿨타임) + 펫 효과를 합산해 상한 60% 적용
+// [UPDATE 2026-07-15] 260715_MTOPC.md 11번: _cdrAtkSpd 제거 — "공격속도"는 이제 totalSpd 경로로 분리되어 이 풀과 무관
 function recalcCdReduction(p) {
-  p._cdReduction = Math.min(0.6, (p._cdrAtkSpd||0) + (p._cdrCd||0) + (p._cdrPet||0));
+  p._cdReduction = Math.min(0.6, (p._cdrCd||0) + (p._cdrPet||0));
 }
 
 // ══════════════════════════════════════════
@@ -1403,7 +1881,9 @@ const STAT_UPGRADE_DEFS = [
   { id:'atk',     name:'공격력',   icon:'⚔️',  desc:'공격력 +8%',       maxLevel:5, apply(p,lv){ p.tempStats.atk+=lv*8; } },
   { id:'hp',      name:'체력',     icon:'❤️',  desc:'최대 체력 +10%',    maxLevel:5, apply(p,lv){ const b=Math.floor(p.maxHp*0.10); p.maxHp+=b; p.hp=Math.min(p.hp+b,p.maxHp); } },
   { id:'mov',     name:'이동속도', icon:'👟',  desc:'이동속도 +8%',      maxLevel:5, apply(p,lv){ p.tempStats.mov+=lv*8; } },
-  { id:'atkSpd',  name:'공격속도', icon:'💨',  desc:'공격속도 +8%',      maxLevel:5, apply(p,lv){ p._cdrAtkSpd=lv*0.08; recalcCdReduction(p); } },
+  // [UPDATE 2026-07-15] 260715_MTOPC.md 11번: "쿨타임" 스탯과 같은 _cdReduction 풀을 공유해서 사실상 동일 효과였던 버그 수정.
+  // player.totalSpd(공속 스탯)를 직접 올리는 별개 경로로 재배선 — 이 경로는 각 무기 fire()의 spdScale로 이미 쿨타임에 곱연산 적용 중(신목 공속강화와 동일 방식)
+  { id:'atkSpd',  name:'공격속도', icon:'💨',  desc:'공격속도 +8%',      maxLevel:5, apply(p,lv){ p.tempStats.spd+=lv*8; } },
   { id:'cd',      name:'쿨타임',   icon:'⏱️',  desc:'쿨타임 감소 -6%',   maxLevel:5, apply(p,lv){ p._cdrCd=lv*0.06; recalcCdReduction(p); } },
   { id:'vampire', name:'흡혈',     icon:'🩸',  desc:'공격 시 HP 흡수',   maxLevel:5, apply(p,lv){ p._vampire=lv*0.03; } },
   { id:'magnet',  name:'자석',     icon:'🧲',  desc:'경험치 범위 +40',   maxLevel:5, apply(p,lv){ p.magnetRange+=40; } },
@@ -1433,11 +1913,13 @@ const WEAPON_I18N = {
     hopaetag: { name:'Identity Tag', desc:'Passively increases gold and XP gained.' },
     karma_bead: { name:'Karma Orb', desc:'Passively increases attack power.' },
     shaman_drum: { name:'Shaman\'s Drum', desc:'Periodically boosts attack power temporarily.' },
+    salt_scatter: { name:'Purifying Salt', desc:'Scatters salt in all directions, briefly stunning struck enemies.' }, // [UPDATE 2026-07-13]
     talisman: { name:'Talisman', desc:'Throws a sealing talisman at the nearest enemy.' },
     talisman_count: { name:'Special Upgrade', desc:'+1 Follow-up Talisman' },
     talisman_tadak: { name:'Special Upgrade', desc:'+1 Follow-up Talisman' },
     sword: { name:'Divine Sword', desc:'A powerful divine sword that slashes in a frontal arc.' },
-    sword_range: { name:'Special Upgrade', desc:'Range +15%' },
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 11번: 실제 효과(잔상 검 소환, 3초마다)와 전혀 다른 죽은 텍스트였음 — 한글판 기준으로 수정
+    sword_range: { name:'Special Upgrade', desc:'Afterimage +1 (every 3s)' },
     bow: { name:'Divine Bow', desc:'Fires arrows in a fan. Level up for rapid fire, awaken for multi-shot.' },
     bow_pierce: { name:'Special Upgrade', desc:'Pierce +1' },
     bow_split: { name:'Special Upgrade', desc:'Homing arrow that splits on hit every 3s' },
@@ -1616,6 +2098,7 @@ const CARD_IMGS = {
   hopaetag:      '__IMG_icons_hopaetag__',
   karma_bead:    '__IMG_icons_karma_bead__',
   shaman_drum:   '__IMG_icons_shaman_drum__',
+  salt_scatter:  '__IMG_icons_salt_scatter__', // [UPDATE 2026-07-13] 정화의 소금 — 레벨업 카드 전용 아이콘
 };
 
 const EFFECT_IMGS = {
@@ -1790,11 +2273,15 @@ function getLevelUpChoices(mainWeapon, subWeapons, statSlots, mode) {
   }
 
   // ── 슬롯3: 스탯 ──
-  // 7종 중 2종 랜덤 (만렙 제외)
+  // 7종 중 2종 랜덤 (만렙 제외). 스탯 슬롯은 최대 4개(HUD 표시 칸 수)까지만 —
+  // [UPDATE 2026-07-12] 버그 수정: 슬롯이 4개 꽉 찬 뒤에도 미보유 스탯이 계속 "New"로 나와서 5번째 이상이 뽑히던 문제.
+  // 슬롯이 다 찼으면 이미 보유한 스탯의 강화(stat_up)만 후보로 남김.
+  const _curStatSlots = statSlots.filter(s=>!s.isSpecial);
+  const _statSlotsFull = _curStatSlots.length >= 4;
   const statPool = [];
   for (const def of STAT_UPGRADE_DEFS) {
     const cur = statSlots.find(s=>s.id===def.id&&!s.isSpecial);
-    if (!cur) statPool.push({ type:'stat', statId:def.id, def });
+    if (!cur) { if (!_statSlotsFull) statPool.push({ type:'stat', statId:def.id, def }); }
     else if (cur.lv < (def.maxLevel||5)) statPool.push({ type:'stat_up', statId:def.id, def, cur });
   }
   shuffle(statPool);

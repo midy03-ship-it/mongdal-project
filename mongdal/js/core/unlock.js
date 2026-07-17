@@ -69,6 +69,26 @@ const Unlock = (() => {
       message: '',
       icon: '🌀',
     },
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 4/9번: 시즌별 특화재화 전용 던전 해금
+    // [UPDATE 2026-07-17] 조건을 "그 시즌 전체 클리어" → "그 시즌이 열리는 시점"으로 변경.
+    // 기존엔 시즌3을 다 깨야 시즌3 전용 재화(혼돈석)를 파밍할 수 있어서, 정작 시즌3을 플레이하는
+    // 동안엔 못 쓰는 구조였음(강화석/태극석 등 다른 던전들은 전부 그 시즌 진행 도중에 열림).
+    {
+      id: 'hondonseok_dungeon',
+      name: '혼돈석 던전',
+      condition: (save) => !!save.season2Clear, // 시즌3(망랑계) 진입 시점
+      unlocks: ['dungeon_hondonseok'],
+      message: '혼돈석 던전이 해금되었습니다.',
+      icon: '🌪️',
+    },
+    {
+      id: 'sullriseok_dungeon',
+      name: '순리석 던전',
+      condition: (save) => !!save.season3Clear, // 시즌4(귀허계) 진입 시점 — 시즌4 콘텐츠 자체가 아직 없어 당분간 잠김 상태 유지
+      unlocks: ['dungeon_sullriseok'],
+      message: '순리석 던전이 해금되었습니다.',
+      icon: '🌊',
+    },
   ];
 
   // 현재 해금된 항목 목록 반환
@@ -140,5 +160,5 @@ const Unlock = (() => {
     },
   ];
 
-  return { getUnlocked, getNewlyUnlocked, UNLOCK_TABLE, LOBBY_BUILDINGS };
+  return { getUnlocked, getNewlyUnlocked, UNLOCK_TABLE, LOBBY_BUILDINGS, cleared }; // [UPDATE 2026-07-14] 260714_MTOPC.md 4번: 스테이지 선택 화면 무지개 테두리용으로 cleared() 재사용 노출
 })();

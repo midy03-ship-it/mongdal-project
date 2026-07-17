@@ -3,6 +3,9 @@ class PetEntity {
   constructor(data, slotIdx) {
     this.id=data.id; this.name=data.name; this.icon=data.icon;
     this.color=data.color; this.effect=data.effect; this.value=data.value;
+    this.markCount=data.markCount||1; this.confuseRangeMult=data.confuseRangeMult||1; // [UPDATE 2026-07-11]
+    // [UPDATE 2026-07-17] autoCollect 펫별 범위 커스터마이징(싸리=강다리보다 느리지만 더 넓게 주움). 미지정시 기존 강다리 수치로 폴백
+    this.fetchRangeMult=data.fetchRangeMult||3; this.pullRadius=data.pullRadius||100;
     this.orbitRadius=28+slotIdx*12;
     this.orbitAngle=slotIdx*(Math.PI*2/3)+Math.PI;
     this.orbitSpd=1.2+slotIdx*0.3;
@@ -19,7 +22,8 @@ class PetEntity {
       zodiac_rabbit:'zodiac_rabbit',zodiac_dragon:'zodiac_dragon',zodiac_snake:'zodiac_snake',
       zodiac_horse:'zodiac_horse',zodiac_goat:'zodiac_goat',zodiac_monkey:'zodiac_monkey',
       zodiac_rooster:'zodiac_rooster',zodiac_dog:'zodiac_dog',zodiac_pig:'zodiac_pig',
-      jeoseung_nabi:'jeoseung_nabi',sangsahwa:'sangsahwa'}; // [UPDATE 2026-07-06] 시즌2 펫
+      jeoseung_nabi:'jeoseung_nabi',sangsahwa:'sangsahwa', // [UPDATE 2026-07-06] 시즌2 펫
+      ssari:'ssari',gongi:'gongi'}; // [UPDATE 2026-07-17] 도깨비 계열 신규 펫
     const sk = petSprMap[this.id];
     const sc = sk && SPRITES?.pets?.[sk];
     this.img = sc ? SpriteLoader.get(sc.src) : null;
@@ -34,9 +38,48 @@ class PetEntity {
     this.breatheT = Math.random() * Math.PI * 2;
   }
 
-  update(dt,player,enemies,projectiles){
+  update(dt,player,enemies,projectiles,items){
     this.t+=dt;
     this.breatheT+=dt*1.3;
+
+    // [UPDATE 2026-07-11] 강다리(술신) 자동수집: 방랑 대신 실제로 가장 가까운 드랍을 향해 달려가서 주움
+    if(this.effect==='autoCollect' && items){
+      // [UPDATE 2026-07-13] 순차 fetch와 별개로, 강다리 자신 주위 반경 100 안에 있는 아이템은
+      // 매 프레임 같이 끌어당김 (완전히 1개씩만 줍는 게 아니라 작은 자석 범위도 추가) — 40으로는 효과 체감 안 돼서 100으로 상향
+      const _petMagnetR=this.pullRadius;
+      for(const arr of [items.xpOrbs,items.goldDrops,items.bigGoldDrops,items.soulDrops]){
+        if(!arr) continue;
+        for(const it of arr){
+          if(it.dead||it.attractState==='magnet') continue;
+          if(Math.hypot(it.x-this.x,it.y-this.y)<_petMagnetR) it.magnetPull();
+        }
+      }
+      if(!this._fetchTarget || this._fetchTarget.dead){
+        const range=(player.magnetRange||60)*this.fetchRangeMult;
+        let best=null, bestD=range;
+        for(const arr of [items.xpOrbs,items.goldDrops,items.bigGoldDrops,items.soulDrops]){
+          if(!arr) continue;
+          for(const it of arr){
+            if(it.dead||it.attractState==='magnet') continue;
+            const d=Math.hypot(it.x-player.x,it.y-player.y);
+            if(d<bestD){ bestD=d; best=it; }
+          }
+        }
+        this._fetchTarget=best;
+      }
+      if(this._fetchTarget && !this._fetchTarget.dead){
+        const t=this._fetchTarget;
+        const dx=t.x-this.x, dy=t.y-this.y, d=Math.hypot(dx,dy)||1;
+        const spd=this.value||70; // 레벨 스케일링된 값(70~91) 그대로 이동속도로 사용
+        if(d<16){ t.magnetPull(); this._fetchTarget=null; this._sparkle('#ffe070',5); this.triggerFlash=1; }
+        else { this.x+=(dx/d)*spd*dt; this.y+=(dy/d)*spd*dt; }
+        this.sparkles=this.sparkles.filter(s=>s.life>0);
+        for(const s of this.sparkles){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt*2;}
+        if(this.triggerFlash>0) this.triggerFlash-=dt*4;
+        return false; // 방랑/트리거 로직 건너뜀
+      }
+      // 주울 대상이 없으면 아래 일반 방랑 로직으로 자연스럽게 이어짐
+    }
 
     // ── 관성 방랑 이동 ──
     this.wanderTimer-=dt;
@@ -74,21 +117,34 @@ class PetEntity {
         }
         return true;
       case 'confuse':{
+        // [UPDATE 2026-07-11] pd.value=지속시간(초), confuseRangeMult 있으면 범위 내 여러 명 혼란(신신 원숭이)
         const alive=enemies.filter(e=>!e.dead);if(!alive.length)return false;
-        const t=alive[Math.floor(Math.random()*alive.length)];
-        t._confused=PC.CONFUSE_DURATION;
+        const dur=this.value||PC.CONFUSE_DURATION;
+        if(this.confuseRangeMult>1){
+          const range=180*this.confuseRangeMult;
+          const near=alive.filter(e=>Math.hypot(e.x-player.x,e.y-player.y)<range)
+            .sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y)).slice(0,3);
+          if(!near.length)return false;
+          for(const e of near) e._confused=dur;
+        } else {
+          const t=alive[Math.floor(Math.random()*alive.length)];
+          t._confused=dur;
+        }
         this._sparkle('#8080ff',8);this.triggerFlash=1;return true;
       }
       case 'knockback':{
+        const force=this.value||PC.KNOCKBACK_FORCE; // [UPDATE 2026-07-11] pd.value=넉백 세기(도깨비100/진신180)
         const alive=enemies.filter(e=>!e.dead&&Math.hypot(e.x-player.x,e.y-player.y)<PC.KNOCKBACK_RANGE);
-        for(const e of alive){const a=Math.atan2(e.y-player.y,e.x-player.x);e.x+=Math.cos(a)*PC.KNOCKBACK_FORCE;e.y+=Math.sin(a)*PC.KNOCKBACK_FORCE;}
+        for(const e of alive){const a=Math.atan2(e.y-player.y,e.x-player.x);e.x+=Math.cos(a)*force;e.y+=Math.sin(a)*force;}
         if(alive.length){this._sparkle('#ff6020',10);this.triggerFlash=1;}
         return alive.length>0;
       }
       case 'mark':{
+        // [UPDATE 2026-07-11] markCount=표식 대상 수(까마귀삼신1/사신3), value=받는피해 증가율
         const alive=enemies.filter(e=>!e.dead);if(!alive.length)return false;
         const sorted=alive.sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y));
-        for(const e of sorted.slice(0,3)){e._marked=PC.MARK_DURATION;e._markedDmgMult=PC.MARK_DAMAGE_MULT;}
+        const mult=1+(this.value!=null?this.value:(PC.MARK_DAMAGE_MULT-1));
+        for(const e of sorted.slice(0,this.markCount||1)){e._marked=PC.MARK_DURATION;e._markedDmgMult=mult;}
         this._sparkle('#ff40ff',8);this.triggerFlash=1;return true;
       }
       default:return false;
@@ -129,6 +185,22 @@ class PetEntity {
   }
 }
 
+// [UPDATE 2026-07-11] 펫 레벨 스케일링 (260711_MTOPC.md 4-7) — 그동안 강화해도 효과가 전혀 안 올랐던 버그 수정
+// 연속값: Lv1(100%)~Lv5(130%), 레벨당 +7.5%p. 정수형(개수) 효과는 Lv1~4 고정, Lv5 도달 시에만 +1
+function scalePetValue(pd, lv) {
+  lv = Math.max(1, Math.min(5, lv || 1));
+  // 상사화 부활횟수는 value 필드 자체가 정수형 개수
+  if (pd.id === 'sangsahwa' && pd.effect === 'autoRevive') {
+    return lv >= 5 ? pd.value + 1 : pd.value;
+  }
+  return pd.value * (1 + 0.30 * (lv - 1) / 4);
+}
+// 사신(뱀) markCount(표식 대상 수)처럼 value와 별개인 정수형 필드 스케일링
+function scalePetIntField(base, lv) {
+  lv = Math.max(1, Math.min(5, lv || 1));
+  return lv >= 5 ? base + 1 : base;
+}
+
 function applyPetPassives(activePetData,player,weapons){
   for(const pd of activePetData){
     switch(pd.effect){
@@ -141,6 +213,13 @@ function applyPetPassives(activePetData,player,weapons){
       case 'soulBoost':  player._soulMult=(player._soulMult||1)+pd.value; break;
       case 'autoRevive': player._autoReviveCharges=(player._autoReviveCharges||0)+pd.value; break;
       case 'magnet':     player.magnetRange=(player.magnetRange||CONFIG.ITEM.PASSIVE_MAGNET_RANGE)+pd.value*50; break;
+      // [UPDATE 2026-07-11] 260711_MTOPC.md 4-3 십이지신 신규효과
+      case 'goldBoost':    player._goldMult=(player._goldMult||1)+pd.value; break; // 미신(양)
+      case 'specialBoost': player._specialMult=(player._specialMult||1)+pd.value; break; // 해신(돼지) — 특화 던전 재화 전용
+      case 'compAtk':      player._compAtkMult=(player._compAtkMult||1)+pd.value; break; // 유신(닭)
+      case 'compDef':      player._compDefMult=(player._compDefMult||0)+pd.value; break; // 자신(쥐) — 받는 피해 감소율(가산)
+      case 'compHp':       player._compHpMult=(player._compHpMult||1)+pd.value; break; // 축신(소)
+      // 강다리(술신) 자동수집: player 플래그 대신 PetEntity 본인이 직접 뛰어가서 줍는 전용 AI로 처리 (update() 참고)
     }
   }
 }

@@ -14,7 +14,9 @@ old md 모음/
 
 # 로컬 전용 설정 (머신별 권한 allowlist, 공유 불필요)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # OS/에디터
 .DS_Store
 Thumbs.db
+desktop.ini

@@ -76,6 +76,31 @@ const DungeonScene = (() => {
       mode: 'infinite',
       rewardMode: 'taegeukseok',
     },
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 4/9번: 시즌별 특화재화 전용 던전 — 기존 재화던전과 동일 패턴, 드랍률도 공통 8% 그대로 재사용
+    {
+      id: 'hondonseok',
+      unlockId: 'dungeon_hondonseok',
+      icon: '🌪️', spriteKey: 'hondonseok', // [UPDATE 2026-07-17] 전용 아이콘 반입
+      reward: 'hondonseok',
+      rewardIcon: '🌪️', rewardSpriteKey: 'hondonseok',
+      color: '#a060e0',
+      borderColor: 'rgba(160,96,224,0.5)',
+      bg: 'linear-gradient(135deg,rgba(25,10,40,.9),rgba(45,15,60,.9))',
+      mode: 'infinite',
+      rewardMode: 'hondonseok',
+    },
+    {
+      id: 'sullriseok',
+      unlockId: 'dungeon_sullriseok',
+      icon: '🌊', spriteKey: 'sullriseok', // [UPDATE 2026-07-17] 전용 아이콘 반입
+      reward: 'sullriseok',
+      rewardIcon: '🌊', rewardSpriteKey: 'sullriseok',
+      color: '#40a0e0',
+      borderColor: 'rgba(64,160,224,0.5)',
+      bg: 'linear-gradient(135deg,rgba(5,20,40,.9),rgba(10,35,55,.9))',
+      mode: 'infinite',
+      rewardMode: 'sullriseok',
+    },
   ];
 
   function enter(el) { saveData = Save.load(); render(el); }
@@ -122,8 +147,10 @@ const DungeonScene = (() => {
             { spriteKey:'cheonunseok',    key:'cheonunseok' },
             { spriteKey:'cheonryeonggwa', key:'cheonryeonggwa' },
             { spriteKey:'taegeukseok',    key:'taegeukseok' },
+            { spriteKey:'hondonseok', key:'hondonseok' }, // [UPDATE 2026-07-17] 전용 아이콘 반입
+            { spriteKey:'sullriseok', key:'sullriseok' },
           ].map(c => {
-            const cIcon = _cimg(c.spriteKey);
+            const cIcon = c.spriteKey ? _cimg(c.spriteKey) : c.icon;
             return `
             <div style="
               padding:4px 10px;border-radius:8px;font-size:12px;
@@ -133,8 +160,11 @@ const DungeonScene = (() => {
           }).join('')}
         </div>
 
+        <!-- [UPDATE 2026-07-16] 260716_MTOPC.md 2번②③⑤: 던전강화 프레스티지 -->
+        ${unlocked.has('dungeon_infinite') ? dungeonUpgradeCard(isEn) : ''}
+
         <!-- 던전 목록 -->
-        <div style="flex:1;overflow-y:auto;padding:12px 16px 40px;display:flex;flex-direction:column;gap:12px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:12px 16px 40px;display:flex;flex-direction:column;gap:12px;">
           ${availableDungeons.length === 0
             ? `<div style="text-align:center;color:rgba(200,160,255,0.4);margin-top:60px;font-size:14px;">
                 ${isEn ? 'No dungeons unlocked yet.\nClear Stage 5 to unlock.' : '스테이지 5 클리어 시\n강화석 던전이 해금됩니다.'}
@@ -144,6 +174,97 @@ const DungeonScene = (() => {
         </div>
       </div>
     `;
+  }
+
+  // [UPDATE 2026-07-16] 260716_MTOPC.md 2번②③⑤: 던전강화 카드 — 무한던전 시작 킬수를 밀어주는 프레스티지 강화 +
+  // 종합 전투력 지수 대비 적정/위험/매우위험 안내
+  function _dungeonUpgradeCost(lv) {
+    const C = CONFIG.DUNGEON_UPGRADE;
+    return {
+      gold: Math.floor(C.BASE_COST_GOLD * Math.pow(C.COST_MULT, lv)),
+      cheonunseok: Math.floor(C.BASE_COST_CHEONUNSEOK * Math.pow(C.CHEONUNSEOK_COST_MULT, lv)),
+    };
+  }
+
+  function dungeonUpgradeCard(isEn) {
+    const lv = saveData.dungeonUpgradeLv || 0;
+    const cost = _dungeonUpgradeCost(lv);
+    const gold = saveData.gold || 0;
+    const cheonunseok = saveData.cheonunseok || 0;
+    const canAfford = gold >= cost.gold && cheonunseok >= cost.cheonunseok;
+    const startKills = lv * CONFIG.DUNGEON_UPGRADE.KILLS_PER_LEVEL;
+    const power = computeBattlePower(saveData);
+    const rating = battlePowerRatingFor(power, lv);
+    const ratingInfo = {
+      safe:   { label: isEn?'Safe':'적정',     color:'#60e080' },
+      risky:  { label: isEn?'Risky':'위험',    color:'#f0c040' },
+      danger: { label: isEn?'Very Risky':'매우위험', color:'#ff6060' },
+    }[rating];
+
+    return `
+      <div style="
+        margin:0 16px 12px;padding:14px 16px;border-radius:14px;
+        background:linear-gradient(135deg,rgba(40,20,60,.9),rgba(20,10,35,.9));
+        border:1.5px solid rgba(200,140,255,0.4);
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:14px;color:#e0c0ff;font-weight:700;">
+            🔮 ${isEn?'Dungeon Enhancement':'던전강화'} Lv.${lv}
+          </div>
+          <div style="font-size:11px;padding:3px 8px;border-radius:8px;
+            background:${ratingInfo.color}22;border:1px solid ${ratingInfo.color}88;color:${ratingInfo.color};">
+            ${isEn?'Power':'전투력'} ${power} · ${ratingInfo.label}
+          </div>
+        </div>
+        <div style="font-size:11px;color:rgba(220,200,255,0.6);margin-bottom:10px;">
+          ${isEn
+            ? `Infinite Dungeon runs start from kill ${startKills.toLocaleString()} (monsters scale accordingly).`
+            : `무한던전 진입 시 ${startKills.toLocaleString()}킬 지점부터 시작합니다 (몬스터 배율도 그 기준).`}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="DungeonScene.downgradeDungeon()" ${lv<=0?'disabled':''} style="
+            padding:9px 12px;border-radius:9px;font-size:12px;cursor:${lv<=0?'not-allowed':'pointer'};
+            font-family:inherit;font-weight:700;white-space:nowrap;
+            background:${lv<=0?'rgba(80,80,80,0.15)':'rgba(255,100,100,0.15)'};
+            border:1px solid ${lv<=0?'rgba(255,255,255,0.08)':'rgba(255,140,140,0.5)'};
+            color:${lv<=0?'rgba(255,255,255,0.25)':'#ffb0b0'};
+          ">▼ Lv.${Math.max(0,lv-1)}</button>
+          <button onclick="DungeonScene.upgradeDungeon()" ${canAfford?'':'disabled'} style="
+            flex:1;padding:9px 0;border-radius:9px;font-size:12px;cursor:${canAfford?'pointer':'not-allowed'};
+            font-family:inherit;font-weight:700;
+            background:${canAfford?'rgba(200,140,255,0.25)':'rgba(80,80,80,0.2)'};
+            border:1px solid ${canAfford?'rgba(220,170,255,0.6)':'rgba(255,255,255,0.1)'};
+            color:${canAfford?'#e8d0ff':'rgba(255,255,255,0.3)'};
+          ">${_cimg('gold')}${cost.gold.toLocaleString()} ${_cimg('cheonunseok')}${cost.cheonunseok.toLocaleString()} → Lv.${lv+1}</button>
+        </div>
+        ${lv>0 ? `<div style="font-size:9px;color:rgba(220,200,255,0.4);margin-top:6px;text-align:center;">
+          ${isEn ? `Lv down refunds ${_dungeonUpgradeCost(lv-1).gold.toLocaleString()} Gold + ${_dungeonUpgradeCost(lv-1).cheonunseok.toLocaleString()} Sky Stone`
+                 : `레벨 다운 시 ${_dungeonUpgradeCost(lv-1).gold.toLocaleString()}골드 + ${_dungeonUpgradeCost(lv-1).cheonunseok.toLocaleString()}천운석 환급`}
+        </div>` : ''}
+      </div>`;
+  }
+
+  function upgradeDungeon() {
+    const lv = saveData.dungeonUpgradeLv || 0;
+    const cost = _dungeonUpgradeCost(lv);
+    if ((saveData.gold||0) < cost.gold || (saveData.cheonunseok||0) < cost.cheonunseok) return;
+    saveData.gold -= cost.gold;
+    saveData.cheonunseok -= cost.cheonunseok;
+    saveData.dungeonUpgradeLv = lv + 1;
+    Save.save(saveData);
+    render(document.getElementById('app'));
+  }
+
+  // [UPDATE 2026-07-17] 던전강화 레벨 다운 — "너무 세게 올려버렸다" 되돌리기용. 그 레벨을 올릴 때 낸 비용을 전액 환급.
+  function downgradeDungeon() {
+    const lv = saveData.dungeonUpgradeLv || 0;
+    if (lv <= 0) return;
+    const refund = _dungeonUpgradeCost(lv - 1);
+    saveData.gold = (saveData.gold||0) + refund.gold;
+    saveData.cheonunseok = (saveData.cheonunseok||0) + refund.cheonunseok;
+    saveData.dungeonUpgradeLv = lv - 1;
+    Save.save(saveData);
+    render(document.getElementById('app'));
   }
 
   function dungeonCard(d, isEn) {
@@ -161,6 +282,8 @@ const DungeonScene = (() => {
       cheonunseok:    isEn ? 'Heavenly stones drop instead of gold.' : '골드 대신 천운석이 드랍됩니다.',
       cheonryeonggwa: isEn ? 'Spirit fruits drop instead of gold.' : '골드 대신 천령과가 드랍됩니다.',
       taegeukseok:    isEn ? 'Taeguk stones drop instead of gold.' : '골드 대신 태극석이 드랍됩니다.',
+      hondonseok:     isEn ? 'Chaos stones drop instead of gold.' : '골드 대신 혼돈석이 드랍됩니다.',
+      sullriseok:     isEn ? 'Sunri stones drop instead of gold.' : '골드 대신 순리석이 드랍됩니다.',
     };
 
     return `
@@ -208,5 +331,5 @@ const DungeonScene = (() => {
   function startInfinite()  { startDungeon('infinite'); }
   function startBossRush()  { startDungeon('bossrush'); }
 
-  return { enter, exit, startDungeon, startInfinite, startBossRush };
+  return { enter, exit, startDungeon, startInfinite, startBossRush, upgradeDungeon, downgradeDungeon };
 })();

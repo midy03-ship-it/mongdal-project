@@ -21,7 +21,7 @@ const DevScene = (() => {
     const allStages = getAllStageIds();
 
     el.innerHTML = `
-      <div style="
+      <div class="scroll-pan-y" style="
         position:absolute;inset:0;background:#0a0814;color:#e0d8f0;
         font-family:serif;overflow-y:auto;padding:12px;box-sizing:border-box;
         z-index:999;
@@ -115,7 +115,8 @@ const DevScene = (() => {
               { key:'taegeukseok',    icon:'💠', name:'태극석',  amounts:[50,200,1000] },
               { key:'chaewonseok',    icon:'🌀', name:'차원석',  amounts:[10,50,200] },
               { key:'soulFragments',  icon:'👻', name:'영혼 조각', amounts:[10,50,200] },
-              { key:'yeongonseok',    icon:'💜', name:'영혼석',  amounts:[10,50,200] }, // [UPDATE 2026-07-08] 실제 저장 필드명으로 수정 (기존 'soulStones'는 존재하지 않는 필드라 초월 재료가 영원히 안 쌓이던 버그)
+              // [UPDATE 2026-07-17] yeongonseok(획득경로 없던 유령 재화)을 soulStones로 통합 — 명부강화/무기초월 공용
+              { key:'soulStones',     icon:'💜', name:'영혼석',  amounts:[10,50,200] },
             ].map(c => `
               <div style="background:#1a1030;border:1px solid #2a1a3a;border-radius:8px;padding:8px;">
                 <div style="font-size:12px;margin-bottom:5px;">${c.icon} ${c.name}: <span style="color:#f0d060;">${(sd[c.key]||0).toLocaleString()}</span></div>

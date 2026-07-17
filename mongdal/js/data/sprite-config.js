@@ -36,6 +36,14 @@ const SPRITES = {
     { src:'__IMG_player_player_5__', drawW:100, drawH:110, offsetX:-50, offsetY:-110 }, // ch8 클리어
   ],
 
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 — 방향 반전은 기존 player.js facing 로직(좌우 스케일) 재사용,
+  // 별도 방향별 애니메이션 불필요(기본 캐릭터 스프라이트와 동일한 단일 정지 포즈 + 좌우 플립 방식)
+  transformPlayer: {
+    dokkaebi: { src:'__IMG_player_transform_dokkaebi__', drawW:50, drawH:90, offsetX:-25, offsetY:-90 },
+    gumiho:   { src:'__IMG_player_transform_gumiho__',   drawW:90, drawH:84, offsetX:-45, offsetY:-84 },
+    gogolgwi: { src:'__IMG_player_transform_gogolgwi__', drawW:68, drawH:90, offsetX:-34, offsetY:-90 },
+  },
+
   companions: {
     dochi:    { src:'__IMG_companions_dochi__',    drawW:51, drawH:60, offsetX:-26, offsetY:-60 },
     aram:     { src:'__IMG_companions_aram__',     drawW:58, drawH:60, offsetX:-29, offsetY:-60 },
@@ -49,8 +57,12 @@ const SPRITES = {
     mugsa:    { src:'__IMG_companions_mugsa__',    drawW:60, drawH:70, offsetX:-30, offsetY:-70 },
     cheolgap: { src:'__IMG_companions_cheolgap__', drawW:62, drawH:80, offsetX:-31, offsetY:-80 },
     // [UPDATE 2026-07-06] 시즌2 동료
-    haewonmaek: { src:'__IMG_companions_haewonmaek__', drawW:55, drawH:75, offsetX:-28, offsetY:-75 },
-    gangnim:    { src:'__IMG_companions_gangnim__',    drawW:45, drawH:80, offsetX:-23, offsetY:-80 },
+    // [UPDATE 2026-07-12] 신규 이미지(쌍망치/갓 쓴 저승차사)로 교체, 실측 비율에 맞춰 크기 재조정
+    haewonmaek: { src:'__IMG_companions_haewonmaek__', drawW:83, drawH:75, offsetX:-42, offsetY:-75 },
+    gangnim:    { src:'__IMG_companions_gangnim__',    drawW:72, drawH:80, offsetX:-36, offsetY:-80 },
+    // [UPDATE 2026-07-17] 도깨비 계열 신규 동료 2종 (박수/장구애비)
+    baksu:        { src:'__IMG_companions_baksu__',        drawW:44, drawH:78, offsetX:-22, offsetY:-78 },
+    janggu_aebi:  { src:'__IMG_companions_janggu_aebi__',  drawW:44, drawH:78, offsetX:-22, offsetY:-78 },
   },
 
   enemies: {
@@ -114,6 +126,68 @@ const SPRITES = {
     // 챕터 20 — 유명계의 왕좌
     death_tome:     { src:'__MON_ch20_mon1__', drawW:52, drawH:55, offsetX:-26, offsetY:-55 },
     chaos_acrobat:  { src:'__MON_ch20_mon2__', drawW:48, drawH:58, offsetX:-24, offsetY:-58 },
+    // [UPDATE 2026-07-16] 시즌3(망랑계) 몬스터 20종 이미지 — 이미지 모음/monsters/ss3 mon 원본, 배경 이미 제거된 상태로 제공됨
+    // 챕터 21 — 망랑계의 첫 발걸음
+    kkomadokkaebi:  { src:'__MON_ch21_mon1__', drawW:55, drawH:51, offsetX:-28, offsetY:-51 },
+    heotgaebi:      { src:'__MON_ch21_mon2__', drawW:52, drawH:55, offsetX:-26, offsetY:-55 },
+    // 챕터 22 — 요술의 거리
+    yeoubul:        { src:'__MON_ch22_mon1__', drawW:55, drawH:51, offsetX:-28, offsetY:-51 },
+    hollinbyeongsa: { src:'__MON_ch22_mon2__', drawW:49, drawH:55, offsetX:-25, offsetY:-55 },
+    // 챕터 23 — 픽셀이 무너지는 숲
+    oryuryeong:     { src:'__MON_ch23_mon1__', drawW:55, drawH:51, offsetX:-28, offsetY:-51 },
+    kkaejingeurimja:{ src:'__MON_ch23_mon2__', drawW:55, drawH:53, offsetX:-28, offsetY:-53 },
+    // 챕터 24 — 뒤틀린 시장
+    jujubatsangpumryeong: { src:'__MON_ch24_mon1__', drawW:47, drawH:55, offsetX:-24, offsetY:-55 },
+    geurimjasangin:       { src:'__MON_ch24_mon2__', drawW:55, drawH:46, offsetX:-28, offsetY:-46 },
+    // 챕터 25 — 망랑계 심층
+    simcheungdokkaebi: { src:'__MON_ch25_mon1__', drawW:53, drawH:55, offsetX:-27, offsetY:-55 },
+    geurimjajimseung:  { src:'__MON_ch25_mon2__', drawW:55, drawH:44, offsetX:-28, offsetY:-44 },
+    // 챕터 26 — 외신에 잠식된 땅
+    oyeomdokkaebi: { src:'__MON_ch26_mon1__', drawW:55, drawH:52, offsetX:-28, offsetY:-52 },
+    jamsikryeong:  { src:'__MON_ch26_mon2__', drawW:53, drawH:55, offsetX:-27, offsetY:-55 },
+    // 챕터 27 — 세계를 홀린 요술
+    hollinyeou: { src:'__MON_ch27_mon1__', drawW:55, drawH:49, offsetX:-28, offsetY:-49 },
+    jujusulsa:  { src:'__MON_ch27_mon2__', drawW:55, drawH:51, offsetX:-28, offsetY:-51 },
+    // 챕터 28 — 혼돈신의 균열
+    sovoldolgwi:       { src:'__MON_ch28_mon1__', drawW:55, drawH:55, offsetX:-28, offsetY:-55 },
+    hondonpaphyeonche: { src:'__MON_ch28_mon2__', drawW:55, drawH:51, offsetX:-28, offsetY:-51 },
+    // 챕터 29 — 글리치 폭풍의 중심
+    pokpungglitch:  { src:'__MON_ch29_mon1__', drawW:53, drawH:55, offsetX:-27, offsetY:-55 },
+    oryupokpungche: { src:'__MON_ch29_mon2__', drawW:55, drawH:52, offsetX:-28, offsetY:-52 },
+    // 챕터 30 — 망랑계의 왕좌
+    bunsindokkaebi:    { src:'__MON_ch30_mon1__', drawW:48, drawH:55, offsetX:-24, offsetY:-55 },
+    wangjwasuhobyeong: { src:'__MON_ch30_mon2__', drawW:55, drawH:53, offsetX:-28, offsetY:-53 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 몬스터 20종 이미지 — 이미지 모음/monsters/ss4mon 원본, 배경 이미 제거된 상태로 제공됨
+    // 챕터 31 — 소멸의 해안
+    padogwi:              { src:'__MON_ch31_mon1__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    baseojinhyeongche:    { src:'__MON_ch31_mon2__', drawW:53, drawH:38, offsetX:-27, offsetY:-38 },
+    // 챕터 32 — 잊혀진 존재들의 바다
+    ikmyeonggwi:          { src:'__MON_ch32_mon1__', drawW:53, drawH:43, offsetX:-27, offsetY:-43 },
+    chimmukhaneunja:      { src:'__MON_ch32_mon2__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    // 챕터 33 — 거듭남의 제단
+    hwansaengpapyeon:     { src:'__MON_ch33_mon1__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    miwanuijaa:           { src:'__MON_ch33_mon2__', drawW:53, drawH:41, offsetX:-27, offsetY:-41 },
+    // 챕터 34 — 허무의 심연
+    gongheogwi:           { src:'__MON_ch34_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    teongbingapju:        { src:'__MON_ch34_mon2__', drawW:53, drawH:41, offsetX:-27, offsetY:-41 },
+    // 챕터 35 — 귀허계 심층
+    simcheungsomyeolsu:   { src:'__MON_ch35_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    chimsikgwi:           { src:'__MON_ch35_mon2__', drawW:53, drawH:37, offsetX:-27, offsetY:-37 },
+    // 챕터 36 — 잠식된 귀허계
+    oyeomdoenpadogwi:     { src:'__MON_ch36_mon1__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    jamsikdoenhyeongche:  { src:'__MON_ch36_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    // 챕터 37 — 뒤틀린 거듭남
+    dwitteullinhwansaengche: { src:'__MON_ch37_mon1__', drawW:53, drawH:39, offsetX:-27, offsetY:-39 },
+    yeokhaenghaneunja:       { src:'__MON_ch37_mon2__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    // 챕터 38 — 혼돈의 허무
+    heomujogak:           { src:'__MON_ch38_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    bunggoehaneunjanyeong:{ src:'__MON_ch38_mon2__', drawW:53, drawH:46, offsetX:-27, offsetY:-46 },
+    // 챕터 39 — 소멸의 경계
+    gyeonggyegwi:         { src:'__MON_ch39_mon1__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    somyeoljikjeonja:     { src:'__MON_ch39_mon2__', drawW:50, drawH:53, offsetX:-25, offsetY:-53 },
+    // 챕터 40 — 귀허계의 왕좌
+    wangjwapapyeonche:    { src:'__MON_ch40_mon1__', drawW:53, drawH:41, offsetX:-27, offsetY:-41 },
+    majimakjaa:           { src:'__MON_ch40_mon2__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
     // 엘리트 몬스터 (챕터쌍별 1종)
     elite_ch1_2:  { src:'__MON_elite_ch1_2__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
     elite_ch3_4:  { src:'__MON_elite_ch3_4__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
@@ -125,6 +199,8 @@ const SPRITES = {
   lobbyNpcs: {
     samshin:  { src: '__IMG_lobbyNpcs_samshin__',  drawW: 60, drawH: 80, offsetX: -30, offsetY: -80 },
     merchant: { src: '__IMG_lobbyNpcs_merchant__', drawW: 72, drawH: 90, offsetX: -36, offsetY: -90 },
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번③ 혼돈시장 NPC 전용 이미지 반입 — 그동안 이모지(🎪)로 대체하던 것 교체
+    chaosMerchant: { src: '__IMG_lobbyNpcs_chaosMerchant__', drawW: 71, drawH: 90, offsetX: -36, offsetY: -90 },
   },
 
   worldMap: { src: '__IMG_worldMap_world_map__' },
@@ -132,6 +208,23 @@ const SPRITES = {
   ending: [
     { src: '__IMG_ending_ending_1__' },
     { src: '__IMG_ending_ending_2__' },
+  ],
+
+  // [UPDATE 2026-07-14] 260713_MTOPC.md 16번: 시즌2 엔딩 5슬라이드 — 시즌1용(0,1)과 인덱스 안 겹치게 별도 배열로 분리
+  endingS2: [
+    { src: '__IMG_ending_ending_s2_1__' },
+    { src: '__IMG_ending_ending_s2_2__' },
+    { src: '__IMG_ending_ending_s2_3__' },
+    { src: '__IMG_ending_ending_s2_4__' },
+    { src: '__IMG_ending_ending_s2_5__' },
+  ],
+
+  // [UPDATE 2026-07-17] 시즌3 엔딩 4슬라이드 (5장 각본에서 마지막 2장을 1장으로 합쳐 4장으로 확정)
+  endingS3: [
+    { src: '__IMG_ending_ending_s3_1__' },
+    { src: '__IMG_ending_ending_s3_2__' },
+    { src: '__IMG_ending_ending_s3_3__' },
+    { src: '__IMG_ending_ending_s3_4__' },
   ],
 
   lobbyBuildings: {
@@ -193,6 +286,22 @@ const SPRITES = {
     cheonryeonggwa:{ src:'__IMG_items_cheonryeonggwa__',drawW:28, drawH:28 },
     taegeukseok:   { src:'__IMG_items_taegeukseok__',   drawW:28, drawH:28 },
     chaewonseok:   { src:'__IMG_items_chaewonseok__',   drawW:28, drawH:28 },
+    // [UPDATE 2026-07-17] 혼돈석/순리석 전용 아이콘 반입 — 그동안 이모지(🌪️/🌊)로 대체하던 것 교체
+    hondonseok:    { src:'__IMG_items_hondonseok__',    drawW:18, drawH:28 },
+    sullriseok:    { src:'__IMG_items_sullriseok__',    drawW:16, drawH:28 },
+    // [UPDATE 2026-07-17] 영혼석(soulStones) 전용 아이콘 반입 — 카오스 마켓 등에서 이모지(💜) 대체하던 것 교체
+    soulStones:    { src:'__IMG_items_soulStones__',    drawW:19, drawH:28 },
+    // [UPDATE 2026-07-17] 영혼조각(soulFragment) 전용 아이콘 반입 — 그동안 맵 드랍이 순수 도형(발광 원)이었던 것 교체
+    soulFragment:  { src:'__IMG_items_soulFragment__',  drawW:15, drawH:22 },
+  },
+
+  // [UPDATE 2026-07-11] 오행 상성표 아트(사용자 제공) — 대장간 등 장착화면 시너지 시각화용
+  ui: {
+    elementChart: { src:'__IMG_ui_element_chart__' },
+    // [UPDATE 2026-07-16] 신목의 균열 "기록의 공간" 배경 — 회전 소용돌이 아트(사용자 제공)
+    memoryHallBg: { src:'__IMG_ui_memory_hall_bg__' },
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 공용 액자 프레임(3개 후보 중 0001 채택)
+    transformCardFrame: { src:'__IMG_ui_transform_card_frame__' },
   },
 
   weapons: {
@@ -235,6 +344,28 @@ const SPRITES = {
     ch18_midboss: { src:'__MON_ch18_midboss__', drawW:110, drawH:110, offsetX:-55, offsetY:-110 },
     ch19_midboss: { src:'__MON_ch19_midboss__', drawW:110, drawH:115, offsetX:-55, offsetY:-115 },
     ch20_midboss: { src:'__MON_ch20_midboss__', drawW:100, drawH:110, offsetX:-50, offsetY:-110 },
+    // [UPDATE 2026-07-16] 시즌3(망랑계) 미들보스 10종 — 이미지 모음/monsters/ss3 boss 원본
+    ch21_midboss: { src:'__MON_ch21_midboss__', drawW:130, drawH:126, offsetX:-65, offsetY:-126 },
+    ch22_midboss: { src:'__MON_ch22_midboss__', drawW:130, drawH:119, offsetX:-65, offsetY:-119 },
+    ch23_midboss: { src:'__MON_ch23_midboss__', drawW:130, drawH:109, offsetX:-65, offsetY:-109 },
+    ch24_midboss: { src:'__MON_ch24_midboss__', drawW:128, drawH:130, offsetX:-64, offsetY:-130 },
+    ch25_midboss: { src:'__MON_ch25_midboss__', drawW:130, drawH:124, offsetX:-65, offsetY:-124 },
+    ch26_midboss: { src:'__MON_ch26_midboss__', drawW:130, drawH: 99, offsetX:-65, offsetY: -99 },
+    ch27_midboss: { src:'__MON_ch27_midboss__', drawW:130, drawH:112, offsetX:-65, offsetY:-112 },
+    ch28_midboss: { src:'__MON_ch28_midboss__', drawW:130, drawH:108, offsetX:-65, offsetY:-108 },
+    ch29_midboss: { src:'__MON_ch29_midboss__', drawW:130, drawH:101, offsetX:-65, offsetY:-101 },
+    ch30_midboss: { src:'__MON_ch30_midboss__', drawW:130, drawH: 95, offsetX:-65, offsetY: -95 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 미들보스 10종 — 이미지 모음/monsters/ss4 boss 원본
+    ch31_midboss: { src:'__MON_ch31_midboss__', drawW:128, drawH:121, offsetX:-64, offsetY:-121 },
+    ch32_midboss: { src:'__MON_ch32_midboss__', drawW:128, drawH:118, offsetX:-64, offsetY:-118 },
+    ch33_midboss: { src:'__MON_ch33_midboss__', drawW:128, drawH:126, offsetX:-64, offsetY:-126 },
+    ch34_midboss: { src:'__MON_ch34_midboss__', drawW:125, drawH:128, offsetX:-63, offsetY:-128 },
+    ch35_midboss: { src:'__MON_ch35_midboss__', drawW:128, drawH:116, offsetX:-64, offsetY:-116 },
+    ch36_midboss: { src:'__MON_ch36_midboss__', drawW:108, drawH:128, offsetX:-54, offsetY:-128 },
+    ch37_midboss: { src:'__MON_ch37_midboss__', drawW:101, drawH:128, offsetX:-51, offsetY:-128 },
+    ch38_midboss: { src:'__MON_ch38_midboss__', drawW:100, drawH:128, offsetX:-50, offsetY:-128 },
+    ch39_midboss: { src:'__MON_ch39_midboss__', drawW:106, drawH:128, offsetX:-53, offsetY:-128 },
+    ch40_midboss: { src:'__MON_ch40_midboss__', drawW: 95, drawH:128, offsetX:-48, offsetY:-128 },
     // 챕터별 최종보스
     ch1_boss:  { src:'__MON_ch1_boss__',  drawW:120, drawH:130, offsetX:-60, offsetY:-130 },
     ch2_boss:  { src:'__MON_ch2_boss__',  drawW:120, drawH:130, offsetX:-60, offsetY:-130 },
@@ -256,12 +387,35 @@ const SPRITES = {
     ch18_boss: { src:'__MON_ch18_boss__', drawW:130, drawH:130, offsetX:-65, offsetY:-130 },
     ch19_boss: { src:'__MON_ch19_boss__', drawW:150, drawH:140, offsetX:-75, offsetY:-140 },
     ch20_boss: { src:'__MON_ch20_boss__', drawW:130, drawH:140, offsetX:-65, offsetY:-140 },
+    // [UPDATE 2026-07-16] 시즌3(망랑계) 챕터보스 10종 — 이미지 모음/monsters/ss3 boss 원본
+    ch21_boss: { src:'__MON_ch21_boss__', drawW:150, drawH:111, offsetX:-75, offsetY:-111 },
+    ch22_boss: { src:'__MON_ch22_boss__', drawW:150, drawH:144, offsetX:-75, offsetY:-144 },
+    ch23_boss: { src:'__MON_ch23_boss__', drawW:150, drawH:106, offsetX:-75, offsetY:-106 },
+    ch24_boss: { src:'__MON_ch24_boss__', drawW:150, drawH:142, offsetX:-75, offsetY:-142 },
+    ch25_boss: { src:'__MON_ch25_boss__', drawW:150, drawH:117, offsetX:-75, offsetY:-117 },
+    ch26_boss: { src:'__MON_ch26_boss__', drawW:150, drawH:139, offsetX:-75, offsetY:-139 },
+    ch27_boss: { src:'__MON_ch27_boss__', drawW:150, drawH:132, offsetX:-75, offsetY:-132 },
+    ch28_boss: { src:'__MON_ch28_boss__', drawW:150, drawH:128, offsetX:-75, offsetY:-128 },
+    ch29_boss: { src:'__MON_ch29_boss__', drawW:150, drawH:131, offsetX:-75, offsetY:-131 },
+    ch30_boss: { src:'__MON_ch30_boss__', drawW:150, drawH:125, offsetX:-75, offsetY:-125 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 챕터보스 10종 — 이미지 모음/monsters/ss4 boss 원본
+    ch31_boss: { src:'__MON_ch31_boss__', drawW:148, drawH:145, offsetX:-74, offsetY:-145 },
+    ch32_boss: { src:'__MON_ch32_boss__', drawW:148, drawH:145, offsetX:-74, offsetY:-145 },
+    ch33_boss: { src:'__MON_ch33_boss__', drawW:148, drawH:146, offsetX:-74, offsetY:-146 },
+    ch34_boss: { src:'__MON_ch34_boss__', drawW:141, drawH:148, offsetX:-71, offsetY:-148 },
+    ch35_boss: { src:'__MON_ch35_boss__', drawW:141, drawH:148, offsetX:-71, offsetY:-148 },
+    ch36_boss: { src:'__MON_ch36_boss__', drawW:148, drawH:148, offsetX:-74, offsetY:-148 },
+    ch37_boss: { src:'__MON_ch37_boss__', drawW:140, drawH:148, offsetX:-70, offsetY:-148 },
+    ch38_boss: { src:'__MON_ch38_boss__', drawW:139, drawH:148, offsetX:-70, offsetY:-148 },
+    ch39_boss: { src:'__MON_ch39_boss__', drawW:141, drawH:148, offsetX:-71, offsetY:-148 },
+    ch40_boss: { src:'__MON_ch40_boss__', drawW:137, drawH:148, offsetX:-69, offsetY:-148 },
   },
 
   pets: {
     // [UPDATE 2026-07-06] 시즌2 펫
     jeoseung_nabi: { src:'__IMG_pets_jeoseung_nabi__', drawW:46, drawH:36, offsetX:-23, offsetY:-36 },
-    sangsahwa:     { src:'__IMG_pets_sangsahwa__',     drawW:39, drawH:52, offsetX:-20, offsetY:-52 },
+    // [UPDATE 2026-07-14] 260713_MTOPC.md 18번: 상사화 사이즈 확정 — 원본 비율 유지해 drawH 44px로 축소(펫 범위 32~52px 중 상위권)
+    sangsahwa:     { src:'__IMG_pets_sangsahwa__',     drawW:33, drawH:44, offsetX:-17, offsetY:-44 },
     hoya:         { src:'__IMG_pets_hoya__',         drawW:34, drawH:36, offsetX:-17, offsetY:-36 },
     crow:         { src:'__IMG_pets_crow__',         drawW:33, drawH:36, offsetX:-17, offsetY:-36 },
     fox:          { src:'__IMG_pets_fox__',          drawW:34, drawH:36, offsetX:-17, offsetY:-36 },
@@ -282,6 +436,9 @@ const SPRITES = {
     zodiac_rooster: { src:'__IMG_pets_zodiac_rooster__', drawW:52, drawH:50, offsetX:-26, offsetY:-50 },
     zodiac_dog:     { src:'__IMG_pets_zodiac_dog__',     drawW:52, drawH:50, offsetX:-26, offsetY:-50 },
     zodiac_pig:     { src:'__IMG_pets_zodiac_pig__',     drawW:52, drawH:50, offsetX:-26, offsetY:-50 },
+    // [UPDATE 2026-07-17] 도깨비 계열 신규 펫 2종 (싸리/공이)
+    ssari: { src:'__IMG_pets_ssari__', drawW:29, drawH:38, offsetX:-15, offsetY:-38 },
+    gongi: { src:'__IMG_pets_gongi__', drawW:18, drawH:38, offsetX:-9,  offsetY:-38 },
   },
 
   lobbyIcons: {
@@ -413,6 +570,8 @@ const SpriteLoader = (() => {
       ...Object.values(SPRITES.weapons || {}),
       ...Object.values(SPRITES.tiles   || {}),
       ...(SPRITES.ending || []),
+      ...(SPRITES.endingS2 || []),
+      ...(SPRITES.endingS3 || []),
       ...Object.values(SPRITES.lobbyNpcs || {}),
     ];
     for (const s of all) if (s?.src) load(s.src);

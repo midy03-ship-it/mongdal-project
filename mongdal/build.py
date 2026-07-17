@@ -2,9 +2,12 @@
 몽달퇴마록 빌드 스크립트
 
 [모드]
-  python build.py           → mongdal-fixed.html  (풀 빌드, 26MB+)
-  python build.py --light   → mongdal-light.html  (이미지 없는 경량 빌드, ~500KB)
-                              모바일 로직 테스트용. 이미지 자리에 컬러 박스 표시.
+  python build.py             → mongdal-fixed.html    (풀 빌드, 26MB+)
+  python build.py --light     → mongdal-light.html    (이미지 없는 경량 빌드, ~500KB)
+                                모바일 로직 테스트용. 이미지 자리에 컬러 박스 표시.
+  python build.py --release   → mongdal-release.html  (배포용 풀 빌드, DEV_MODE 강제 false)
+                                [UPDATE 2026-07-16] 소스의 CONFIG.DEV_MODE는 그대로 두고
+                                빌드 시점에만 false로 치환 — 개발용 소스 파일은 안 건드림.
 
 [Python 경로]
 C:/Users/MS/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe
@@ -16,10 +19,17 @@ C:/Users/MS/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/pyth
 
 import os, re, base64, sys
 
-LIGHT_MODE = '--light' in sys.argv
+LIGHT_MODE   = '--light' in sys.argv
+RELEASE_MODE = '--release' in sys.argv
 
 BASE       = os.path.dirname(os.path.abspath(__file__))
-OUT        = os.path.join(BASE, '..', 'mongdal-light.html' if LIGHT_MODE else 'mongdal-fixed.html')
+if LIGHT_MODE:
+    _OUT_NAME = 'mongdal-light.html'
+elif RELEASE_MODE:
+    _OUT_NAME = 'mongdal-release.html'
+else:
+    _OUT_NAME = 'mongdal-fixed.html'
+OUT        = os.path.join(BASE, '..', _OUT_NAME)
 IMG_BASE   = os.path.join(BASE, 'image_total')
 SPRITE_DIR = os.path.join(IMG_BASE, 'sprites')
 MON_DIR    = os.path.join(SPRITE_DIR, 'enemies')
@@ -35,6 +45,7 @@ JS_ORDER = [
     'js/core/lang.js',
     'js/core/audio.js',
     'js/core/unlock.js',
+    'js/data/promo-codes.js',
     'js/scenes/lang-select.js',
     'js/core/scene-manager.js',
     'js/core/input.js',
@@ -182,6 +193,12 @@ def build():
     js_parts = []
     for path in JS_ORDER:
         content = read(path)
+        # [UPDATE 2026-07-16] --release 빌드: 개발자 모드 강제 off (소스 파일은 미변경)
+        if RELEASE_MODE and path == 'js/data/config.js':
+            new_content, n = re.subn(r'DEV_MODE:\s*true', 'DEV_MODE: false', content)
+            if n == 0:
+                raise RuntimeError('--release: config.js에서 DEV_MODE: true 를 찾지 못함 (패턴 확인 필요)')
+            content = new_content
         # sprite-config.js 의 플레이스홀더 교체
         if path == 'js/data/sprite-config.js':
             content = inject_images(content)
@@ -248,7 +265,7 @@ def build():
         f.write(html)
 
     size_mb = os.path.getsize(OUT) / 1024 / 1024
-    mode_label = '[LIGHT]' if LIGHT_MODE else '[FULL]'
+    mode_label = '[LIGHT]' if LIGHT_MODE else '[RELEASE]' if RELEASE_MODE else '[FULL]'
     print(f'빌드 완료 {mode_label}: {out_name} ({size_mb:.1f} MB)')
 
 if __name__ == '__main__':

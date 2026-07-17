@@ -171,16 +171,27 @@ class SoulDrop {
     g.addColorStop(0, isStone ? 'rgba(140,80,255,0.9)' : 'rgba(80,160,255,0.8)');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r * 2.5, 0, Math.PI * 2); ctx.fill();
-    // 오브 본체
+    ctx.restore();
+    // [UPDATE 2026-07-17] 도트 이미지가 있으면 이미지로, 없으면 기존 발광 원(도형) 폴백
+    ctx.save();
     ctx.globalAlpha = pulse * 0.9;
-    ctx.shadowColor = isStone ? '#a040ff' : '#4090ff';
-    ctx.shadowBlur = isStone ? 12 : 8;
-    ctx.fillStyle = isStone ? '#c070ff' : '#60b0ff';
-    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
-    // 내부 하이라이트
-    ctx.globalAlpha = 0.7;
-    ctx.fillStyle = isStone ? '#e0b0ff' : '#a0d0ff';
-    ctx.beginPath(); ctx.arc(sx - r * 0.3, sy - r * 0.3, r * 0.4, 0, Math.PI * 2); ctx.fill();
+    const sc = SPRITES?.items?.[isStone ? 'soulStones' : 'soulFragment'];
+    const img = sc ? SpriteLoader.get(sc.src) : null;
+    if (img?.complete && img.naturalWidth > 0) {
+      ctx.shadowColor = isStone ? '#a040ff' : '#4090ff';
+      ctx.shadowBlur = isStone ? 10 : 6;
+      ctx.drawImage(img, sx - sc.drawW/2, sy - sc.drawH/2, sc.drawW, sc.drawH);
+    } else {
+      // 오브 본체
+      ctx.shadowColor = isStone ? '#a040ff' : '#4090ff';
+      ctx.shadowBlur = isStone ? 12 : 8;
+      ctx.fillStyle = isStone ? '#c070ff' : '#60b0ff';
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+      // 내부 하이라이트
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = isStone ? '#e0b0ff' : '#a0d0ff';
+      ctx.beginPath(); ctx.arc(sx - r * 0.3, sy - r * 0.3, r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
   }
 }
@@ -193,6 +204,10 @@ const SPECIAL_CONFIGS = {
   magnet: { icon: '🧲', color: '#e040c0', glow: 'rgba(220,64,180,.6)', label: '자석', lifetime: 12 },
   bomb:   { icon: '💣', color: '#e04020', glow: 'rgba(220,64,32,.6)',  label: '폭탄', lifetime: 12 },
   potion: { icon: '🧪', color: '#40d060', glow: 'rgba(64,200,80,.6)',  label: '포션', lifetime: 15 },
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 — 처치 시 0.5% 드랍, 밟으면 즉시 30초 변신
+  card_dokkaebi: { icon: '👹', color: '#c05820', glow: 'rgba(192,88,32,.7)', label: '도깨비 카드', lifetime: 20 },
+  card_gumiho:   { icon: '🦊', color: '#a04888', glow: 'rgba(160,72,136,.7)', label: '구미호 카드', lifetime: 20 },
+  card_gogolgwi: { icon: '💀', color: '#888888', glow: 'rgba(160,160,160,.7)', label: '해골귀 카드', lifetime: 20 },
 };
 
 class SpecialItem {
@@ -373,6 +388,12 @@ function applyItemEffect(item, player, enemies, saveData, xpOrbs, goldDrops) {
         } else {
           showFloatingText(item.x, item.y, '💀회복 불가', '#9060d0');
         }
+        break;
+      // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 — 실제 변신 처리는 game.js 훅에 위임(전투루프 상태 필요)
+      case 'card_dokkaebi': case 'card_gumiho': case 'card_gogolgwi':
+        if (typeof window !== 'undefined' && typeof window._onTransformCardPickup === 'function')
+          window._onTransformCardPickup(item.type.replace('card_',''));
+        showFloatingText(item.x, item.y, SPECIAL_CONFIGS[item.type].icon, SPECIAL_CONFIGS[item.type].color);
         break;
     }
   }

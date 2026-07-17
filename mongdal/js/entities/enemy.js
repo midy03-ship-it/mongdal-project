@@ -28,7 +28,7 @@ function buildEnemyTypes() {
 const ENEMY_TYPES = {};
 
 class Enemy {
-  constructor(x, y, typeName, wave, isDungeon = false, dungeonMult = 1) {
+  constructor(x, y, typeName, wave, isDungeon = false, dungeonMult = 1, glitchMods = null, rewardMult = null) {
     // 타입 데이터 (ENEMY_TYPES 초기화 전이면 직접 조회)
     const t = ENEMY_TYPES[typeName] || MONSTERS?.defs?.[typeName] || ENEMY_TYPES.ghost || { name:'몽달귀신', hp:18, damage:8, speed:55, xp:2, gold:2, size:14, color:'#7090d0', glowColor:'rgba(80,100,220,0.4)', shape:'ghost', attackPattern:'melee' };
 
@@ -44,10 +44,15 @@ class Enemy {
     this.name     = t.name;
     this.hp       = Math.floor(t.hp    * (1 + wave * hpScale) * dungeonMult * chapterEase);
     this.maxHp    = this.hp;
-    this.damage   = Math.floor(t.damage* (1 + wave * 0.18)    * dungeonMult * chapterEase);
+    // [UPDATE 2026-07-15] 튜토리얼용 — 스테이지1 한정 몬스터 공격력 ×0.1 (신규 유저 초반 사망 방지)
+    const stage1DmgEase = (!isDungeon && window._stage1DmgEase) ? 0.1 : 1.0;
+    this.damage   = Math.floor(t.damage* (1 + wave * 0.18)    * dungeonMult * chapterEase * stage1DmgEase);
     this.speed    = t.speed  + wave * speedScale;
-    this.xpValue  = t.xp;
-    this.goldValue = Math.floor((t.gold||1)*(1+wave*0.10));
+    this.xpValue  = t.xp; // [UPDATE 2026-07-16] 260716_MTOPC.md 2번①: XP는 의도적으로 dungeonMult 미적용(레벨업 카드 과다 방지)
+    // [UPDATE 2026-07-16] 260716_MTOPC.md 2번①: 버그 수정 — 무한던전 몬스터 HP/공격력이 세지는데 골드 보상은
+    // 안 따라가서 파밍 효율이 떨어지던 문제. 골드도 dungeonMult 적용.
+    // [UPDATE 2026-07-17] 몬스터가 세지는 배율보다 보상 배율을 1.5배 더 후하게 주도록 rewardMult 분리(사용자 요청)
+    this.goldValue = Math.floor((t.gold||1)*(1+wave*0.10)*(rewardMult!=null?rewardMult:dungeonMult));
     this.size     = t.size;
     this.color    = t.color;
     this.glowColor= t.glowColor;
@@ -74,17 +79,45 @@ class Enemy {
     this._marked       = 0;
     this._markedDmgMult= 1;
     this._confused     = 0;
+    this._stunned       = 0; // [UPDATE 2026-07-13] 정화의 소금(salt_scatter) 등 CC용 — 혼란(반대이동)과 달리 완전 정지
 
     // 스프라이트 (없으면 캔버스 폴백)
     const sprKey = typeName;
     const sc = SPRITES?.enemies?.[sprKey];
     this.img    = sc ? SpriteLoader.get(sc.src) : null;
     this.sprCfg = sc || null;
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번④: 글리치 몬스터 modifier — 신규 이미지 없이 스탯 보정 + VFX로 표현
+    this.glitchMods = glitchMods || null;
+    this._glitchInvisTimer = 0; this._glitchInvisActive = false;
+    this._glitchSplit = false; this._glitchSplitDone = false;
+    if (this.glitchMods) {
+      for (const m of this.glitchMods) {
+        if (m === 'fast') { this.speed *= 1.4; }
+        else if (m === 'slowGiant') {
+          this.speed *= 0.7; this.size = Math.floor(this.size * 1.3);
+          this.hp = Math.floor(this.hp * 1.5); this.maxHp = this.hp;
+        }
+        else if (m === 'split') { this._glitchSplit = true; }
+        else if (m === 'invis') { this._glitchInvisTimer = 3.0; }
+      }
+    }
   }
 
   update(dt, px, py) {
     this.t += dt;
     if (this.dead) { this.deathT += dt; return null; }
+    // [UPDATE 2026-07-13] 스턴 중엔 이동/공격 모두 정지 (혼란처럼 반대로 움직이지 않고 완전 멈춤)
+    if (this._stunned > 0) { this._stunned -= dt; return null; }
+
+    // [UPDATE 2026-07-17] 글리치 modifier "투명" — 3초 주기로 1초간 투명화(피격 불가)
+    if (this.glitchMods && this.glitchMods.includes('invis')) {
+      this._glitchInvisTimer -= dt;
+      if (this._glitchInvisTimer <= 0) {
+        this._glitchInvisActive = !this._glitchInvisActive;
+        this._glitchInvisTimer = this._glitchInvisActive ? 1.0 : 3.0;
+      }
+    }
 
     const dx = px - this.x, dy = py - this.y;
     const dist = Math.hypot(dx, dy) || 1;
@@ -165,14 +198,16 @@ class Enemy {
       isEnemyProjectile: true,
       x: this.x, y: this.y,
       vx: (dx/dist)*spd, vy: (dy/dist)*spd,
-      damage: Math.floor(this.damage * 0.6),
+      // [UPDATE 2026-07-16] 원거리 몹 여러 마리가 겹쳐 쏠 때 피해가 과했다는 피드백 — 0.6 → 0.4로 너프
+      damage: Math.floor(this.damage * 0.4),
       radius: 5, life: 2.2, dead: false, t: 0,
       color: this.color,
     };
   }
 
-  takeDamage(dmg, isCritical) {
+  takeDamage(dmg, isCritical, srcType) {
     if (this.dead) return;
+    if (this._glitchInvisActive) return; // [UPDATE 2026-07-17] 글리치 "투명" — 투명화 중 피격 무효
     if (this._markedDmgMult && this._markedDmgMult > 1)
       dmg = Math.floor(dmg * this._markedDmgMult);
     this.hp -= dmg;
@@ -186,7 +221,11 @@ class Enemy {
         ox: (Math.random()-.5)*10, oy: -8-Math.random()*6,
       });
     }
-    if (this.hp <= 0) { this.hp = 0; this.dead = true; }
+    if (this.hp <= 0) {
+      this.hp = 0; this.dead = true;
+      // [UPDATE 2026-07-11] 오행 시너지(영혼낫 처치→신검 쿨감 스택 등) 처치 귀속용 훅
+      if (typeof window!=='undefined' && typeof window._onEnemyKilled==='function') window._onEnemyKilled(srcType);
+    }
   }
 
   hitTest(px, py, pr) {
@@ -237,6 +276,8 @@ class Enemy {
     // ── 스프라이트 or 폴백 도형 ──
     ctx.save();
     ctx.translate(sx, sy + Math.sin(this.t*2+this.wobble)*2.5);
+    // [UPDATE 2026-07-17] 글리치 "투명" modifier — 투명화 중엔 희미하게만 보이도록(완전 비가시는 UX상 위험해서 반투명 처리)
+    if (this._glitchInvisActive) ctx.globalAlpha = 0.2;
 
     if (this.img && this.img.complete && this.img.naturalWidth > 0 && this.sprCfg) {
       const sc = this.sprCfg;
@@ -276,6 +317,18 @@ class Enemy {
       ctx.fillStyle='#c040e0'; ctx.font=`${Math.round(s*0.9)}px serif`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('✦',sx,sy-s-14);
+      ctx.restore();
+    }
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번④: 글리치 modifier 배지 — 별도 이미지 없이 아이콘으로 표기
+    if (this.glitchMods && this.glitchMods.length) {
+      const _badgeIcon = { fast:'💨', slowGiant:'🐢', split:'🔀', invis:'👻' };
+      ctx.save();
+      ctx.font = `${Math.round(s*0.7)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      this.glitchMods.forEach((m, i) => {
+        ctx.fillText(_badgeIcon[m] || '', sx + s*0.9 + i*(s*0.6), sy - s - 6);
+      });
       ctx.restore();
     }
   }

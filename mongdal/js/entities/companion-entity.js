@@ -1,53 +1,54 @@
 // companion-entity.js - 전투 중 동료 AI
 
+// [UPDATE 2026-07-12] 궁극기 쿨타임이 4~9초로 너무 잦다는 피드백 — 20~30초대로 전체 상향(기존 값*2+12로 선형 변환, 상대적 빠르기 순서는 유지)
 const COMPANION_CONFIGS = {
   tank: {
     hp: 150, dmg: 22, atkInterval: 0.47, range: 30,
     orbitRadius: 52, orbitSpd: 0.5,
     atkType: 'slash', pierce: 2,
-    skillInterval: 8, skillType: 'shield',
+    skillInterval: 28, skillType: 'shield',
     label: '⚔️ 탱커',
   },
   dps: {
     hp: 75, dmg: 20, atkInterval: 0.85, range: 200,
     orbitRadius: 68, orbitSpd: 0.6,
     atkType: 'arrow', pierce: 0,
-    skillInterval: 5, skillType: 'rapidfire',
+    skillInterval: 22, skillType: 'rapidfire',
     label: '🏹 딜러',
   },
   healer: {
     hp: 65, dmg: 0, atkInterval: 0, range: 0,
     orbitRadius: 44, orbitSpd: 0.4,
     atkType: 'heal', pierce: 0,
-    skillInterval: 4, skillType: 'heal',
+    skillInterval: 20, skillType: 'heal',
     label: '💚 힐러',
   },
   support: {
     hp: 85, dmg: 28, atkInterval: 2.2, range: 160,
     orbitRadius: 62, orbitSpd: 0.55,
     atkType: 'bomb', pierce: 0,
-    skillInterval: 9, skillType: 'slowfield',
+    skillInterval: 30, skillType: 'slowfield',
     label: '🔧 서포터',
   },
   assassin: {
     hp: 68, dmg: 48, atkInterval: 1.1, range: 160,
     orbitRadius: 72, orbitSpd: 0.7,
     atkType: 'shuriken', pierce: 0,
-    skillInterval: 6, skillType: 'execute',
+    skillInterval: 24, skillType: 'execute',
     label: '🗡️ 암살자',
   },
   mage: {
     hp: 70, dmg: 35, atkInterval: 1.2, range: 220,
     orbitRadius: 74, orbitSpd: 0.6,
     atkType: 'magic', pierce: 2,
-    skillInterval: 6, skillType: 'burst',
+    skillInterval: 24, skillType: 'burst',
     label: '🪄 마법사',
   },
   berserker: {
     hp: 130, dmg: 40, atkInterval: 0.4, range: 45,
     orbitRadius: 56, orbitSpd: 0.55,
     atkType: 'slam', pierce: 1,
-    skillInterval: 7, skillType: 'rage',
+    skillInterval: 26, skillType: 'rage',
     label: '⚡ 버서커',
   },
   // ── 스페셜 동료 개별 스탯 ──
@@ -55,28 +56,28 @@ const COMPANION_CONFIGS = {
     hp: 180, dmg: 30, atkInterval: 0.55, range: 35,
     orbitRadius: 52, orbitSpd: 0.5,
     atkType: 'slash', pierce: 2,
-    skillInterval: 8, skillType: 'shield',
+    skillInterval: 28, skillType: 'shield',
     label: '🐯 돌진탱커',
   },
   dps_sohee: {     // 봉황 소희: 화염 딜러 (한방 묵직)
     hp: 70, dmg: 32, atkInterval: 1.0, range: 200,
     orbitRadius: 68, orbitSpd: 0.6,
     atkType: 'arrow', pierce: 0,
-    skillInterval: 5, skillType: 'rapidfire',
+    skillInterval: 22, skillType: 'rapidfire',
     label: '🔥 화염딜러',
   },
   dps_mugsa: {     // 신검 무사: 근접 한방형
     hp: 90, dmg: 55, atkInterval: 1.4, range: 40,
     orbitRadius: 56, orbitSpd: 0.55,
     atkType: 'slash', pierce: 1,
-    skillInterval: 6, skillType: 'rapidfire',
+    skillInterval: 24, skillType: 'rapidfire',
     label: '⚔️ 검호',
   },
   tank_cheolgap: { // 철갑 수호신: HP 최고 방어막 특화
     hp: 220, dmg: 18, atkInterval: 0.6, range: 30,
     orbitRadius: 52, orbitSpd: 0.45,
     atkType: 'slash', pierce: 2,
-    skillInterval: 9, skillType: 'shield',
+    skillInterval: 30, skillType: 'shield',
     label: '🛡️ 방어막탱커',
   },
   // [UPDATE 2026-07-06] 시즌2 동료
@@ -84,14 +85,14 @@ const COMPANION_CONFIGS = {
     hp: 200, dmg: 34, atkInterval: 0.6, range: 38,
     orbitRadius: 52, orbitSpd: 0.5,
     atkType: 'slam', pierce: 1,
-    skillInterval: 8, skillType: 'shield',
+    skillInterval: 28, skillType: 'shield',
     label: '🔨 저승무관',
   },
   assassin_gangnim: { // 강림차사: 생사부 처형 암살자
     hp: 80, dmg: 60, atkInterval: 1.2, range: 170,
     orbitRadius: 72, orbitSpd: 0.7,
     atkType: 'shuriken', pierce: 0,
-    skillInterval: 6, skillType: 'execute',
+    skillInterval: 24, skillType: 'execute',
     label: '📖 저승차사',
   },
 };
@@ -112,6 +113,9 @@ const COMPANION_ATK_STYLES = {
   // [UPDATE 2026-07-06] 시즌2 — 해원맥: 망치 임팩트가 대상 위치에 찍히는 field형 / 강림차사: 생사부 투사체(가로로 긴 이미지라 스케일 지정)
   haewonmaek: { atk:'field', ult:'field' },
   gangnim:    { atk:'shot',  ult:'field', atkScaleX:2.4, atkScaleY:1.1 },
+  // [UPDATE 2026-07-17] 도깨비 계열 신규 동료
+  baksu:        { atk:'shot',  ult:'field' },
+  janggu_aebi:  { atk:'field', ult:'field' },
 };
 
 // 역할별 색상 (발사체 / 이펙트)
@@ -156,10 +160,15 @@ class CompanionEntity {
     this.hp    = this.maxHp;
     this.atkDmg      = Math.floor(cfg.dmg * starAtkMult);
     this.atkInterval = cfg.atkInterval;
-    this.atkRange    = cfg.range;
     this.atkType     = cfg.atkType;
     this.pierce      = cfg.pierce;
     this.skillInterval = cfg.skillInterval;
+    // [UPDATE 2026-07-12] 근접 사거리 ×2 유지, 궁극기 사거리는 평타 사거리와 동일하게 통일(별도 공식 제거)
+    const _isMeleeType = this.atkType === 'slash' || this.atkType === 'slam';
+    this.atkRange    = (_isMeleeType ? cfg.range : (100 + this.stars * 5)) * 2;
+    this.ultRange    = this.atkRange;
+    // [UPDATE 2026-07-12] 강림차사로 40% 테스트해보고 "50%가 딱"이라고 확인됨 — 전체 동료에 50% 시작으로 적용
+    this.atkEffectScale = 0.50 + this.stars * 0.05;
 
     // 각성 스탯 적용
     const awakeList = data.awakening || [];
@@ -191,10 +200,16 @@ class CompanionEntity {
     this.formationAngle = slotIdx * (Math.PI * 2 / 3) + Math.PI * 0.3;
     this.formationRadius = this.orbitRadius;
 
+    // [UPDATE 2026-07-12] 펫처럼 조금씩 배회하는 느낌 추가 — 고정 대형 위치에서 살짝씩 벗어났다 돌아왔다 함
+    this._wanderAngleOfs = 0;
+    this._wanderRadiusOfs = 0;
+    this._wanderTimer = Math.random() * 2;
+
     // 위치/애니
     this.x = 0; this.y = 0;
     this.facing = 1;
     this.walkT  = 0;
+    this.breatheT = Math.random() * Math.PI * 2; // [UPDATE 2026-07-11] 정지 시 숨쉬기 모션용 (기존엔 정지하면 walkT가 안 늘어서 완전히 멈춰 보였음)
 
     // 스프라이트
     const sc = SPRITES?.companions?.[this.id];
@@ -233,8 +248,15 @@ class CompanionEntity {
     const playerMoving = Math.hypot(player.x - (this._lastPx||player.x), player.y - (this._lastPy||player.y)) > 0.1;
     this._lastPx = player.x; this._lastPy = player.y;
 
-    const formX = player.x + Math.cos(this.formationAngle) * this.formationRadius;
-    const formY = player.y + Math.sin(this.formationAngle) * this.formationRadius;
+    // [UPDATE 2026-07-12] 배회(wander) — 주기적으로 대형 위치에서 살짝 벗어난 목표를 새로 잡아 항상 미세하게 움직이게 함
+    this._wanderTimer -= dt;
+    if (this._wanderTimer <= 0) {
+      this._wanderTimer = 1.4 + Math.random() * 1.8;
+      this._wanderAngleOfs = (Math.random() - 0.5) * 0.5;   // ±0.25 라디안
+      this._wanderRadiusOfs = (Math.random() - 0.5) * 16;   // ±8px
+    }
+    const formX = player.x + Math.cos(this.formationAngle + this._wanderAngleOfs) * (this.formationRadius + this._wanderRadiusOfs);
+    const formY = player.y + Math.sin(this.formationAngle + this._wanderAngleOfs) * (this.formationRadius + this._wanderRadiusOfs);
 
     const dx = formX - this.x, dy = formY - this.y;
     const dist = Math.hypot(dx, dy) || 0.001;
@@ -250,12 +272,14 @@ class CompanionEntity {
     if (Math.abs(this.vx) > 0.5) this.facing = this.vx > 0 ? 1 : -1;
     else this.facing = player.facing;
     if (Math.hypot(this.vx, this.vy) > 1) this.walkT += dt * 6;
+    this.breatheT += dt * 1.3; // [UPDATE 2026-07-11] 정지 여부와 무관하게 항상 증가
 
     // ── 적 충돌 ──
     for (const e of enemies) {
       if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < e.size + 15) {
         if (this.iframe <= 0) {
-          this.hp -= e.damage * 0.4;
+          // [UPDATE 2026-07-11] 자신(쥐) 펫 compDef 반영 — 동료가 받는 피해 감소
+          this.hp -= e.damage * 0.4 * (1 - Math.min(0.8, player._compDefMult||0));
           this.iframe = 0.6;
           if (this.hp <= 0) { this.hp = 0; this.dead = true; this.reviveTimer = 12; }
         }
@@ -326,9 +350,12 @@ class CompanionEntity {
     const srcType = `c_${this.id}_atk`;
     const base    = { srcType, color: this.mainColor, glow: this.glowColor };
 
+    // [UPDATE 2026-07-12] 공격 이펙트(도트) 크기 배율 — 별 레벨에 비례해 커짐 (atkEffectScale)
+    const _es = this.atkEffectScale != null ? this.atkEffectScale : 1;
+
     if (style === 'laser') {
       // 즉시 빔 데미지 (경로 내 모든 적)
-      const beamW = 22;
+      const beamW = 22 * _es;
       const ux = dx / d, uy = dy / d;
       for (const e of enemies) {
         if (e.dead) continue;
@@ -340,14 +367,14 @@ class CompanionEntity {
       return new Projectile(this.x, this.y - 20, 0, 0, 0, {
         ...base, type: `companion_${this.id}_atk`,
         radius: 0, pierce: 999, life: 0.35,
-        laser: true, laserAngle: Math.atan2(dy, dx), laserLen: d,
+        laser: true, laserAngle: Math.atan2(dy, dx), laserLen: d, laserThickness: 0.55*_es,
       });
     }
 
     if (style === 'field') {
       return new Projectile(target.x, target.y, 0, 0, this.atkDmg, {
         ...base, type: `companion_${this.id}_atk`,
-        radius: 8, pierceAll: true, aoe: 80, life: 0.8, field: true,
+        radius: 8*_es, pierceAll: true, aoe: 80*_es, life: 0.8, field: true,
       });
     }
 
@@ -355,8 +382,8 @@ class CompanionEntity {
     const _st = COMPANION_ATK_STYLES[this.id] || {};
     return new Projectile(this.x, this.y, (dx/d)*320, (dy/d)*320, this.atkDmg, {
       ...base, type: `companion_${this.id}_atk`,
-      radius: 6, pierce: this.pierce, life: 1.5,
-      drawScaleX: _st.atkScaleX || 1, drawScaleY: _st.atkScaleY || 1,
+      radius: 6*_es, pierce: this.pierce, life: 1.5,
+      drawScaleX: (_st.atkScaleX || 1) * _es, drawScaleY: (_st.atkScaleY || 1) * _es,
     });
   }
 
@@ -365,7 +392,9 @@ class CompanionEntity {
   _useSkill(enemies, player) {
     const ultStyle = COMPANION_ATK_STYLES[this.id]?.ult;
     const srcType  = `c_${this.id}_ult`;
-    const alive    = enemies.filter(e => !e.dead);
+    // [UPDATE 2026-07-12] 궁극기 사거리 제한 신설 — 예전엔 맵 전체 아무 적이나 대상이 될 수 있었음
+    const _ultRange = this.ultRange != null ? this.ultRange : 120;
+    const alive = enemies.filter(e => !e.dead && Math.hypot(e.x-this.x, e.y-this.y) <= _ultRange);
     if (alive.length === 0) return null;
 
     const target = this._getTarget(alive);
@@ -373,9 +402,11 @@ class CompanionEntity {
     const dx = target.x - this.x, dy = target.y - this.y;
     const d  = Math.hypot(dx, dy) || 1;
     const base = { srcType, color: this.mainColor, glow: this.glowColor };
+    // [UPDATE 2026-07-12] 궁극기도 평타와 동일하게 atkEffectScale만큼 이펙트 크기 축소
+    const _es = this.atkEffectScale != null ? this.atkEffectScale : 1;
 
     if (ultStyle === 'laser') {
-      const beamW = 30;
+      const beamW = 30 * _es;
       const ux = dx / d, uy = dy / d;
       for (const e of alive) {
         const ex = e.x - this.x, ey = e.y - this.y;
@@ -386,7 +417,7 @@ class CompanionEntity {
       return new Projectile(this.x, this.y - 20, 0, 0, 0, {
         ...base, type: `companion_${this.id}_ult`,
         radius: 0, pierce: 999, life: 0.6,
-        laser: true, laserAngle: Math.atan2(dy, dx), laserLen: d,
+        laser: true, laserAngle: Math.atan2(dy, dx), laserLen: d, laserThickness: 0.55*_es,
       });
     }
 
@@ -396,7 +427,7 @@ class CompanionEntity {
         const ed = Math.hypot(ex, ey) || 1;
         return new Projectile(this.x, this.y, (ex/ed)*380, (ey/ed)*380, this.atkDmg * 2, {
           ...base, type: `companion_${this.id}_ult`,
-          radius: 8, pierce: this.pierce, life: 1.8,
+          radius: 8*_es, pierce: this.pierce, life: 1.8,
         });
       });
     }
@@ -404,7 +435,7 @@ class CompanionEntity {
     // field (장판형 궁극기)
     return new Projectile(target.x, target.y, 0, 0, this.atkDmg * 2, {
       ...base, type: `companion_${this.id}_ult`,
-      radius: 8, pierceAll: true, aoe: 120, life: 1.5, field: true,
+      radius: 8*_es, pierceAll: true, aoe: 120*_es, life: 1.5, field: true,
     });
   }
 
@@ -428,7 +459,9 @@ class CompanionEntity {
     }
 
     const sx = this.x - camX, sy = this.y - camY;
-    const bob = Math.sin(this.walkT) * 2.5;
+    // [UPDATE 2026-07-11] 이동 중엔 걷기모션, 정지 중엔 숨쉬기모션 (기존엔 정지 시 walkT가 안 늘어 완전 정지로 보였음)
+    const _isMoving = Math.hypot(this.vx, this.vy) > 1;
+    const bob = _isMoving ? Math.sin(this.walkT) * 2.5 : Math.sin(this.breatheT) * 1.6;
     const H = 52, W = this.spriteW * (H / this.spriteH);
 
     // 발광

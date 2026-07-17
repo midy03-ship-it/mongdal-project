@@ -76,7 +76,7 @@ const BuildingScene = (() => {
         </div>
 
         <!-- 건물 목록 -->
-        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
           ${buildings.length === 0
             ? `<div style="text-align:center;color:rgba(200,160,255,0.4);margin-top:60px;font-size:14px;">
                 ${isEn ? 'No buildings unlocked yet.' : '아직 해금된 건물이 없습니다.'}
@@ -109,7 +109,11 @@ const BuildingScene = (() => {
         border-radius:14px;padding:16px;
       ">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-          <div style="font-size:36px;flex-shrink:0;">${b.icon}</div>
+          <div style="width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            ${SPRITES.lobbyBuildings?.[b.id]
+              ? `<img src="${SPRITES.lobbyBuildings[b.id].src}" style="width:44px;height:44px;object-fit:contain;image-rendering:pixelated;">`
+              : `<span style="font-size:36px;">${b.icon}</span>`}
+          </div>
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
               <span style="font-size:15px;font-weight:bold;color:#e0c8ff;">${isEn ? (b.nameEn||b.name) : b.name}</span>
@@ -222,7 +226,7 @@ const BuildingScene = (() => {
           </div>
         </div>
 
-        <div style="flex:1;overflow-y:auto;padding:16px 16px 40px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px 16px 40px;">
           <!-- 역할 설명 -->
           <div style="
             background:rgba(200,160,255,0.06);

@@ -7,8 +7,11 @@ const GameScene = (() => {
   window.earnedSpecial = 0;
   let _rewardMode = null;
   let _pendingEnding = false; // 시즌 1 최초 클리어 시 엔딩 씬으로 이동 // null=normal, 'ganghwaseok','cheonunseok','cheonryeonggwa','taegeukseok','bossrush'
-  const SPECIAL_REWARD_KEYS = { ganghwaseok:1, cheonunseok:1, cheonryeonggwa:1, taegeukseok:1, chaewonseok:1 };
-  const SPECIAL_ICONS = { ganghwaseok:'🔧', cheonunseok:'🪨', cheonryeonggwa:'🍑', taegeukseok:'💠', bossrush:'💎', chaewonseok:'🔷' };
+  let _pendingEnding2 = false; // [UPDATE 2026-07-14] 260713_MTOPC.md 16번: 시즌 2 최초 클리어 시 엔딩 씬으로 이동
+  let _pendingEnding3 = false; // [UPDATE 2026-07-17] 시즌 3 최초 클리어 시 엔딩 씬으로 이동
+  // [UPDATE 2026-07-15] 260715_MTOPC.md 4/9번: 혼돈석/순리석 던전 신설 — rollDrops()는 rewardMode truthy만 체크하므로 코드 변경 없이 그대로 작동
+  const SPECIAL_REWARD_KEYS = { ganghwaseok:1, cheonunseok:1, cheonryeonggwa:1, taegeukseok:1, chaewonseok:1, hondonseok:1, sullriseok:1 };
+  const SPECIAL_ICONS = { ganghwaseok:'🔧', cheonunseok:'🪨', cheonryeonggwa:'🍑', taegeukseok:'💠', bossrush:'💎', chaewonseok:'🔷', hondonseok:'🌪️', sullriseok:'🌊' };
   let bigGoldDrops = [];
   let goldDrops = [], specialItems = [], enemyProjs = [], hitEffects = [], floatingTexts = [], bombEffects = [];
   let petEntities = [], activePetData = [];
@@ -21,9 +24,97 @@ const GameScene = (() => {
   let difficulty = 'easy'; // easy | normal | hard
   let _s2Debuff = false;   // 시즌2 차원석 없을 때 잠식 디버프
   let _s2CwsDrainTimer = 0; // 시즌2 차원석 시간 소모 타이머 (60초마다 2개 차감)
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번①: 도깨비주사위 — 시즌3 스테이지 입장 시 1회 랜덤 롤
+  let _dokkaebiDiceResult = null;
+  const DOKKAEBI_DICE_TABLE = [
+    { roll:1, icon:'💀', textKo:'저주 — 받는피해 +15%',         textEn:'Curse — Damage Taken +15%',
+      apply: p => { p._diceDmgTakenMult = (p._diceDmgTakenMult||0) + 0.15; } },
+    { roll:2, icon:'📉', textKo:'쇠약 — 공격력 -10%',            textEn:'Weakness — ATK -10%',
+      apply: p => { p._diceAtkMult = (p._diceAtkMult||1) - 0.10; } },
+    { roll:3, icon:'🌀', textKo:'꽝 — 아무 일도 없었다',          textEn:'Nothing — Nothing happens',
+      apply: () => {} },
+    { roll:4, icon:'💨', textKo:'날쌤 — 이동속도 +10%',          textEn:'Swift — Move Speed +10%',
+      apply: p => { p.tempStats.mov += 10; } },
+    { roll:5, icon:'🪙', textKo:'재물운 — 골드 획득량 +20%',      textEn:'Fortune — Gold Gain +20%',
+      apply: p => { p._goldMult = (p._goldMult||1) * 1.2; } },
+    { roll:6, icon:'🎇', textKo:'대박 — 공격력 +20%, 받는피해 -10%', textEn:'Jackpot — ATK +20%, Damage Taken -10%',
+      apply: p => { p._diceAtkMult = (p._diceAtkMult||1) + 0.20; p._diceDmgTakenMult = (p._diceDmgTakenMult||0) - 0.10; } },
+  ];
+  function _rollDokkaebiDice(p) {
+    const entry = DOKKAEBI_DICE_TABLE[Math.floor(Math.random() * 6)];
+    entry.apply(p);
+    return entry;
+  }
+
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 — 즉시 발동, 30초 지속, 재드랍 쿨다운 없음
+  let _transformType = null, _transformTimer = 0, _transformAtkCd = 0;
+  const TRANSFORM_DURATION = 30;
+  window._onTransformCardPickup = (type) => {
+    _transformType = type;
+    _transformTimer = TRANSFORM_DURATION;
+    _transformAtkCd = 0;
+    const sc = SPRITES?.transformPlayer?.[type];
+    if (sc && player) { player.img = SpriteLoader.get(sc.src); player.spriteW=sc.drawW; player.spriteH=sc.drawH; player.spriteOX=sc.offsetX; player.spriteOY=sc.offsetY; }
+  };
+  function _revertTransform() {
+    _transformType = null;
+    if (player) {
+      const sc = Player.getSpriteConfig();
+      player.img = SpriteLoader.get(sc.src); player.spriteW=sc.drawW; player.spriteH=sc.drawH; player.spriteOX=sc.offsetX; player.spriteOY=sc.offsetY;
+    }
+  }
+  // 변신 중 전투 로직 — 기존 무기는 그대로 두고(디자인 문서상 "즉시 사용" 강조라 별도 무기 해제 로직 없이 보너스 공격으로 얹음),
+  // 카드별 전용 공격 패턴을 추가로 발동시켜 변신의 존재감을 살림
+  function _updateTransform(dt, aliveList) {
+    if (!_transformType) return;
+    _transformTimer -= dt;
+    if (_transformTimer <= 0) { _revertTransform(); return; }
+    _transformAtkCd -= dt;
+    if (_transformType === 'dokkaebi') {
+      // 근접 강타(넉백 큰 광역): 1.2초마다 반경 90 내 전체 타격 + 큰 넉백
+      if (_transformAtkCd <= 0) {
+        _transformAtkCd = 1.2;
+        const dmg = Math.floor(player.totalAtk * 2.5);
+        const hit = aliveList.filter(e => Math.hypot(e.x-player.x,e.y-player.y) < 90);
+        for (const e of hit) {
+          e.takeDamage(dmg, false, 'transform_dokkaebi');
+          const a = Math.atan2(e.y-player.y, e.x-player.x);
+          e.x += Math.cos(a)*120; e.y += Math.sin(a)*120;
+        }
+        if (hit.length && window._hitEffects) window._hitEffects.push({x:player.x,y:player.y,t:0,life:0.3,key:'hit_explode',ox:0,oy:-8});
+      }
+    } else if (_transformType === 'gumiho') {
+      // 원거리 화염구 연사: 0.4초마다 가장 가까운 적에게 관통 화염구 1발
+      if (_transformAtkCd <= 0) {
+        _transformAtkCd = 0.4;
+        let nearest=null, nd=Infinity;
+        for (const e of aliveList) { const d=Math.hypot(e.x-player.x,e.y-player.y); if(d<nd){nd=d;nearest=e;} }
+        if (nearest) {
+          const dist = nd||1;
+          projectiles.push(new Projectile(
+            player.x, player.y, (nearest.x-player.x)/dist*380, (nearest.y-player.y)/dist*380,
+            Math.floor(player.totalAtk*0.6),
+            { radius:10, pierce:2, life:1.5, type:'transform_gumiho', color:'#c060e0', glow:'rgba(192,96,224,.5)' }
+          ));
+        }
+      }
+    } else if (_transformType === 'gogolgwi') {
+      // 빠른 이속 + 다중 히트 근접: 0.35초마다 반경 55 내 전체 타격(약한 개별 데미지, 높은 히트빈도)
+      if (_transformAtkCd <= 0) {
+        _transformAtkCd = 0.35;
+        const dmg = Math.floor(player.totalAtk * 0.7);
+        const hit = aliveList.filter(e => Math.hypot(e.x-player.x,e.y-player.y) < 55);
+        for (const e of hit) e.takeDamage(dmg, false, 'transform_gogolgwi');
+        if (hit.length && window._hitEffects) window._hitEffects.push({x:player.x,y:player.y,t:0,life:0.2,key:'hit_normal',ox:0,oy:-8});
+      }
+    }
+  }
   let soulDrops = [];      // 시즌2 영혼 드랍 (영혼 조각 / 영혼석)
   let bossRushIndex = 0;   // 보스 러쉬 진행 인덱스
+  let rushBossPool = [];   // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 무한 확장형 — 해금된 챕터의 보스를 반복 소환할 풀
   let infiniteWave = 0;    // 무한 모드 웨이브
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번②: 복수 애기씨(분신) — 시즌3 한정, 혼돈석 30개/체(최대3체) 소모 소환
+  let aegissiClones = [];
   let zoom = 1.0;  // 줌 레벨 (0.5 ~ 2.0)
   let killTarget = 300, kills = 0; // [UPDATE 2026-07-09] init()에서 즉시 덮어써지는 초기값 — 개발모드 축소 제거
   let killTargetReached = false, bossSpawned = false;
@@ -40,6 +131,15 @@ const GameScene = (() => {
       for (const s of ch.stages)
         if (s.id === id) return s;
     return null;
+  }
+
+  // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 보스러시 무한 확장형 — 클리어한 챕터의 미들보스+챕터보스를 반복 소환하는 풀 구성
+  function _buildBossRushPool(sd) {
+    const cleared = (sd.clearedChapters || []).slice().sort((a,b)=>a-b);
+    const chs = cleared.length ? cleared : [1]; // 안전장치: 클리어 기록이 없어도 최소 챕터1은 항상 포함
+    const pool = [];
+    for (const ch of chs) { pool.push({type:'mid_boss', ch}); pool.push({type:'chapter_boss', ch}); }
+    return pool;
   }
 
   function init(el, params) {
@@ -69,12 +169,16 @@ const GameScene = (() => {
     }
 
     kills = 0; elapsed = 0; window.earnedGold = 0; window.earnedSpecial = 0;
+    // [UPDATE 2026-07-17] 이전 런의 잔여값이 결과화면에 그대로 새던 버그 수정 — 매 런 시작마다 초기화
+    window.earnedSoulStones = 0; window.earnedSoulFragments = 0;
     bigGoldDrops = []; soulDrops = [];
     killTargetReached = false; farmingTimer = 0; bossSpawned = false;
     state = 'playing'; warningTimer = 0;
 
     enemies=[]; projectiles=[]; xpOrbs=[]; bgOrbs=[];
     goldDrops=[]; specialItems=[]; enemyProjs=[]; hitEffects=[]; floatingTexts=[]; bombEffects=[];
+    aegissiClones=[];
+    _transformType=null; _transformTimer=0; _transformAtkCd=0; // [UPDATE 2026-07-17] 변신카드 상태 초기화
     window._hitEffects = hitEffects;
     companions=[]; levelUpChoices={main:[],sub:[],stat:[]};
     petEntities=[]; activePetData=[];
@@ -82,6 +186,19 @@ const GameScene = (() => {
     zoom = 1.0;
 
     saveData = Save.load();
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 6번: 시즌5 첫 진입 시 삼신할매 태몽 회상 트리거 —
+    // 시즌5(챕터41~) 콘텐츠 자체가 아직 없어서 당장은 도달 불가능하지만, 나중에 시즌5가 추가되면 바로 동작하도록 미리 배선.
+    // 팝업은 로비의 기존 삼신할매 대화창을 재사용(다음 로비 방문 시 1회 노출) — 인게임 전용 팝업 UI를 새로 만들지 않음.
+    if (gameMode === 'normal' && stageId === 401 && !saveData.samsinDreamSeen) {
+      saveData.samsinDreamSeen = true;
+      Save.save(saveData);
+    }
+    if (gameMode === 'boss_rush') rushBossPool = _buildBossRushPool(saveData); // [UPDATE 2026-07-14]
+    // [UPDATE 2026-07-16] 260716_MTOPC.md 2번②③: 던전강화 — 무한던전 시작 킬수를 강화 레벨만큼 밀어줌
+    // (kills가 Spawner.update()의 dungeonMult 계산에 그대로 쓰이므로, 시작값만 올려두면 별도 배선 불필요)
+    if (gameMode === 'infinite') {
+      kills = (saveData.dungeonUpgradeLv || 0) * CONFIG.DUNGEON_UPGRADE.KILLS_PER_LEVEL;
+    }
     speedMult = saveData.speedMult || 1;
     autoMode  = saveData.autoMode  || 0;
     if (saveData.speedMult === undefined || saveData.autoMode === undefined) {
@@ -90,12 +207,26 @@ const GameScene = (() => {
       Save.save(saveData);
     }
 
+    // [UPDATE 2026-07-13] 260713_MTOPC.md 20번: 줌 버튼 발견성 낮음 피드백 대응 — 스테이지1 최초 진입 시 1회만 스팟라이트
+    const _showZoomTutorial = gameMode === 'normal' && stageId === 1 && !saveData.stage1TutorialSeen;
+    if (_showZoomTutorial) { saveData.stage1TutorialSeen = true; Save.save(saveData); }
+
     // 플레이어 (저장된 강화 스탯 반영)
     player = new Player(0, 0, saveData.statUpgrades || {}, saveData.sinmokUpgrades || {}, saveData.sinmokS2 || {});
     player._invincible = 2.0; // 시작 2초 무적
 
-    // 시즌2 차원석 입장료 차감
-    if (stageId >= 101 && stageId <= 200) {
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번①③: 도깨비주사위 + 혼돈시장 재고 — 시즌3 스테이지(201~300) 입장 시 갱신
+    if (gameMode === 'normal' && stageId >= 201 && stageId <= 300) {
+      _dokkaebiDiceResult = _rollDokkaebiDice(player);
+      saveData._chaosMarketStock = rollChaosMarketStock();
+      Save.save(saveData);
+    } else {
+      _dokkaebiDiceResult = null;
+    }
+
+    // [UPDATE 2026-07-17] 차원석 경제를 시즌2(101~200)로만 한정했던 것을 시즌2 이후 전체(101~)로 확장 —
+    // "현계 밖에서 사는 동안은 계속 차원석이 필요하다"는 설정에 맞춰 시즌3 이후에도 동일 적용(사용자 지적)
+    if (stageId >= 101) {
       const _diffCfgEntry = StageSelectScene.DIFF_CONFIG[difficulty] || StageSelectScene.DIFF_CONFIG.easy;
       const _entryCost = _diffCfgEntry.s2EntryCost || 1;
       saveData.chaewonseok = Math.max(0, (saveData.chaewonseok || 0) - _entryCost);
@@ -103,11 +234,12 @@ const GameScene = (() => {
     }
     _s2CwsDrainTimer = 0;
 
-    // 시즌2 차원석 디버프 감지 (stageId 101~200, chaewonseok=0)
-    _s2Debuff = (stageId >= 101 && stageId <= 200 && (saveData.chaewonseok || 0) === 0);
+    // 차원석 디버프 감지 (stageId 101 이상, chaewonseok=0)
+    _s2Debuff = (stageId >= 101 && (saveData.chaewonseok || 0) === 0);
     player._healBlocked = _s2Debuff;
     const _unlockedWeapons = saveData.unlockedWeapons || ['talisman'];
-    const _diffCfg = StageSelectScene.DIFF_CONFIG[difficulty] || StageSelectScene.DIFF_CONFIG.easy;
+    // [UPDATE 2026-07-11] 이지는 동적 슬롯수(챕터5클리어→2/시즌1클리어→3) 반영
+    const _diffCfg = StageSelectScene.getDiffConfig(difficulty, saveData) || StageSelectScene.DIFF_CONFIG.easy;
     const _mainSlotCount = gameMode === 'normal' ? (_diffCfg.slotMain || 1) : 3;
     // 선택된 주무기 목록 (슬롯 수만큼, 없으면 talisman 폴백)
     const _selectedMains = (saveData.selectedMainWeapons || [saveData.selectedMainWeapon || 'talisman'])
@@ -133,6 +265,11 @@ const GameScene = (() => {
     weapons = _selectedMains.map(_makeMainWeapon);
     window.mainWeapon  = weapons[0];
     window.mainWeapons = weapons; // 다중 주무기 배열
+    // [UPDATE 2026-07-12] 무기 초월 발광 연출용 — 투사체 draw()는 WeaponInstance에 직접 접근 못 하므로 defId→초월랭크 조회 테이블을 별도로 둠.
+    // 투사체 type 값은 scythe_main이 아니라 'scythe'로 쓰이므로 별칭 처리.
+    window._transcendRankByType = {};
+    const _TRANSCEND_TYPE_ALIAS = { scythe_main: 'scythe' };
+    for (const w of weapons) window._transcendRankByType[_TRANSCEND_TYPE_ALIAS[w.defId] || w.defId] = w._transcendRank || 0;
     window.subWeapons  = [];
     window.statSlots   = [];
     player.weapons = weapons;
@@ -148,7 +285,7 @@ const GameScene = (() => {
     player._critChance=0; player._critMult=1.5;
     player._atkBuff=1; player._atkBuffTime=0;
     player._xpMult=1.0; player._cdReduction=0;
-    player._cdrAtkSpd=0; player._cdrCd=0; player._cdrPet=0; // [UPDATE 2026-07-06] 쿨감 소스별 필드 리셋
+    player._cdrCd=0; player._cdrPet=0; // [UPDATE 2026-07-06] 쿨감 소스별 필드 리셋 // [UPDATE 2026-07-15] _cdrAtkSpd 제거(260715_MTOPC.md 11번, 공격속도는 totalSpd 경로로 분리)
     player._shieldTime=0; player._shieldHp=0;
     window._boss = null;
     window._player = player;
@@ -172,11 +309,42 @@ const GameScene = (() => {
     if (petUnlocked) {
       (saveData.activePets||[]).slice(0, _petSlotCount).forEach((id,i)=>{
         const pd=GAME_DATA.pets.find(p=>p.id===id);
-        if(pd){ petEntities.push(new PetEntity(pd,i)); activePetData.push(pd); }
+        if(pd){
+          // [UPDATE 2026-07-11] 강화 레벨을 실제 효과치에 반영 (기존엔 petLevels가 전혀 안 쓰였음)
+          const _petLv = (saveData.petLevels||{})[id] || 1;
+          const scaledPd = { ...pd, value: scalePetValue(pd, _petLv) };
+          if (pd.markCount) scaledPd.markCount = scalePetIntField(pd.markCount, _petLv); // [UPDATE 2026-07-11] 사신 표식 대상 수
+          petEntities.push(new PetEntity(scaledPd,i)); activePetData.push(scaledPd);
+        }
       });
     }
+    // [UPDATE 2026-07-17] 히든 시너지: 도깨비 계열 동료(꺽쇠/박수/장구애비) + 도깨비 계열 펫(싸리/공이) 동시 장착 시
+    // 보조무기 도깨비불 지속시간·크기 2배 (hidden.md 참고, weapons.js goblin_fire.fire()에서 실사용)
+    const _dokkaebiComps = ['ggeogsoe','baksu','janggu_aebi'];
+    const _dokkaebiPets  = ['ssari','gongi'];
+    player._dokkaebiFireBoost = activeIds.some(id=>_dokkaebiComps.includes(id))
+      && activePetData.some(pd=>_dokkaebiPets.includes(pd.id));
+    // [UPDATE 2026-07-11] 오행 시너지는 펫 패시브 적용 전에 계산해야 펫 효과량 배율이 반영됨
+    applyElementSynergies(window.mainWeapons, companions, activePetData, player);
+    // [UPDATE 2026-07-11] 영혼낫 처치 → 신검 쿨감 스택 (오행 시너지) 처치 귀속 훅
+    window._onEnemyKilled = (srcType) => {
+      const sw = (window.mainWeapons||[]).find(w => w.defId==='sword');
+      if (sw && sw._synKillStackEnabled && srcType==='scythe') {
+        sw._killStacks = Math.min(5, (sw._killStacks||0)+1);
+        sw._killStackTimer = 8.0;
+      }
+    };
     applyPetPassives(activePetData, player, weapons);
     window._cdReduction = player._cdReduction||0;
+
+    // [UPDATE 2026-07-11] 펫발 동료 스탯 배율(유신/자신/축신) + 오행 동료 연쇄 쿨감 적용 — 패시브 적용 후라야 값이 확정됨
+    if (player._compAtkMult || player._compHpMult || player._compCdBonus) {
+      for (const c of companions) {
+        if (player._compAtkMult) c.atkDmg = Math.floor(c.atkDmg * player._compAtkMult);
+        if (player._compHpMult) { c.maxHp = Math.floor(c.maxHp * player._compHpMult); c.hp = c.maxHp; }
+        if (player._compCdBonus) c.skillInterval *= (1 - player._compCdBonus);
+      }
+    }
 
     // ── 건물 효과 적용 ──
     BuildingEffects.applyAll(player, companions, saveData);
@@ -225,7 +393,15 @@ const GameScene = (() => {
           background:rgba(0,0,0,0.5);border:1px solid rgba(100,180,255,0.4);
           border-radius:8px;color:#80c8ff;font-size:11px;font-weight:700;cursor:pointer;
           display:flex;align-items:center;justify-content:center;z-index:50;font-family:inherit;">수동</button>
-        <div style="position:absolute;bottom:90px;right:10px;
+        ${((gameMode==='normal' && stageId>=201 && stageId<=300) || _rewardMode==='hondonseok') ? `
+        <button id="cloneBtn" onclick="GameScene.summonClone()" style="
+          position:absolute;top:56px;right:160px;width:52px;height:36px;
+          background:rgba(20,10,40,0.7);border:1px solid rgba(160,96,224,0.5);
+          border-radius:8px;color:#d0a0ff;font-size:9px;font-weight:700;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;z-index:50;font-family:inherit;">
+          <span>👤${Lang.getCurrent()==='en'?'Clone':'분신'}</span><span id="cloneBtnCost" style="font-size:8px;">🌪️30</span>
+        </button>` : ''}
+        <div id="zoomBtnWrap" style="position:absolute;bottom:90px;right:10px;
           display:flex;flex-direction:column;gap:6px;z-index:50;">
           <button onclick="GameScene.zoomIn()" style="
             width:36px;height:36px;background:rgba(0,0,0,0.5);
@@ -235,9 +411,31 @@ const GameScene = (() => {
             width:36px;height:36px;background:rgba(0,0,0,0.5);
             border:1px solid rgba(212,160,23,0.3);border-radius:8px;
             color:#e8dcc8;font-size:16px;cursor:pointer;">−</button>
+          ${_showZoomTutorial ? `<span id="zoomTutorialHint" class="onboard-hint" style="display:none;white-space:normal;width:120px;text-align:center;">${Lang.t('onboarding','zoomHint')}</span>` : ''}
         </div>
       </div>`;
     canvas=document.getElementById('gameCanvas'); ctx=canvas.getContext('2d');
+
+    // [UPDATE 2026-07-13] 260713_MTOPC.md 20번: 기존 스테이지 인트로 텍스트(0~1.5초) 종료 직후 → 줌 버튼 스팟라이트 노출,
+    // 논블로킹으로 몇 초 뒤 자동 페이드아웃
+    if (_showZoomTutorial) {
+      setTimeout(() => {
+        const wrap = document.getElementById('zoomBtnWrap');
+        const hint = document.getElementById('zoomTutorialHint');
+        if (wrap) wrap.classList.add('onboard-pulse');
+        if (hint) hint.style.display = 'block';
+      }, 1500);
+      setTimeout(() => {
+        const wrap = document.getElementById('zoomBtnWrap');
+        const hint = document.getElementById('zoomTutorialHint');
+        if (wrap) wrap.classList.remove('onboard-pulse');
+        if (hint) {
+          hint.style.transition = 'opacity .5s';
+          hint.style.opacity = '0';
+          setTimeout(() => hint.remove(), 500);
+        }
+      }, 1500 + 4500);
+    }
 
     const _speedBtn = document.getElementById('speedBtn');
     if (_speedBtn) _speedBtn.textContent = speedMult + 'x';
@@ -311,7 +509,7 @@ const GameScene = (() => {
       : gameMode==='boss_rush'?(isKo?'보스러시':'Boss Rush')
       : (isKo?'스테이지 ':'Stage ')+stageId;
     ui.innerHTML=`
-      <div style="position:absolute;inset:0;background:rgba(0,0,10,0.88);overflow-y:auto;
+      <div class="scroll-pan-y" style="position:absolute;inset:0;background:rgba(0,0,10,0.88);overflow-y:auto;
         display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;">
         <div style="font-size:22px;color:#f0c040;font-weight:700;">⏸ ${isKo?'일시 정지':'Paused'}</div>
         <div style="font-size:11px;color:#6a5a4a;">
@@ -377,11 +575,21 @@ const GameScene = (() => {
       showFloatingText(b.x, b.y, '🔷+1', '#80c8ff');
       return;
     }
+    // [UPDATE 2026-07-17] 던전 몬스터가 세지는 만큼 특화재화/골드뭉치 보상도 스케일 — 기존엔 몬스터만
+    // 세지고 보상은 고정이라 던전강화로 더 강한 구간에 들어가도 위험만 늘고 이득은 그대로였음.
+    // spawner.js와 동일하게 몬스터 배율(1천킬당 2배)의 1.5배로 보상은 더 후하게 지급.
+    const _monsterMult = (gameMode === 'infinite') ? Math.max(1, Math.floor(kills / 1000) * 2) : 1;
+    const _bgDungeonMult = (gameMode === 'infinite') ? _monsterMult * 1.5 : 1;
     if (_rewardMode && SPECIAL_REWARD_KEYS[_rewardMode]) {
-      saveData[_rewardMode] = (saveData[_rewardMode] || 0) + 1;
-      window.earnedSpecial = (window.earnedSpecial || 0) + 1;
+      // [UPDATE 2026-07-11] 해신(돼지) 펫 specialBoost 반영 — 분수분은 확률로 처리
+      const _specMult = player._specialMult || 1;
+      const _specRaw = 1 * _specMult * _bgDungeonMult;
+      let _specGain = Math.floor(_specRaw);
+      if (Math.random() < _specRaw - _specGain) _specGain++;
+      saveData[_rewardMode] = (saveData[_rewardMode] || 0) + _specGain;
+      window.earnedSpecial = (window.earnedSpecial || 0) + _specGain;
       Save.save(saveData);
-      showFloatingText(b.x, b.y, SPECIAL_ICONS[_rewardMode] + '+1', '#c0e0ff');
+      showFloatingText(b.x, b.y, SPECIAL_ICONS[_rewardMode] + '+' + _specGain, '#c0e0ff');
     } else if (_rewardMode === 'bossrush') {
       // 보스러쉬: 다이아
       saveData.gems = (saveData.gems || 0) + 1;
@@ -390,7 +598,7 @@ const GameScene = (() => {
       showFloatingText(b.x, b.y, '💎+1', '#e080ff');
     } else {
       const goldMult = difficulty==='easy' ? 0.7 : difficulty==='hard' ? 1.5 : 1.0;
-      const gained = Math.floor(b.value * goldMult);
+      const gained = Math.floor(b.value * goldMult * _bgDungeonMult);
       saveData.gold = (saveData.gold || 0) + gained;
       window.earnedGold += gained;
       Save.save(saveData);
@@ -485,6 +693,19 @@ const GameScene = (() => {
     Save.save(saveData);
   }
 
+  // [UPDATE 2026-07-17] 260713_MTOPC.md 9번②: 복수 애기씨 소환 — 혼돈석 30개 소모, 최대 3체
+  function summonClone() {
+    if (aegissiClones.length >= 3) return;
+    const sd = Save.load();
+    if ((sd.hondonseok || 0) < 30) return;
+    sd.hondonseok -= 30;
+    Save.save(sd);
+    saveData = sd;
+    aegissiClones.push({ x: player.x + (Math.random()-0.5)*60, y: player.y + (Math.random()-0.5)*60, atkCd: 0 });
+    const costEl = document.getElementById('cloneBtnCost');
+    if (costEl) costEl.textContent = aegissiClones.length >= 3 ? 'MAX' : '🌪️30';
+  }
+
   function cycleAutoMode() {
     autoMode = (autoMode + 1) % 3;
     const btn = document.getElementById('autoBtn');
@@ -534,22 +755,25 @@ const GameScene = (() => {
       if(farmingTimer<=0){ endGame(true); return; }
       const dir = autoMode > 0 ? getAutoDir() : Input.getDir();
       player.update(dt,dir);
+      // [UPDATE 2026-07-13] 260713_MTOPC.md 20번: 파밍 구간(스폰 종료~결과화면 전) 왕복 이동이
+      // 파밍 타임(5초)보다 오래 걸려 못 먹는 신고 대응 — 파밍 중에만 자석 범위 3배 적용
+      const _farmMagnet = player.magnetRange * 3;
       // 골드/아이템 수집
-      for(const g of goldDrops){ g.update(dt,player.x,player.y,player.magnetRange); }
+      for(const g of goldDrops){ g.update(dt,player.x,player.y,_farmMagnet); }
       goldDrops=goldDrops.filter(g=>!g.dead);
-      for(const b of bigGoldDrops){ b.update(dt,player.x,player.y,player.magnetRange);
+      for(const b of bigGoldDrops){ b.update(dt,player.x,player.y,_farmMagnet);
         if(b.dead){ _collectBigGold(b); }
       }
       bigGoldDrops=bigGoldDrops.filter(b=>!b.dead);
       for(const s of specialItems){ s.update(dt,player.x,player.y); }
       specialItems=specialItems.filter(s=>!s.dead);
       // 영혼 드랍 (시즌2)
-      for(const sd of soulDrops){ sd.update(dt,player.x,player.y,player.magnetRange);
+      for(const sd of soulDrops){ sd.update(dt,player.x,player.y,_farmMagnet);
         if(sd.dead){ _collectSoulDrop(sd); }
       }
       soulDrops=soulDrops.filter(sd=>!sd.dead);
       // XP 오브
-      for(const o of xpOrbs){ o.update(dt,player.x,player.y,player.magnetRange);
+      for(const o of xpOrbs){ o.update(dt,player.x,player.y,_farmMagnet);
         if(o.dead&&player.gainXp) player.gainXp(Math.floor(o.val||o.value||1));
       }
       xpOrbs=xpOrbs.filter(o=>!o.dead);
@@ -561,6 +785,7 @@ const GameScene = (() => {
     // [UPDATE 2026-07-10] 무기별 데미지 미터 — 최근 3초 로그를 매 프레임 정리해서 부드러운 DPS 계산 (1초 단위로 뚝뚝 끊기지 않게)
     window._gameElapsed = elapsed;
     window._curChapterForEnemyScale = (gameMode==='normal') ? currentChapter : 0; // [UPDATE 2026-07-10] 초반 챕터 완화용 — 일반 스테이지에서만 적용(무한던전 등은 currentChapter=1 고정 버그라 제외)
+    window._stage1DmgEase = (gameMode==='normal' && stageId===1); // [UPDATE 2026-07-15] 튜토리얼용 — 스테이지1 한정 몬스터 공격력 대폭 완화
     if (window._dpsLog && window._dpsLog.length) {
       const DPS_WINDOW = 3.0;
       const cutoff = elapsed - DPS_WINDOW;
@@ -585,8 +810,8 @@ const GameScene = (() => {
     if(player.dead){endGame(false);return;}
     if(timeLeft<=0){timeLeft=0;endGame(false);return;}
 
-    // ── 시즌2 차원석 시간 소모: 60초마다 2개 차감 ──
-    if (stageId >= 101 && stageId <= 200) {
+    // ── 차원석 시간 소모: 60초마다 2개 차감 (시즌2 이후 전체) ──
+    if (stageId >= 101) {
       _s2CwsDrainTimer += dt;
       if (_s2CwsDrainTimer >= 60) {
         _s2CwsDrainTimer -= 60;
@@ -621,14 +846,16 @@ const GameScene = (() => {
           '#f0c040');
       }
     } else if (gameMode === 'boss_rush') {
-      // 보스 러쉬: 이전 보스 생사와 무관하게 30초마다 무조건 다음 보스 소환 (경고 연출 없이 즉시 등장)
-      if (elapsed >= rushNextSpawnAt && bossRushIndex < BOSS_RUSH_SEQ.length) {
-        const b = BOSS_RUSH_SEQ[bossRushIndex];
+      // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 고정 10마리 시퀀스 폐기 → 해금 챕터 풀을 무한 반복,
+      // 등장 순번(bossRushIndex)을 wave로 넘겨 보스 1마리 등장마다 소폭 복리 강화(HP×1+n*0.12, DMG×1+n*0.08 — Boss 생성자 기존 공식 재사용)
+      if (elapsed >= rushNextSpawnAt && rushBossPool.length) {
+        const b = rushBossPool[bossRushIndex % rushBossPool.length];
         const _ang = Math.random()*Math.PI*2; // 기존 보스와 안 겹치도록 스폰 위치 분산
         const newBoss = new Boss(
           player.x+Math.cos(_ang)*220, player.y+Math.sin(_ang)*220,
-          b.type, Math.floor(elapsed/20), b.ch
+          b.type, bossRushIndex, b.ch
         );
+        newBoss._rushBossNum = bossRushIndex; // 처치 보상 스케일링용
         rushBosses.push(newBoss);
         bossRushIndex++;
         rushNextSpawnAt = elapsed + BOSS_RUSH_INTERVAL;
@@ -656,7 +883,7 @@ const GameScene = (() => {
       shakeX=(Math.random()-.5)*screenShake*6; shakeY=(Math.random()-.5)*screenShake*6;
     } else {shakeX=0;shakeY=0;}
 
-    for(const pe of petEntities) pe.update(dt,player,enemies,projectiles);
+    for(const pe of petEntities) pe.update(dt,player,enemies,projectiles,{xpOrbs,goldDrops,bigGoldDrops,soulDrops}); // [UPDATE 2026-07-11] 강다리 자동수집 AI용 아이템 배열 전달
     updateEnemyDebuffs(enemies,dt);
 
     if(boss && gameMode!=='boss_rush'){
@@ -683,9 +910,13 @@ const GameScene = (() => {
 
         boss=null; window._boss=null; bossSpawned=false;
 
-        // 5초 후 스테이지 종료 알림 (일반 모드 전용 - 보스 러시는 별도 블록에서 처리)
+        // [UPDATE 2026-07-15] 보스 처치 직후에도 일반 스테이지의 킬타겟 달성과 동일하게 'farming' 상태로 전환.
+        // 기존엔 setTimeout+state='playing' 유지라서, 보스가 흘린 XP를 먹으면 레벨업 카드가 또 뜨던 문제
+        // (일반 스테이지 파밍 구간은 조용히 스탯만 오르도록 이미 설계돼 있었는데 보스 스테이지만 예외였음)
+        enemies.forEach(e=>{ if(!e.dead) e.dead=true; });
         showFloatingText(player.x, player.y-60, (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en')?'🏆 Stage ends in 5s!':'🏆 5초 후 스테이지 종료!', '#f0d040');
-        setTimeout(()=>endGame(true), 5000);
+        state='farming';
+        farmingTimer=5.0;
         return;
       }
       for(const p of projectiles){
@@ -722,13 +953,15 @@ const GameScene = (() => {
           rb._rewarded=true;
           for(let i=0;i<12;i++)
             xpOrbs.push(new XpOrb(rb.x+(Math.random()-.5)*80,rb.y+(Math.random()-.5)*80,Math.floor(rb.xpVal/12)));
-          // 보스러쉬: 보스 처치마다 💎+1 확정 + bigGold(→_collectBigGold에서 추가 💎)
+          // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 등장 순번 기준 소폭 복리 다이아 보상(20마리≈275개, 40마리≈600개 목표로 캘리브레이션)
+          // + bigGold(→_collectBigGold에서 추가 💎, 랜덤 보너스)
+          const _gemReward = Math.max(1, Math.floor(12 + (rb._rushBossNum||0)*0.15));
           saveData=Save.load();
-          saveData.gems=(saveData.gems||0)+1;
-          window.earnedSpecial=(window.earnedSpecial||0)+1;
-          saveData.bossRushRecord=Math.max(saveData.bossRushRecord||0, bossRushIndex);
+          saveData.gems=(saveData.gems||0)+_gemReward;
+          window.earnedSpecial=(window.earnedSpecial||0)+_gemReward;
+          saveData.bossrushRecord=Math.max(saveData.bossrushRecord||0, bossRushIndex); // [UPDATE 2026-07-12] 대소문자 버그 수정(bossRushRecord→bossrushRecord)
           Save.save(saveData);
-          showFloatingText(rb.x,rb.y-70,'💎+1','#c080ff');
+          showFloatingText(rb.x,rb.y-70,'💎+'+_gemReward,'#c080ff');
           // 추가 bigGold 드랍 (1~2개, _rewardMode='bossrush'로 인해 💎로 전환됨)
           for(let _bi=0;_bi<1+Math.floor(Math.random()*2);_bi++){
             bigGoldDrops.push(new BigGoldDrop(rb.x+(Math.random()-0.5)*80, rb.y+(Math.random()-0.5)*80));
@@ -737,24 +970,47 @@ const GameScene = (() => {
       }
       // 완전히 죽어서 연출까지 끝난 보스는 배열에서 제거
       rushBosses = rushBosses.filter(rb=>!(rb.dead && rb.deathT>1.5));
-      // 시퀀스를 모두 소환했고, 살아있는 보스가 더 없으면 클리어
-      if(bossRushIndex>=BOSS_RUSH_SEQ.length && rushBosses.length===0){ endGame(true); return; }
+      // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 무한 확장형이라 시퀀스 소진에 의한 자동 종료 없음 — 플레이어 사망/시간초과로만 종료
     }
 
     window._enemies = enemies;
-    if (!killTargetReached) Spawner.update(dt,elapsed,player,enemies,canvas.width,canvas.height,kills);
+    if (!killTargetReached) Spawner.update(dt,elapsed,player,enemies,canvas.width,canvas.height,kills,saveData.dungeonUpgradeLv||0);
 
     const alive=enemies.filter(e=>!e.dead);
-    // 주무기는 보스도 조준 대상에 포함 (일반/보스러시 모두)
+    // 무기는 주/보조 구분 없이 전부 보스도 조준 대상에 포함 (일반/보스러시 모두)
+    // [UPDATE 2026-07-14] 260714_MTOPC.md 1번: 서브무기만 alive(보스 제외)로 분리돼있던 방치 버그 수정 —
+    // 귀신손/번개장판 등 타겟선정형 서브무기가 보스전에서 일반몹 전멸 시 헛발질하던 문제
     const aliveWithBoss = (gameMode==='boss_rush' && rushBosses.length)
       ? [...alive, ...rushBosses.filter(rb=>!rb.dead)]
       : (boss && !boss.dead) ? [...alive, boss] : alive;
     for(const w of weapons){
-      const isMainWpn = !!(typeof MAIN_WEAPON_DEFS!=='undefined' && MAIN_WEAPON_DEFS[w.defId]);
-      const _targets = isMainWpn ? aliveWithBoss : alive;
-      const _ps=w.tick(dt,player,_targets); if(_ps?.length) projectiles.push(..._ps.filter(p=>p!=null));
+      const _ps=w.tick(dt,player,aliveWithBoss); if(_ps?.length) projectiles.push(..._ps.filter(p=>p!=null));
     }
     for(const c of companions){const ps=c.update(dt,player,alive);if(ps?.length)projectiles.push(...ps.filter(p=>p!=null));}
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번②: 복수 애기씨(분신) — 체력 없음(피격 무시, enemies의 타겟 목록에
+    // 애초에 포함 안 시켜서 자연히 무적), 본체 공격력의 40%로 가장 가까운 적을 공격
+    for(const cl of aegissiClones){
+      cl.atkCd = (cl.atkCd||0) - dt;
+      let nearest=null, nd=Infinity;
+      for(const e of alive){ const d=Math.hypot(e.x-cl.x,e.y-cl.y); if(d<nd){nd=d;nearest=e;} }
+      if(nearest){
+        const dist = nd||1;
+        if(dist>60){ cl.x += (nearest.x-cl.x)/dist*140*dt; cl.y += (nearest.y-cl.y)/dist*140*dt; }
+        else if(cl.atkCd<=0){
+          cl.atkCd = 1.0;
+          nearest.takeDamage(Math.max(1,Math.floor(player.totalAtk*0.4)), false, 'aegissi_clone');
+          if(window._hitEffects) window._hitEffects.push({x:nearest.x,y:nearest.y,t:0,life:0.3,key:'hit_normal',ox:0,oy:-8});
+        }
+      } else {
+        // 적 없으면 본체 근처로 배회 복귀
+        const d2=Math.hypot(player.x-cl.x,player.y-cl.y);
+        if(d2>80){ cl.x += (player.x-cl.x)/d2*100*dt; cl.y += (player.y-cl.y)/d2*100*dt; }
+      }
+    }
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 전투 로직
+    _updateTransform(dt, alive);
 
     for(const e of enemies){
       if(!e.dead&&e._charmed>0){
@@ -773,10 +1029,27 @@ const GameScene = (() => {
           continue; // 플레이어 공격 스킵
         }
       }
-      e.update(dt,player.x,player.y);
+      // [UPDATE 2026-07-15] 260715_MTOPC.md 1번: 원거리 몹(attackPattern:'ranged')이 리턴하는 투사체를 캐치 —
+      // 기존엔 리턴값을 아예 안 받아서 원거리 공격이 통째로 무효화되던 버그
+      const _ep = e.update(dt,player.x,player.y);
+      if(_ep && _ep.isEnemyProjectile) enemyProjs.push(_ep);
       if(!e.dead&&e.hitTest(player.x,player.y,14)){
         player.takeDamage(e.damage, e); // [UPDATE 2026-07-06] 명부강화 반사용 공격자 전달
         if(player.iframe>0.5) screenShake=1;
+      }
+    }
+
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 1번: 원거리 몹 투사체 이동/충돌/수명 처리 —
+    // 배열/드로잉은 이미 있었지만 이 처리 로직 자체가 통째로 누락돼 있었음
+    for(const ep of enemyProjs){
+      if(ep.dead) continue;
+      ep.x += ep.vx*dt; ep.y += ep.vy*dt;
+      ep.t += dt; ep.life -= dt;
+      if(ep.life<=0){ ep.dead=true; continue; }
+      if(Math.hypot(player.x-ep.x, player.y-ep.y) < ep.radius+14){
+        player.takeDamage(ep.damage);
+        if(player.iframe>0.5) screenShake=1;
+        ep.dead=true;
       }
     }
 
@@ -965,6 +1238,13 @@ const GameScene = (() => {
       if(g.dead) applyItemEffect(g,player,enemies,saveData,xpOrbs,goldDrops);
     }
 
+    // [UPDATE 2026-07-11] 영혼 드랍(시즌2)이 일반 루프에선 전혀 업데이트 안 되던 버그 수정 — 자석/술신 자동수집이 안 먹히던 원인
+    for(const sd of soulDrops){
+      sd.update(dt,player.x,player.y,player.magnetRange);
+      if(sd.dead) _collectSoulDrop(sd);
+    }
+    soulDrops=soulDrops.filter(sd=>!sd.dead);
+
     // ── 스페셜 아이템 업데이트 (자석 무효, 직접 밟기) ──
     for(const s of specialItems){
       s.update(dt,player.x,player.y);
@@ -980,6 +1260,11 @@ const GameScene = (() => {
     for(const e of newDead){
       e._counted=true;  // 한 번만 카운트
       kills++;
+      // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 — 시즌3 스테이지 한정 드랍 (0.5% → 5%, 너무 안 나온다는 피드백)
+      if (gameMode==='normal' && stageId>=201 && stageId<=300 && Math.random() < 0.05) {
+        const cardType = ['card_dokkaebi','card_gumiho','card_gogolgwi'][Math.floor(Math.random()*3)];
+        specialItems.push(new SpecialItem(e.x, e.y, cardType));
+      }
       const drops=createDrops(e.x,e.y,e.xpValue,e.goldValue,_rewardMode);
       if(drops.xp){
         const cnt=Math.ceil(e.xpValue/2);
@@ -990,8 +1275,9 @@ const GameScene = (() => {
             Math.ceil(e.xpValue/cnt)
           ));
       }
-      // 시즌2: 특화 드랍 (골드→차원석, 빅골드→영혼석, 영혼조각 추가)
-      const _isSeason2Stage = (stageId >= 101 && stageId <= 200);
+      // [UPDATE 2026-07-17] 시즌2 전용이던 특화 드랍(골드→차원석, 빅골드→영혼석, 영혼조각)을
+      // 시즌2 이후 전체로 확장 — 시즌3에서 갑자기 평범한 골드 경제로 되돌아가던 문제 수정
+      const _isSeason2Stage = (stageId >= 101);
       if (_isSeason2Stage) {
         for (const g of drops.gold) {
           if (Math.random() < 0.10) bigGoldDrops.push(new BigGoldDrop(g.x, g.y, 'chaewonseok'));
@@ -1007,6 +1293,20 @@ const GameScene = (() => {
         if(drops.bigGold) for(const b of drops.bigGold) bigGoldDrops.push(b);
       }
       for(const s of drops.special) specialItems.push(s);
+
+      // [UPDATE 2026-07-17] 260713_MTOPC.md 9번④: 글리치 "분열" modifier — 처치 시 절반체력 미니 몬스터 2체로 분열(1회만)
+      if (e._glitchSplit && !e._glitchSplitDone) {
+        e._glitchSplitDone = true;
+        for (let i = 0; i < 2; i++) {
+          const mini = new Enemy(
+            e.x + (Math.random()-0.5)*30, e.y + (Math.random()-0.5)*30,
+            e.type, Math.max(0, Math.floor(elapsed/20)-1), gameMode !== 'normal', 1
+          );
+          mini.hp = mini.maxHp = Math.max(1, Math.floor(e.maxHp/2));
+          mini.size = Math.floor(e.size*0.65);
+          enemies.push(mini);
+        }
+      }
     }
 
     // 플로팅 텍스트 / 폭탄 이펙트
@@ -1294,7 +1594,23 @@ const GameScene = (() => {
     for(const rb of rushBosses) rb.draw(ctx,camX,camY);
     for(const p of projectiles) if(!p||!(p.aoe>0)) p.draw(ctx,camX,camY);
     for(const pe of petEntities) pe.draw(ctx,camX,camY);
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번②: 복수 애기씨 분신 — 본체 스프라이트를 반투명 보라빛으로 재사용
+    for(const cl of aegissiClones){
+      const csx=cl.x-camX, csy=cl.y-camY;
+      ctx.save();
+      ctx.globalAlpha=0.55;
+      if(player.img && player.img.complete && player.img.naturalWidth>0){
+        ctx.filter='hue-rotate(220deg) saturate(1.4)';
+        ctx.drawImage(player.img, csx+(player.spriteOX||-14), csy+(player.spriteOY||-28), player.spriteW||28, player.spriteH||36);
+        ctx.filter='none';
+      } else {
+        ctx.fillStyle='#a060e0';
+        ctx.beginPath(); ctx.arc(csx,csy,14,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
     player.draw(ctx,camX,camY);
+    _drawElementTrinityOrbit(ctx,camX,camY); // [UPDATE 2026-07-11] 삼위일체 궤도 시각효과
     drawBombEffects(ctx,camX,camY,bombEffects);
     _drawHitEffects(ctx,camX,camY);
     _drawEnemyProjs(ctx,camX,camY);
@@ -1352,17 +1668,48 @@ const GameScene = (() => {
       ctx.fillText((_isEn?(si?.nameEn||si?.name):si?.name) || '', W/2, H/2 + 6);
       ctx.restore();
     }
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번①: 도깨비주사위 결과 표시 (스테이지 인트로 텍스트 종료 직후 1.6~4.5초)
+    if (_dokkaebiDiceResult && elapsed >= 1.6 && elapsed < 4.5) {
+      const dAlpha = elapsed < 2.0 ? (elapsed-1.6)/0.4 : elapsed > 4.0 ? (4.5-elapsed)/0.5 : 1;
+      const _isEnD = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, dAlpha);
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillStyle = '#ffd870';
+      ctx.fillText(`🎲 ${_dokkaebiDiceResult.icon}`, W/2, H/2 + 50);
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = '#f0e8c8';
+      ctx.fillText(_isEnD ? _dokkaebiDiceResult.textEn : _dokkaebiDiceResult.textKo, W/2, H/2 + 74);
+      ctx.restore();
+    }
+
+    // [UPDATE 2026-07-17] 도깨비주사위 효과가 런 내내 지속되는데 처음 몇 초만 보여주고 사라져서 뭘 먹었는지
+    // 까먹기 쉽다는 피드백 — 우측 하단(줌 버튼 위)에 작게 상시 표시
+    // [UPDATE 2026-07-17] 좌표가 줌 버튼 wrap(bottom:90px, 버튼2개+간격=78px → 하단기준 90~168px 구간)과
+    // 겹쳐서(기존 하단기준 136~176px) 실기기에서 배지가 줌 버튼에 포개지는 버그 — 줌 버튼 위로 여유있게 이동
+    if (_dokkaebiDiceResult) {
+      const _isEnD2 = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
+      const bx = W - 74, by = H - 224, bw = 64, bh = 40;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,216,112,0.4)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 8); ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#ffd870';
+      ctx.fillText(`🎲${_dokkaebiDiceResult.icon}`, bx+bw/2, by+20);
+      ctx.font = '8px sans-serif';
+      ctx.fillStyle = 'rgba(240,232,200,0.85)';
+      const _shortTxt = (_isEnD2 ? _dokkaebiDiceResult.textEn : _dokkaebiDiceResult.textKo).split(/[—-]/)[0].trim();
+      ctx.fillText(_shortTxt, bx+bw/2, by+33);
+      ctx.restore();
+    }
   }
 
 
-  // ── 보스 러쉬 시퀀스 ──
-  const BOSS_RUSH_SEQ = [
-    {type:'mid_boss',     ch:1}, {type:'chapter_boss', ch:1},
-    {type:'mid_boss',     ch:2}, {type:'chapter_boss', ch:2},
-    {type:'mid_boss',     ch:3}, {type:'chapter_boss', ch:3},
-    {type:'mid_boss',     ch:4}, {type:'chapter_boss', ch:4},
-    {type:'mid_boss',     ch:5}, {type:'chapter_boss', ch:5},
-  ];
 
   function drawHUD(W,H){
     const _aliveRushBosses = gameMode==='boss_rush' ? rushBosses.filter(rb=>!rb.dead).length : 0;
@@ -1422,6 +1769,20 @@ const GameScene = (() => {
       ctx.fillStyle = '#c0e0ff';
       ctx.textAlign = 'right';
       ctx.fillText(text, W - 8, ry);
+      ctx.textAlign = 'left';
+    }
+
+    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 지속시간 배지
+    if (_transformType) {
+      const _tIcon = { dokkaebi:'👹', gumiho:'🦊', gogolgwi:'💀' }[_transformType] || '✨';
+      const text = `${_tIcon} ${Math.ceil(_transformTimer)}s`;
+      ctx.font = 'bold 13px sans-serif';
+      const tw = ctx.measureText(text).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.roundRect(W/2 - tw/2 - 8, 96, tw+16, 20, 6); ctx.fill();
+      ctx.fillStyle = '#ffd070';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, W/2, 111);
       ctx.textAlign = 'left';
     }
 
@@ -1540,7 +1901,7 @@ const GameScene = (() => {
       const _totalSrc = window._dpsTotal || {};
       // 투사체 type이 무기 defId와 다른 경우 매핑 (영혼낫: type='scythe' → defId='scythe_main')
       const DPS_KEY_ALIAS = { scythe_main: 'scythe' };
-      const _fmtNum = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n);
+      const _fmtNum = n => n >= 1000 ? (n/1000).toFixed(2)+'k' : n.toFixed(2); // [UPDATE 2026-07-11] 소수점 2자리 반올림
       const _dpsWeapons = [...(window.mainWeapons||[]).filter(Boolean), ...(window.subWeapons||[]).filter(Boolean)];
       const _dpsRows = _dpsWeapons.map(w => {
         const key = DPS_KEY_ALIAS[w.defId] || w.defId;
@@ -1571,7 +1932,7 @@ const GameScene = (() => {
           ctx.font='bold 12px sans-serif'; ctx.fillStyle='#ffd878';
           ctx.fillText(_fmtNum(r.total), DR_X+26, ry+10);
           ctx.font='9px sans-serif'; ctx.fillStyle='rgba(200,200,200,0.75)';
-          ctx.fillText(`${_fmtNum(Math.round(r.dps))}/s`, DR_X+26, ry+21);
+          ctx.fillText(`${_fmtNum(r.dps)}/s`, DR_X+26, ry+21); // [UPDATE 2026-07-11] 정수 반올림 제거 — 소수점 2자리로 표시
           // [UPDATE 2026-07-10] 무기별 데미지 점유율(%) 게이지 바
           const pct = r.total / _grandTotal;
           const barX = DR_X+4, barY = ry+24, barW = DR_W-38, barH = 5;
@@ -1588,7 +1949,7 @@ const GameScene = (() => {
 
     // 우측 상단 재화 HUD
     ctx.textAlign='right'; ctx.font='bold 10px sans-serif';
-    const _isSeason2Hud = (stageId >= 101 && stageId <= 200);
+    const _isSeason2Hud = (stageId >= 101); // [UPDATE 2026-07-17] 시즌2 이후 전체로 확장
     if (_isSeason2Hud) {
       // 시즌2: 차원석 잔량 + 이번 판 획득량 + 소모율
       const _cwsCur = saveData.chaewonseok || 0;
@@ -1753,6 +2114,10 @@ const GameScene = (() => {
   }
 
   function triggerLevelUp(){
+    // [UPDATE 2026-07-15] 260715_MTOPC.md 10번: 파밍 중 레벨업 시 상태 복귀 오류 수정 —
+    // 파밍 중이었는지 기록해뒀다가 pickLevelUp()에서 원래 상태로 복귀시킴 (기존엔 무조건 'playing'으로 복귀돼
+    // farmingTimer가 멈춘 채 방치, 최악의 경우 클리어했는데도 시간초과 패배 처리될 수 있었음)
+    window._wasFarming = (state === 'farming');
     state='levelup';
     try {
       levelUpChoices=getLevelUpChoices(window.mainWeapons||[window.mainWeapon||weapons[0]], window.subWeapons||[], window.statSlots||[], gameMode);
@@ -1788,15 +2153,14 @@ const GameScene = (() => {
       : `<div style="color:#8a7a6a;font-size:13px;text-align:center">${_lvIsEn?'Nothing available':'선택지 없음'}<br><br>
          <button onclick="GameScene.pickLevelUp('none',0)" style="padding:10px 24px;background:rgba(112,64,192,.5);border:1px solid #7040c0;color:#e8dcc8;border-radius:20px;cursor:pointer;font-family:inherit;">${_lvIsEn?'Continue':'계속하기'}</button></div>`;
 
-    ui.innerHTML=`<div style="position:absolute;inset:0;background:rgba(0,0,10,.85);
+    ui.innerHTML=`<div class="scroll-pan-y" style="position:absolute;inset:0;background:rgba(0,0,10,.85);
       display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:16px;overflow-y:auto">
       <div style="font-size:22px;color:#f0c040;font-weight:700;text-shadow:0 0 12px rgba(240,192,64,.5);margin-top:8px">✨ ${_lvIsEn?'Level Up!':'레벨 업!'} Lv.${player.level} ✨</div>
       <div style="font-size:10px;color:#5a4a3a;margin-bottom:4px">ATK+3 &nbsp;SPD+2 &nbsp;MOV+1 &nbsp;DEF+2</div>
       ${bodyHTML}
-      ${autoMode === 2 ? `<div id="levelup-auto-cd" style="font-size:11px;color:rgba(255,140,80,0.7);margin-top:4px;">${_lvIsEn?'Auto-select in 3s...':'자동 선택 3초 후...'}</div>` : ''}
     </div>`;
 
-    // 자동 모드: 3초 후 티어 우선순위로 자동 선택
+    // [UPDATE 2026-07-14] 자동 모드: 정해진 우선순위대로 뽑으니 카운트다운 없이 0.5초 후 바로 선택(뭘 골랐는지만 깜빡임으로 표시)
     if (autoMode === 2) {
       // 티어 정의 (낮을수록 우선)
       // [UPDATE 2026-07-10] 실제 무기 id와 안 맞던 오타 수정 (healing_incense→heal_incense, karma_orb→karma_bead,
@@ -1840,31 +2204,27 @@ const GameScene = (() => {
         all.sort((a,b)=>_getTier(a)-_getTier(b));
         return all[0];
       }
-      let _cd = 3;
-      const _iv = setInterval(() => {
-        _cd--;
-        const _el = document.getElementById('levelup-auto-cd');
-        if (!_el) { clearInterval(_iv); return; }
-        if (_cd <= 0) {
-          clearInterval(_iv);
-          const _best = _autoBestPick(levelUpChoices);
-          if (_best) {
-            // [UPDATE 2026-07-10] 자동 선택도 어떤 카드가 뽑혔는지 깜빡임으로 표시
-            const _bestEl = document.getElementById(`lvup-card-${_best._cat}-${_best._idx}`);
-            if (_bestEl) confirmPick(_bestEl, _best._cat, _best._idx);
-            else pickLevelUp(_best._cat, _best._idx);
-          }
-          else pickLevelUp('none', 0);
-        } else {
-          _el.textContent = _lvIsEn ? `Auto-select in ${_cd}s...` : `자동 선택 ${_cd}초 후...`;
+      // [UPDATE 2026-07-16] 260716_MTOPC.md 4번: 수동 클릭 시 이 타이머를 취소할 수 있도록 전역 참조 보관
+      window._levelupAutoTimeout = setTimeout(() => {
+        window._levelupAutoTimeout = null;
+        const _best = _autoBestPick(levelUpChoices);
+        if (_best) {
+          // [UPDATE 2026-07-10] 자동 선택도 어떤 카드가 뽑혔는지 깜빡임으로 표시
+          const _bestEl = document.getElementById(`lvup-card-${_best._cat}-${_best._idx}`);
+          if (_bestEl) confirmPick(_bestEl, _best._cat, _best._idx);
+          else pickLevelUp(_best._cat, _best._idx);
         }
-      }, 1000);
+        else pickLevelUp('none', 0);
+      }, 500);
     }
   }
 
   // [UPDATE 2026-07-10] 레벨업 카드 클릭 시 뭘 골랐는지 보이도록 깜빡임 확인 연출 후 실제 적용
   function confirmPick(el, cat, idx){
-    if(!el || el.dataset.picked) return; // 중복 클릭 방지
+    // [UPDATE 2026-07-16] 260716_MTOPC.md 4번: 자동선택 타이머와 수동 클릭 타이밍이 겹치면 카드 2장이 한번에
+    // 적용되던 버그 — state 가드 추가(이미 처리된 레벨업이면 완전히 무시) + 대기 중인 자동선택 타이머 취소
+    if(!el || el.dataset.picked || state !== 'levelup') return; // 중복 클릭 방지
+    if (window._levelupAutoTimeout) { clearTimeout(window._levelupAutoTimeout); window._levelupAutoTimeout = null; }
     el.dataset.picked = '1';
     // 나머지 카드는 흐리게 + 클릭 막기
     const container = document.getElementById('gameUI');
@@ -1887,6 +2247,8 @@ const GameScene = (() => {
 
   // cat: 'main'|'sub'|'stat'|'none', idx: 숫자
   function pickLevelUp(cat, idx){
+    // [UPDATE 2026-07-16] 260716_MTOPC.md 4번: 이미 처리된 레벨업이 자동선택 타이머 등으로 재실행되는 것 방지
+    if (state !== 'levelup') return;
     const c = (cat==='main'||cat==='sub'||cat==='stat') ? levelUpChoices[cat][idx] : null;
     if(c){
       if(c.type==='evolve'){
@@ -1915,12 +2277,15 @@ const GameScene = (() => {
       // 1개 선택 즉시 닫기
       const ui2=document.getElementById('gameUI');
       if(ui2){ui2.innerHTML='';ui2.style.pointerEvents='none';}
-      state='playing';
+      // [UPDATE 2026-07-15] 260715_MTOPC.md 10번: 파밍 중이었으면 'farming'으로 복귀 (기존 무조건 'playing' 하드코딩 수정)
+      state = window._wasFarming ? 'farming' : 'playing';
+      window._wasFarming = false;
       return;
     }
     const ui=document.getElementById('gameUI');
     if(ui){ui.innerHTML='';ui.style.pointerEvents='none';}
-    state='playing';
+    state = window._wasFarming ? 'farming' : 'playing';
+    window._wasFarming = false;
   }
 
   // ── 진화 이펙트 ──
@@ -1942,6 +2307,12 @@ const GameScene = (() => {
     state=victory?'victory':'dead';
     const btn=document.getElementById('pauseBtn');if(btn)btn.style.display='none';
     saveData=Save.load();
+    // [UPDATE 2026-07-15] 버그 수정: 이 두 배너 플래그가 victory 블록 안에서만 초기화돼서, 이전 런에서 승리해 배너가
+    // 세팅된 뒤 다음 런에서 패배해도 window에 남은 값이 그대로 결과화면에 다시 뜨던 문제 — 승패 무관하게 매번 초기화
+    window._s2UnlockMsg = null;
+    window._beginnerGiftParts = null;
+    // [UPDATE 2026-07-14] 초보자 선물(스테이지1~20 최초클리어 보너스) 판정용 — 클리어 기록 갱신 전 상태를 미리 기억
+    const _wasStageClearedBefore = Unlock.cleared(saveData, stageId);
     if(gameMode==='normal'&&victory){
       const prevCleared = saveData.clearedStages || [];
       const wasFirst = prevCleared.length === 0;
@@ -1952,8 +2323,11 @@ const GameScene = (() => {
       if (!saveData.clearedStagesEasy)   saveData.clearedStagesEasy   = [];
       if (!saveData.clearedStagesNormal) saveData.clearedStagesNormal = [];
       if (!saveData.clearedStagesHard)   saveData.clearedStagesHard   = [];
-      if (difficulty === 'easy'   && !saveData.clearedStagesEasy.includes(stageId))
+      if (difficulty === 'easy'   && !saveData.clearedStagesEasy.includes(stageId)) {
         saveData.clearedStagesEasy.push(stageId);
+        // [UPDATE 2026-07-11] 260711_MTOPC.md 3번: 이지 챕터5 클리어 → 이지 2슬롯 해금 알림
+        if (stageId === 50) saveData._showSlotUnlock = 'easy2';
+      }
       if (difficulty === 'normal' && !saveData.clearedStagesNormal.includes(stageId)) {
         saveData.clearedStagesNormal.push(stageId);
         if (!saveData.clearedStagesEasy.includes(stageId)) saveData.clearedStagesEasy.push(stageId);
@@ -1975,23 +2349,39 @@ const GameScene = (() => {
         if (!saveData.clearedChapters.includes(ch2)) saveData.clearedChapters.push(ch2);
       }
       // [UPDATE 2026-07-06] 시즌2 스토리 해금: 챕터16 클리어→강림차사, 챕터20 클리어→상사화
-      window._s2UnlockMsg = null;
       if (stageId === 160 && !(saveData.companions || []).includes('gangnim')) {
         saveData.companions = [...(saveData.companions || []), 'gangnim'];
         window._s2UnlockMsg = { icon:'📖', ko:'새 동료 [강림차사]가 해금되었다!', en:'New companion [Gangnim Chasa] unlocked!' };
       }
       if (stageId === 200) saveData.season2Clear = true; // (기존에 설정하는 곳이 없던 버그 수정)
+      // [UPDATE 2026-07-17] 순리석 던전 해금 조건(season3Clear)용 — 혼돈석 던전(hondonseok_dungeon)이
+      // season2Clear로 열리는 것과 동일한 패턴
+      if (stageId === 300) saveData.season3Clear = true;
       if (stageId === 200 && !(saveData.pets || []).includes('sangsahwa')) {
         saveData.pets = [...(saveData.pets || []), 'sangsahwa'];
         if (!saveData.petLevels) saveData.petLevels = {};
         saveData.petLevels.sangsahwa = 1;
-        window._s2UnlockMsg = { icon:'🌺', ko:'새 펫 [상사화]가 해금되었다!', en:'New pet [Sangsahwa] unlocked!' };
+        // [UPDATE 2026-07-14] 260713_MTOPC.md 18번: 해금 순간엔 원본 풀사이즈(39×52 ×2배)로 임팩트, 인게임에선 축소판(drawH44) 유지
+        window._s2UnlockMsg = { icon:'🌺', spriteKey:'sangsahwa', popupW:78, popupH:104, ko:'새 펫 [상사화]가 해금되었다!', en:'New pet [Sangsahwa] unlocked!' };
+      }
+      // [UPDATE 2026-07-14] 초보자 선물 — 스테이지1~20 최초 클리어(난이도 무관 1회) 시 신규 유저 초반 가속용 재화 보너스
+      // [UPDATE 2026-07-15] 공식을 beginnerGiftFor()로 추출(game-data.js) — 프로모 코드 소급지급과 공유
+      if (!_wasStageClearedBefore && stageId >= 1 && stageId <= 20) {
+        const parts = beginnerGiftFor(stageId);
+        for (const p of parts) saveData[p.key] = (saveData[p.key]||0) + p.amount;
+        window._beginnerGiftParts = parts;
       }
     }
-    if(gameMode==='infinite')
-      saveData.infiniteRecord=Math.max(saveData.infiniteRecord||0, Math.floor(elapsed));
+    // [UPDATE 2026-07-12] 버그 수정: 강화석/천운석/천령과/태극석 던전이 전부 gameMode==='infinite'를 공유하는데
+    // 어느 던전인지 구분 없이 항상 saveData.infiniteRecord 하나에만 기록해서, "무한 던전" 외 나머지는
+    // 던전 목록 화면이 읽는 saveData[id+'Record'] 필드가 영원히 안 채워지던 문제. rewardMode 기준으로 분리해서 저장.
+    if(gameMode==='infinite'){
+      const _recKey = (_rewardMode || 'infinite') + 'Record';
+      saveData[_recKey] = Math.max(saveData[_recKey]||0, Math.floor(elapsed));
+    }
+    // [UPDATE 2026-07-12] 버그 수정: 저장 키가 bossRushRecord(대문자 R)였는데 던전 목록 화면은 bossrushRecord(소문자)로 읽어서 항상 "기록 없음"이었음
     if(gameMode==='boss_rush')
-      saveData.bossRushRecord=Math.max(saveData.bossRushRecord||0, bossRushIndex);
+      saveData.bossrushRecord=Math.max(saveData.bossrushRecord||0, bossRushIndex);
     saveData.totalKills=(saveData.totalKills||0)+kills;
     saveData.runs=(saveData.runs||0)+1;
 
@@ -2004,6 +2394,20 @@ const GameScene = (() => {
     if (gameMode==='normal' && victory && stageId===100 && difficulty==='easy' && !saveData.season1Clear) {
       saveData.season1Clear = true;
       _pendingEnding = true;
+      saveData._showSlotUnlock = 'easy3'; // [UPDATE 2026-07-11] 이지 시즌1 전체클리어 → 이지 3슬롯 해금 알림
+    }
+    // [UPDATE 2026-07-14] 260713_MTOPC.md 16번: 시즌 2 최초 클리어 감지 (이지 스테이지 200) — season2Clear와 별도 플래그로
+    // "엔딩을 이미 봤는지"만 추적(season2Clear는 무기초월 등 다른 시스템의 해금 조건으로 이미 쓰이고 있어 분리)
+    _pendingEnding2 = false;
+    if (gameMode==='normal' && victory && stageId===200 && difficulty==='easy' && !saveData.season2ClearEnding) {
+      saveData.season2ClearEnding = true;
+      _pendingEnding2 = true;
+    }
+    // [UPDATE 2026-07-17] 시즌 3 최초 클리어 감지 (이지 스테이지 300) — season2ClearEnding과 동일 패턴
+    _pendingEnding3 = false;
+    if (gameMode==='normal' && victory && stageId===300 && difficulty==='easy' && !saveData.season3ClearEnding) {
+      saveData.season3ClearEnding = true;
+      _pendingEnding3 = true;
     }
     AchievementScene.checkAndUnlock(saveData);
     Save.save(saveData);
@@ -2024,14 +2428,20 @@ const GameScene = (() => {
       gameMode==='infinite'
         ? (victory ? (isKo?'🌀 무한 도전 종료!':'🌀 Infinite Run End!') : (isKo?`💀 Wave ${infiniteWave} 전멸`:`💀 Wave ${infiniteWave} Defeated`))
         : gameMode==='boss_rush'
-          ? (bossRushIndex>=BOSS_RUSH_SEQ.length ? (isKo?'👹 전체 클리어!':'👹 All Bosses Cleared!') : (isKo?`💎 ${bossRushIndex}보스 처치`:`💎 Boss ${bossRushIndex} Slain`))
+          // [UPDATE 2026-07-14] 260714_MTOPC.md 15번: 무한 확장형이라 "전체 클리어" 문구 제거, 처치 수만 표시
+          ? (isKo?`💎 ${bossRushIndex}보스 처치`:`💎 Boss ${bossRushIndex} Slain`)
           : (victory
               ? (isBossStage ? (isKo?'⚔️ 보스 격파!':'⚔️ Boss Defeated!') : (isKo?'🏆 스테이지 클리어!':'🏆 Stage Clear!'))
               : (timeLeft<=0 ? (isKo?'⏰ 시간 초과':'⏰ Time Up') : (isKo?'💀 전멸':'💀 Defeated')));
 
     const earnedGold    = window.earnedGold || 0;
     const earnedSpecial = window.earnedSpecial || 0;
-    const specialIcon   = _rewardMode ? (SPECIAL_ICONS[_rewardMode] || '') : '';
+    const earnedSoulFragments = window.earnedSoulFragments || 0;
+    const earnedSoulStones    = window.earnedSoulStones || 0;
+    // [UPDATE 2026-07-17] 스토리 스테이지(시즌2 이후, 차원석 경제)의 earnedSpecial은 던전 특화재화가 아니라 차원석 —
+    // 아이콘이 항상 비어보이던 버그 원인. _rewardMode 유무로 던전/스토리 문맥을 구분해서 아이콘을 정확히 매칭.
+    const _isStoryDimStage = (gameMode==='normal' && !_rewardMode && stageId>=101);
+    const specialIcon = _rewardMode ? (SPECIAL_ICONS[_rewardMode] || '💠') : (_isStoryDimStage ? '🔷' : '');
     const survivedComp = companions.filter(c=>!c.dead).length;
     const timeSec = Math.floor(elapsed);
     const timeStr = isKo ? `${Math.floor(timeSec/60)}분 ${timeSec%60}초` : `${Math.floor(timeSec/60)}m ${timeSec%60}s`;
@@ -2048,13 +2458,20 @@ const GameScene = (() => {
           ${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}
         </div>` : '';
 
+    // [UPDATE 2026-07-17] 이번 판에 얻은 재화가 1종류뿐이라는 가정이 틀렸음(골드+차원석+영혼조각/영혼석이 동시에
+    // 나올 수 있음) — either/or 대신 0보다 큰 재화를 전부 나열하도록 재설계(사용자 지적)
+    const earnedRows = [];
+    if (earnedGold > 0) earnedRows.push({ icon:'🪙', label: isKo?'획득 골드':'Gold', val:`+${earnedGold.toLocaleString()}` });
+    if (earnedSpecial > 0) earnedRows.push({ icon: specialIcon, label: isKo?(_isStoryDimStage?'획득 차원석':'획득 재화'):(_isStoryDimStage?'Dim. Stones':'Earned'), val:`+${earnedSpecial}` });
+    if (earnedSoulFragments > 0) earnedRows.push({ icon:'👻', label: isKo?'영혼 조각':'Soul Frag.', val:`+${earnedSoulFragments}` });
+    if (earnedSoulStones > 0) earnedRows.push({ icon:'💜', label: isKo?'영혼석':'Soul Stone', val:`+${earnedSoulStones}` });
+    if (!earnedRows.length) earnedRows.push({ icon:'🪙', label: isKo?'획득 골드':'Gold', val:'+0' });
+
     // ── 스탯 행 ──
     const statRows = [
       { icon:'⚔️', label: isKo?'처치':'Kills',   val: `${kills}` + (gameMode==='normal'?`/${killTarget}`:'') },
       { icon:'⏱️', label: isKo?'생존시간':'Time', val: timeStr },
-      ...(earnedSpecial > 0
-        ? [{ icon: specialIcon, label: isKo ? '획득 재화' : 'Earned', val: `+${earnedSpecial}` }]
-        : [{ icon:'🪙', label: isKo?'획득 골드':'Gold Earned', val: `+${earnedGold.toLocaleString()}` }]),
+      ...earnedRows,
       { icon:'❤️',  label: isKo?'남은 HP':'HP Left', val: `${Math.max(0,Math.floor(player.hp))} / ${Math.floor(player.maxHp)}` },
       ...(companions.length ? [{ icon:'🤝', label: isKo?'동료 생존':'Allies', val: `${survivedComp}/${companions.length}` }] : []),
       { icon:'⬆️',  label: isKo?'레벨':'Level', val: `${player.level}` },
@@ -2118,11 +2535,33 @@ const GameScene = (() => {
 
         ${window._s2UnlockMsg ? `
         <!-- [UPDATE 2026-07-06] 시즌2 스토리 해금 배너 -->
+        <!-- [UPDATE 2026-07-14] 260713_MTOPC.md 18번: spriteKey 있으면 원본 풀사이즈 이미지로 임팩트 강화 -->
         <div style="
-          margin-bottom:14px;padding:10px 12px;border-radius:10px;
+          margin-bottom:14px;padding:10px 12px;border-radius:10px;text-align:center;
           background:rgba(140,60,255,0.15);border:1px solid rgba(180,120,255,0.5);
-          font-size:13px;color:#d8b8ff;font-weight:600;
-        ">${window._s2UnlockMsg.icon} ${isKo ? window._s2UnlockMsg.ko : window._s2UnlockMsg.en}</div>
+        ">
+          ${(window._s2UnlockMsg.spriteKey && SPRITES?.pets?.[window._s2UnlockMsg.spriteKey]) ? `
+            <img src="${SpriteLoader.get(SPRITES.pets[window._s2UnlockMsg.spriteKey].src).src}"
+              style="width:${window._s2UnlockMsg.popupW||78}px;height:${window._s2UnlockMsg.popupH||104}px;
+                object-fit:contain;image-rendering:pixelated;display:block;margin:0 auto 6px;">
+          ` : ''}
+          <div style="font-size:13px;color:#d8b8ff;font-weight:600;">${window._s2UnlockMsg.icon} ${isKo ? window._s2UnlockMsg.ko : window._s2UnlockMsg.en}</div>
+        </div>
+        ` : ''}
+        ${window._beginnerGiftParts ? `
+        <!-- [UPDATE 2026-07-14] 초보자 선물 배너 — 스테이지1~20 최초 클리어 보너스 -->
+        <div style="
+          margin-bottom:14px;padding:10px 12px;border-radius:10px;text-align:center;
+          background:rgba(255,200,60,0.12);border:1px solid rgba(255,210,90,0.5);
+        ">
+          <div style="font-size:12px;color:#ffd870;font-weight:700;margin-bottom:6px;">🎁 ${isKo?'초보자 선물':'Beginner Gift'}</div>
+          <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;font-size:12px;color:#f0e0c0;">
+            ${window._beginnerGiftParts.map(p => {
+              const _iconHTML = p.key==='gold' ? '🪙' : p.key==='gems' ? '💎' : _cimg(p.key,14);
+              return `<span>${_iconHTML} +${p.amount.toLocaleString()}</span>`;
+            }).join('')}
+          </div>
+        </div>
         ` : ''}
         <!-- 재화 카운트업 -->
         <div id="gold-reward" style="
@@ -2148,7 +2587,7 @@ const GameScene = (() => {
               color:#c0ffc0;cursor:pointer;font-family:inherit;
             ">${isKo?'▶ 다음 스테이지':'▶ Next Stage'}</button>
           ` : ''}
-          <button id="result-lobby" style="
+          <button id="result-lobby" class="${victory && gameMode==='normal' && stageId===1 ? 'onboard-pulse' : ''}" style="
             flex:1;padding:13px 0;border-radius:10px;font-size:13px;font-weight:600;
             background:${victory?'rgba(112,64,192,0.5)':'rgba(80,20,20,0.6)'};
             border:1px solid ${victory?'#a060e0':'#803030'};
@@ -2191,6 +2630,8 @@ const GameScene = (() => {
       document.getElementById('result-overlay')?.remove();
       canvas._retSet = false;
       if (_pendingEnding) { _pendingEnding = false; SceneManager.go('ending'); }
+      else if (_pendingEnding2) { _pendingEnding2 = false; SceneManager.go('ending', { season:2 }); } // [UPDATE 2026-07-14] 260713_MTOPC.md 16번
+      else if (_pendingEnding3) { _pendingEnding3 = false; SceneManager.go('ending', { season:3 }); } // [UPDATE 2026-07-17]
       else SceneManager.go('lobby');
     });
     document.getElementById('result-retry')?.addEventListener('click', ()=>{
@@ -2223,13 +2664,18 @@ const GameScene = (() => {
           canvas._retSet = false;
           if (gameMode !== 'normal') {
             // 던전/무한/보스러시: 패배 시 같은 모드로 재시작, 승리 시 로비
-            if (!victory) SceneManager.go('game', { mode: gameMode, difficulty });
+            // [UPDATE 2026-07-15] 260715_MTOPC.md 3번: rewardMode 누락 버그 수정 — 재도전 시 _rewardMode가 null로
+            // 리셋되면서 다이아/특수재화 대신 골드가 나오던 문제 (6개 재화던전 전부 해당)
+            if (!victory) SceneManager.go('game', { mode: gameMode, difficulty, rewardMode: _rewardMode });
             else SceneManager.go('lobby');
           } else if (!victory) {
             SceneManager.go('game', { stageId, difficulty });
           } else {
-            const LOBBY_CHANGE_STAGES = [1,5,10,15,20,25,30];
-            const goLobbyAfter = LOBBY_CHANGE_STAGES.includes(stageId) || stageId >= 50;
+            // [UPDATE 2026-07-17] 버그 수정: "stageId >= 50"이 붙어있어서 스테이지50 이후 전체(시즌1 후반~시즌3 전부)가
+            // 자동/반자동 모드에서 절대 자동 진행되지 않고 매번 로비로 튕기던 문제 — 해금 트리거 스테이지에서만
+            // 로비로 돌아가도록 UNLOCK_PENDING_STAGE_IDS(stage-select.js) 기준 목록으로 교체
+            const LOBBY_CHANGE_STAGES = [1,5,10,15,20,25,30,100,110,160,200,300];
+            const goLobbyAfter = LOBBY_CHANGE_STAGES.includes(stageId);
             if (goLobbyAfter) SceneManager.go('lobby');
             else SceneManager.go('game', { stageId: stageId + 1, difficulty });
           }
@@ -2253,6 +2699,30 @@ const GameScene = (() => {
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('touchstart', onTouchStart);
       canvas.removeEventListener('touchmove', onTouchMove);
+    }
+  }
+
+  // [UPDATE 2026-07-11] 260711_MTOPC.md 2-5: 삼위일체 달성 슬롯 수만큼 발광 구체가 캐릭터 주변을 궤도(반경50px, 발광15px, 5초/바퀴)
+  function _drawElementTrinityOrbit(ctx,camX,camY){
+    const slots = window._elementTrinitySlots;
+    if (!slots || !slots.length) return;
+    const sx = player.x-camX, sy = player.y-camY-20;
+    const n = Math.min(3, slots.length);
+    const baseAngle = (elapsed / 5.0) * Math.PI * 2; // 5초/바퀴
+    for (let i=0; i<n; i++) {
+      const el = slots[i];
+      const meta = (typeof ELEMENT_META!=='undefined') ? ELEMENT_META[el] : null;
+      if (!meta) continue;
+      const ang = baseAngle + (Math.PI*2/n)*i;
+      const ox = sx + Math.cos(ang)*50, oy = sy + Math.sin(ang)*50;
+      ctx.save();
+      const g = ctx.createRadialGradient(ox,oy,0,ox,oy,15);
+      g.addColorStop(0, meta.bg); g.addColorStop(1, 'transparent');
+      ctx.globalAlpha = 0.85; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(ox,oy,15,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1; ctx.fillStyle = meta.bg;
+      ctx.beginPath(); ctx.arc(ox,oy,6,0,Math.PI*2); ctx.fill();
+      ctx.restore();
     }
   }
 
@@ -2324,5 +2794,5 @@ const GameScene = (() => {
     }
   }
 
-  return{enter,exit,pickLevelUp,confirmPick,togglePause,resumeGame,toggleMute,goLobby,zoomIn,zoomOut,cycleSpeed,cycleAutoMode};
+  return{enter,exit,pickLevelUp,confirmPick,togglePause,resumeGame,toggleMute,goLobby,zoomIn,zoomOut,cycleSpeed,cycleAutoMode,summonClone};
 })();

@@ -104,6 +104,13 @@ class Boss {
     // 소환 위치
     this.summonSpots = [];
 
+    // [UPDATE 2026-07-15] 260714_MTOPC.md 시즌3 신규 패턴 4종 — 임시상태
+    this.teleportTarget = null;   // teleport_strike: 순간이동 목표 좌표
+    this._teleportDone = false;
+    this.clones = [];             // clone_split: 데미지 없는 허상 분신들 {x,y,life,maxLife}
+    this._glitchTimer = 0;        // glitch_barrage: 연속 스폰 타이머
+    this._confuseDone = false;
+
     // 경고 표시
     this.showWarning = false;
     this.warningT    = 0;
@@ -128,6 +135,12 @@ class Boss {
     if (this.phaseFlash > 0) this.phaseFlash -= dt;
 
     this.t += dt;
+
+    // [UPDATE 2026-07-15] clone_split 분신 수명 관리 (상태와 무관하게 항상 갱신)
+    if (this.clones.length) {
+      for (const c of this.clones) { c.life -= dt; c.x += c.vx*dt; c.y += c.vy*dt; }
+      this.clones = this.clones.filter(c => c.life > 0);
+    }
 
     // 페이즈 전환 체크
     const ph = this.curPhase;
@@ -227,6 +240,31 @@ class Boss {
     if (this.curPattern === 'spiral') {
       this.spiralAngle = 0;
     }
+    // [UPDATE 2026-07-15] 260714_MTOPC.md 시즌3 신규 패턴 4종
+    if (this.curPattern === 'teleport_strike') {
+      // 순간이동 후 기습: 플레이어 근처(80~140px) 랜덤 지점을 목표로 예고
+      const a = Math.random() * Math.PI * 2;
+      const r = 80 + Math.random() * 60;
+      this.teleportTarget = { x: player.x + Math.cos(a) * r, y: player.y + Math.sin(a) * r };
+      this._teleportDone = false;
+    }
+    if (this.curPattern === 'confuse_field') {
+      this._confuseDone = false;
+    }
+    if (this.curPattern === 'clone_split') {
+      this.clones = [];
+      for (let i = 0; i < 2; i++) {
+        const a = (i / 2) * Math.PI * 2 + Math.random() * 0.6;
+        this.clones.push({
+          x: this.x + Math.cos(a) * 90, y: this.y + Math.sin(a) * 90,
+          vx: Math.cos(a + Math.PI/2) * 30, vy: Math.sin(a + Math.PI/2) * 30,
+          life: 3.0, maxLife: 3.0,
+        });
+      }
+    }
+    if (this.curPattern === 'glitch_barrage') {
+      this._glitchTimer = 0;
+    }
   }
 
   _getAttackDuration() {
@@ -236,6 +274,10 @@ class Boss {
       shockwave: 0.40,
       spiral:    1.20,
       summon:    0.30,
+      teleport_strike: 0.35,
+      clone_split:     0.30,
+      confuse_field:   0.40,
+      glitch_barrage:  1.40,
     }[this.curPattern] || 0.5;
   }
 
@@ -296,6 +338,48 @@ class Boss {
         // 소환 위치에서 적 생성 (game.js에서 처리)
         this._summonPending = true;
         break;
+
+      // [UPDATE 2026-07-15] 260714_MTOPC.md 시즌3 신규 패턴 4종
+      case 'teleport_strike': {
+        // 순간이동 후 기습: 첫 프레임에 순간이동 + 착지 충격파
+        if (!this._teleportDone) {
+          this._teleportDone = true;
+          if (this.teleportTarget) { this.x = this.teleportTarget.x; this.y = this.teleportTarget.y; }
+          projs.push(new Projectile(this.x, this.y, 0, 0, this.dmg * 1.3, {
+            aoe: 110, radius: 110, life: 0.3,
+            type: 'bell', color: this.color, glow: this.glowColor,
+          }));
+        }
+        break;
+      }
+
+      case 'clone_split':
+        // 데미지 없는 허상 분신은 _setupTelegraph에서 이미 생성(this.clones) — 판정 없이 시야 교란용
+        break;
+
+      case 'confuse_field':
+        // 필드 내 플레이어 조작 일시 반전
+        if (!this._confuseDone) {
+          this._confuseDone = true;
+          player._controlReversed = Math.max(player._controlReversed || 0, 2.0);
+        }
+        break;
+
+      case 'glitch_barrage': {
+        // 화면 랜덤 위치 연속 폭발형 투사체 난사
+        this._glitchTimer -= dt;
+        if (this._glitchTimer <= 0) {
+          this._glitchTimer = 0.12;
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * 180;
+          const gx = player.x + Math.cos(a) * r, gy = player.y + Math.sin(a) * r;
+          projs.push(new Projectile(gx, gy, 0, 0, this.dmg * 0.6, {
+            aoe: 50, radius: 50, life: 0.25,
+            type: 'bell', color: '#40ffe0', glow: 'rgba(64,255,224,0.6)',
+          }));
+        }
+        break;
+      }
     }
     return projs;
   }
@@ -350,6 +434,16 @@ class Boss {
 
     // 피격 깜빡임
     if (this.iframe > 0 && Math.floor(this.iframe*16)%2===0) return;
+
+    // [UPDATE 2026-07-15] clone_split 허상 분신 (본체보다 흐리게, 데미지 없음)
+    for (const c of this.clones) {
+      const cx = c.x - camX, cy = c.y - camY;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, c.life / c.maxLife) * 0.55;
+      if (this.bossType === 'mid_boss') this._drawMidBoss(ctx, cx, cy, s);
+      else this._drawChapterBoss(ctx, cx, cy, s);
+      ctx.restore();
+    }
 
     // 보스 본체 드로잉
     if (this.bossType === 'mid_boss') {
@@ -491,6 +585,27 @@ class Boss {
         ctx.strokeStyle='#e0a020'; ctx.lineWidth=2;
         ctx.beginPath(); ctx.arc(spx,spy,20*p,0,Math.PI*2); ctx.stroke();
       }
+    }
+    // [UPDATE 2026-07-15] 260714_MTOPC.md 시즌3 신규 패턴 4종 예고 연출
+    else if (this.curPattern === 'teleport_strike' && this.teleportTarget) {
+      const tx = sx + (this.teleportTarget.x - this.x), ty = sy + (this.teleportTarget.y - this.y);
+      ctx.strokeStyle='#c040ff'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(tx,ty,60*p,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([6,6]);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(tx,ty); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    else if (this.curPattern === 'confuse_field') {
+      const r = 140 * p;
+      ctx.strokeStyle='#e060ff'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
+    }
+    else if (this.curPattern === 'glitch_barrage') {
+      // 화면 전체가 곧 난사 대상임을 암시하는 깜빡이는 테두리
+      ctx.strokeStyle='#40ffe0'; ctx.lineWidth=2;
+      ctx.setLineDash([10,6]);
+      ctx.beginPath(); ctx.arc(sx,sy,s+30*p,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
     }
     ctx.restore();
   }

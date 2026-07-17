@@ -225,7 +225,7 @@ const AchievementScene = (() => {
         </div>
 
         <!-- 내용 -->
-        <div style="flex:1;overflow-y:auto;padding:14px 16px;">
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:14px 16px;">
           <div style="font-size:12px;color:rgba(200,160,255,0.6);letter-spacing:.1em;margin-bottom:10px;">
             ${Lang.t('achievement','onceSect')}
           </div>

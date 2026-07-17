@@ -1,6 +1,10 @@
 // pet.js - 펫 관리 화면
 const PetScene = (() => {
   let saveData = null;
+  let _expandedId = null; // [UPDATE 2026-07-13] 탭하면 펫 설명을 큰 글씨로 펼쳐 보여주는 카드 id
+
+  // [UPDATE 2026-07-11] 펫 카드에 등급 텍스트 라벨이 없어 커먼/언커먼 구분이 안 보이던 문제 수정 (character.js 패턴과 동일하게 rarity_* 키 재사용)
+  function rarityLabel(r) { return Lang.t('character', 'rarity_' + r) || r; }
 
   function petImgTag(pd, size=40, grayscale=false) {
     const sc = SPRITES?.pets?.[pd.id] || SPRITES?.pets?.[pd.id + '_pet'];
@@ -11,18 +15,23 @@ const PetScene = (() => {
     return `<span style="font-size:${size*0.7}px;line-height:1;${grayscale?'filter:grayscale(1) opacity(0.35)':''}">${pd.icon}</span>`;
   }
 
+  // [UPDATE 2026-07-11] 260711_MTOPC.md 4-5: 4단계 → 7단계 등급 사다리로 확장 (에픽/레전더리/미소스는 향후 콘텐츠용, 현재 펫은 커먼~유니크만 사용)
   const RARITY_COLOR = {
-    common: '#aaa', rare: '#4a90d9', epic: '#c060d0', legendary: '#e8a020'
+    common: '#aaa', uncommon: '#60a060', rare: '#4a90d9', unique: '#a040e0',
+    epic: '#c060d0', legendary: '#e8a020', mythos: '#ff4060',
   };
 
   // 해금 비용 (천령과)
-  const UNLOCK_COST = { common: 5, rare: 15, epic: 40, legendary: 80 };
-  // 강화 비용 per 레벨 (골드, 천령과)
+  const UNLOCK_COST = { common:10, uncommon:30, rare:40, unique:70, epic:110, legendary:180, mythos:290 };
+  // 강화 비용 per 레벨 (골드, 천령과 동일값)
   const UPGRADE_COST = {
-    common:    { gold:  200, cheonryeonggwa:   200 },
-    rare:      { gold:  500, cheonryeonggwa:   500 },
-    epic:      { gold: 1200, cheonryeonggwa:  1200 },
-    legendary: { gold: 3000, cheonryeonggwa:  3000 },
+    common:    { gold:   350, cheonryeonggwa:   350 },
+    uncommon:  { gold:  1000, cheonryeonggwa:  1000 },
+    rare:      { gold:  1400, cheonryeonggwa:  1400 },
+    unique:    { gold:  2500, cheonryeonggwa:  2500 },
+    epic:      { gold:  4000, cheonryeonggwa:  4000 },
+    legendary: { gold:  6000, cheonryeonggwa:  6000 },
+    mythos:    { gold: 10000, cheonryeonggwa: 10000 },
   };
   const MAX_PET_LV = 5;
 
@@ -35,6 +44,8 @@ const PetScene = (() => {
     const isEn      = Lang.getCurrent() === 'en';
     const cheon     = saveData.cheonryeonggwa || 0;
     const gold      = saveData.gold           || 0;
+    // [UPDATE 2026-07-11] 펜타그램/카드 테두리용 — 현재 편성된 펫들의 오행 목록
+    const _activePetEls = active.map(id => list.find(p=>p.id===id)?.element).filter(Boolean);
 
     el.innerHTML = `
       <div class="char-root">
@@ -50,7 +61,9 @@ const PetScene = (() => {
         ${(() => {
           const _hasNormal = (saveData.clearedStagesNormal||[]).length > 0;
           const _hasHard   = (saveData.clearedStagesHard||[]).length > 0;
-          const _slotCount = _hasHard ? 3 : _hasNormal ? 2 : 1;
+          // [UPDATE 2026-07-11] 이지 전용 슬롯 확장도 반영
+          const _easySlots = (typeof StageSelectScene !== 'undefined') ? StageSelectScene.getEasySlotCount(saveData) : 1;
+          const _slotCount = Math.max(_hasHard ? 3 : _hasNormal ? 2 : 1, _easySlots);
           const _diffLabels = ['🌿','⚔️','🔥'];
           const _diffColors = ['#60c060','#f0c040','#ff6040'];
           return `<div class="formation-bar">
@@ -87,6 +100,15 @@ const PetScene = (() => {
             </div>
           </div>` : ''}
 
+        <!-- [UPDATE 2026-07-11] 오행 펜타그램 — 현재 편성된 펫들의 속성을 색 링으로 표시 -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
+          background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
+          <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
+            ${isEn?'Element Relations (colored = deployed)':'오행 상생상극 (색상 = 편성 중)'}
+          </div>
+          ${elementPentagramSVG(_activePetEls, null, 150)}
+        </div>
+
         <!-- 펫 목록 -->
         <div class="companion-list">
           <div class="list-section-title">${Lang.t('pet','owned')} (${owned.length}/${list.length})</div>
@@ -95,6 +117,7 @@ const PetScene = (() => {
               const isOwned  = owned.includes(pd.id);
               const isActive = active.includes(pd.id);
               const rc       = RARITY_COLOR[pd.rarity] || '#aaa';
+              const rl       = rarityLabel(pd.rarity);
               const lv       = petLevels[pd.id] || 1;
               const isMax    = lv >= MAX_PET_LV;
               const unlockCost = UNLOCK_COST[pd.rarity] || 5;
@@ -104,9 +127,15 @@ const PetScene = (() => {
               const _storyLocked = pd.storyUnlock && !isOwned;
               const canUnlock  = !isOwned && !_s2Locked && !_storyLocked && cheon >= unlockCost;
               const canUpgrade = isOwned && !isMax && gold >= upgCost.gold && cheon >= upgCost.cheonryeonggwa;
+              // [UPDATE 2026-07-11] 편성 중인 펫들과의 상생/상극 — 카드 테두리로 표시 (편성 안 된 카드에만)
+              const _pRelation = (isOwned && !isActive) ? elementRelation(pd.element, _activePetEls) : null;
+              const _pBorderStyle = _pRelation==='gen' ? 'border-color:rgba(94,194,106,0.7);'
+                : _pRelation==='clash' ? 'border-color:rgba(192,72,72,0.7);' : '';
 
+              const _expanded = _expandedId === pd.id;
               return `
-                <div class="companion-card ${isOwned?'owned':'locked'} ${isActive?'active':''}" >
+                <div class="companion-card ${isOwned?'owned':'locked'} ${isActive?'active':''}" style="${_pBorderStyle}"
+                  ${isOwned?`onclick="PetScene.toggleExpand('${pd.id}')"`:''}>
                   <div class="card-rarity-bar" style="background:${rc}"></div>
                   <div class="card-sprite-wrap" style="min-height:60px;position:relative;">
                     <div style="line-height:1;">
@@ -117,10 +146,16 @@ const PetScene = (() => {
                     ${isOwned ? `<div style="position:absolute;bottom:0;right:0;font-size:9px;
                       background:${rc}33;border:1px solid ${rc};color:${rc};
                       border-radius:4px;padding:1px 4px;">${isMax?'MAX':Lang.getCurrent()==='en'?`Lv.${lv}`:lv+'강'}</div>` : ''}
+                    ${isOwned ? `<div style="position:absolute;top:2px;right:2px;
+                      font-size:9px;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:4px;color:${rc};">
+                      ${rl}
+                    </div>` : ''}
+                    ${pd.element ? elementBadgeHTML(pd.element,14,'top:2px;left:2px;') : ''}
                   </div>
                   <div class="card-info">
                     <div class="card-name" style="color:${isOwned?rc:'#555'}">${isEn?(pd.nameEn||pd.name):pd.name}</div>
-                    <div class="card-role" style="font-size:9px;line-height:1.3;color:#6a5a4a;margin-top:2px;">
+                    <!-- [UPDATE 2026-07-13] 카드 탭 시 큰 글씨로 펼쳐 보기 -->
+                    <div class="card-role" style="font-size:${_expanded?13:9}px;line-height:${_expanded?1.6:1.3};color:#6a5a4a;margin-top:2px;">
                       ${isEn?(pd.descEn||pd.desc):pd.desc}
                     </div>
                     <!-- 버튼 영역 -->
@@ -144,14 +179,14 @@ const PetScene = (() => {
                           ${_cimg('cheonryeonggwa')}${unlockCost} ${isEn?'Unlock':'해금'}
                         </button>`) : ''}
                       ${isOwned && !isActive ? `
-                        <button onclick="PetScene.addPet('${pd.id}')" style="
+                        <button onclick="event.stopPropagation();PetScene.addPet('${pd.id}')" style="
                           width:100%;padding:3px 0;border-radius:5px;font-size:10px;
                           background:rgba(100,160,220,0.2);border:1px solid rgba(100,160,220,0.5);
                           color:#80b8f0;cursor:pointer;">
                           ${isEn?'Deploy':'편성'}
                         </button>` : ''}
                       ${isOwned && !isMax ? `
-                        <button onclick="PetScene.upgradePet('${pd.id}')" style="
+                        <button onclick="event.stopPropagation();PetScene.upgradePet('${pd.id}')" style="
                           width:100%;padding:3px 0;border-radius:5px;font-size:10px;
                           background:${canUpgrade?'rgba(200,160,40,0.2)':'rgba(60,60,60,0.3)'};
                           border:1px solid ${canUpgrade?'rgba(240,200,64,0.5)':'#444'};
@@ -214,6 +249,7 @@ const PetScene = (() => {
     const active = saveData.activePets || [];
     if (active.includes(id) || active.length >= 3) return;
     saveData.activePets = [...active, id];
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData);
     refresh();
   }
@@ -223,6 +259,7 @@ const PetScene = (() => {
     if (!active[i]) return;
     active.splice(i, 1);
     saveData.activePets = active;
+    checkTrinityToast(saveData); // [UPDATE 2026-07-13] 삼위일체 발동 토스트
     Save.save(saveData);
     refresh();
   }
@@ -238,8 +275,10 @@ const PetScene = (() => {
     if (newScrollEl) newScrollEl.scrollTop = scrollTop;
   }
 
-  function enter(el) { saveData = Save.load(); render(el); }
+  function enter(el) { saveData = Save.load(); _expandedId = null; render(el); }
   function exit()    {}
+  // [UPDATE 2026-07-13] 카드 탭 → 설명 확대/축소 토글
+  function toggleExpand(id) { _expandedId = (_expandedId===id) ? null : id; refresh(); }
 
-  return { enter, exit, unlockPet, upgradePet, addPet, removeSlot, refresh };
+  return { enter, exit, unlockPet, upgradePet, addPet, removeSlot, refresh, toggleExpand };
 })();

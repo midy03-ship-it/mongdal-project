@@ -22,6 +22,7 @@ const Save = (() => {
     totalKills: 0,
     runs: 0,
     selectedMainWeapons: ['talisman'],
+    decks: [],  // [UPDATE 2026-07-16] 260716_MTOPC.md 2번⑥: 무기셋(덱) 5슬롯 — { mainWeapons, companions, pets } 스냅샷
     unlockedWeapons: ['talisman'],
     weaponLevels: {},  // { talisman: 3, sword: 1, ... } 1~25강
     ganghwaseok: 0,   // 강화석 - 무기 강화 재료
@@ -29,7 +30,9 @@ const Save = (() => {
     cheonryeonggwa: 0, // 천령과 - 펫 강화 재료
     taegeukseok: 0,   // 태극석 - 무기 슬롯 재료
     chaewonseok: 0,   // 차원석 - 차원 상인 거래 재화
-    yeongonseok: 0,   // 영혼석 - 무기 초월 재료 (시즌2 클리어 후 해금)
+    // [UPDATE 2026-07-17] yeongonseok(무기초월 재료, 획득경로 없어 영원히 0이던 유령 재화)를
+    // soulStones(명부강화 재료, 드랍+차원상인 교환으로 실제 모을 수 있음)로 통합 — 필드 자체를 제거
+    soulStones: 0,    // 영혼석 - 무기초월 + 명부강화 공용 재료
     weaponTranscend: {}, // [UPDATE 2026-07-08] 무기 초월 { talisman: 0~10, sword: 0~10, ... }
     companionFragments: {},  // { dochi: 3, aram: 7, ... }
     universalFragments: 0,   // 만능 파편
