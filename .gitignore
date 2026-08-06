@@ -1,12 +1,15 @@
 # 빌드 산출물 (build.py가 mongdal/ 소스로부터 생성 — 직접 수정 금지, git 추적 안 함)
 mongdal-fixed.html
 mongdal-light.html
+mongdal-release.html
 mongdal-v*.html
+index.zip
 
 # 원본/백업 이미지·오디오 스테이징 폴더 (build.py는 mongdal/image_total/만 읽음, 용량 큼)
 이미지 모음/
 이미지_back_260622/
 노래 모음/
+영상 캡쳐/
 
 # 기타 로컬 산출물
 bugs/

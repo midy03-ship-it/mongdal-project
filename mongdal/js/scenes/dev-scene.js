@@ -46,12 +46,28 @@ const DevScene = (() => {
               { label:'해금만',        color:'#605020', fn:'DevScene.resetUnlocks()' },
               { label:'건물만',        color:'#204060', fn:'DevScene.resetBuildings()' },
               { label:'무기만',        color:'#602060', fn:'DevScene.resetWeapons()' },
+              { label:'오염도0',       color:'#802040', fn:'DevScene.clearBlessings()' },
             ].map(b => `
               <button onclick="${b.fn}" style="
                 background:${b.color};border:none;color:#fff;
                 padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;
               ">${b.label}</button>
             `).join('')}
+          </div>
+        </section>
+
+        <!-- ①-2 파트2 프로필 전환 -->
+        <!-- [UPDATE 2026-08-05] 요청: 요구조건(전 던전+전 무기 해금)/3단계 확인창 없이 바로 파트2 진입 테스트용 -->
+        <section style="margin-bottom:16px;">
+          <div style="font-size:13px;color:#a090c0;margin-bottom:6px;border-bottom:1px solid #2a1a3a;padding-bottom:4px;">
+            파트2 프로필 &nbsp;
+            <span style="font-size:11px;color:#706080;">현재: ${Save.getActiveProfile()==='part2' ? '파트2' : '파트1'}${Save.hasPart2Save() ? ' (파트2 세이브 있음)' : ''}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button onclick="DevScene.forcePart2Entry()" style="background:#a04070;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;">🌀 파트2 즉시 진입(신규)</button>
+            <button onclick="DevScene.switchProfile('part1')" style="background:#204060;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;">파트1로 전환</button>
+            <button onclick="DevScene.switchProfile('part2')" style="background:#204060;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;" ${Save.hasPart2Save()?'':'disabled'}>파트2로 전환(기존)</button>
+            <button onclick="DevScene.wipePart2Save()" style="background:#602020;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;">파트2 세이브 삭제</button>
           </div>
         </section>
 
@@ -107,16 +123,20 @@ const DevScene = (() => {
           <div style="font-size:13px;color:#a090c0;margin-bottom:6px;border-bottom:1px solid #2a1a3a;padding-bottom:4px;">재화 추가</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
             ${[
-              { key:'gold',           icon:'🪙', name:'골드',    amounts:[1000,10000,100000] },
-              { key:'gems',           icon:'💎', name:'다이아',  amounts:[100,1000,5000] },
-              { key:'ganghwaseok',    icon:'🔧', name:'강화석',  amounts:[100,500,2000] },
-              { key:'cheonunseok',    icon:'🪨', name:'천운석',  amounts:[100,500,2000] },
-              { key:'cheonryeonggwa', icon:'🍑', name:'천령과',  amounts:[100,500,2000] },
-              { key:'taegeukseok',    icon:'💠', name:'태극석',  amounts:[50,200,1000] },
-              { key:'chaewonseok',    icon:'🌀', name:'차원석',  amounts:[10,50,200] },
-              { key:'soulFragments',  icon:'👻', name:'영혼 조각', amounts:[10,50,200] },
+              // [UPDATE 2026-07-22] 사용자 요청: 개발 도구 재화 추가량 전부 1000배 상향 (테스트 편의)
+              { key:'gold',           icon:'🪙', name:'골드',    amounts:[1000000,10000000,100000000] },
+              { key:'gems',           icon:'💎', name:'다이아',  amounts:[100000,1000000,5000000] },
+              { key:'ganghwaseok',    icon:'🔧', name:'강화석',  amounts:[100000,500000,2000000] },
+              { key:'cheonunseok',    icon:'🪨', name:'천운석',  amounts:[100000,500000,2000000] },
+              { key:'cheonryeonggwa', icon:'🍑', name:'천령과',  amounts:[100000,500000,2000000] },
+              { key:'taegeukseok',    icon:'💠', name:'태극석',  amounts:[50000,200000,1000000] },
+              { key:'chaewonseok',    icon:'🌀', name:'차원석',  amounts:[10000,50000,200000] },
+              { key:'soulFragments',  icon:'👻', name:'영혼 조각', amounts:[10000,50000,200000] },
               // [UPDATE 2026-07-17] yeongonseok(획득경로 없던 유령 재화)을 soulStones로 통합 — 명부강화/무기초월 공용
-              { key:'soulStones',     icon:'💜', name:'영혼석',  amounts:[10,50,200] },
+              { key:'soulStones',     icon:'💜', name:'영혼석',  amounts:[10000,50000,200000] },
+              { key:'sullriseok',     icon:'🌊', name:'순리석',  amounts:[10000,50000,200000] },
+              // [UPDATE 2026-07-22] 선기석 (시즌5, 선술 스킬트리 강화 재화) 개발 도구 추가
+              { key:'sullgiseok',     icon:'🔷', name:'선기석',  amounts:[10000,50000,200000] },
             ].map(c => `
               <div style="background:#1a1030;border:1px solid #2a1a3a;border-radius:8px;padding:8px;">
                 <div style="font-size:12px;margin-bottom:5px;">${c.icon} ${c.name}: <span style="color:#f0d060;">${(sd[c.key]||0).toLocaleString()}</span></div>
@@ -257,6 +277,39 @@ const DevScene = (() => {
     refresh();
   }
 
+  // [UPDATE 2026-08-02] 개발 테스트용 — 오염도(슈브니구라스의 축복 잔여량)를 즉시 0으로.
+  // 황계 엔딩 확인 등 정화 그라인드를 건너뛰고 싶을 때 사용.
+  function clearBlessings() {
+    const sd = Save.load();
+    sd.blessings = 0;
+    Save.save(sd);
+    refresh();
+  }
+
+  // [UPDATE 2026-08-05] 개발 테스트용 — 파트2 요구조건(전 던전+전 무기 해금)/3단계 확인창을 건너뛰고
+  // 곧바로 파트2 신규 세이브(별도 프로필)로 전환. 로직은 lobby.js의 _activatePart2()와 동일.
+  function forcePart2Entry() {
+    Save.setActiveProfile('part2');
+    const freshP2 = Save.load(); // 프로필 전환 직후라 파트2의 새 세이브(비어있음)를 반환
+    freshP2.season8ClearEnding = true; // 박수 스프라이트/동료목록 제외 로직이 이 플래그로 동작
+    Save.save(freshP2);
+    SceneManager.go('lobby');
+  }
+
+  // 파트1/파트2 세이브 프로필 전환만 (신규 시작 아님 — 기존 세이브 그대로 불러옴)
+  function switchProfile(profile) {
+    Save.setActiveProfile(profile);
+    SceneManager.go('lobby');
+  }
+
+  // 파트2 세이브만 완전히 삭제(파트1 세이브는 그대로) — 재테스트용
+  function wipePart2Save() {
+    const wasPart2 = Save.getActiveProfile() === 'part2';
+    try { localStorage.removeItem('mongdal_save_part2'); } catch (e) {}
+    if (wasPart2) Save.setActiveProfile('part1');
+    refresh();
+  }
+
   function refresh() {
     const el = document.getElementById('app');
     if (!el) return;
@@ -270,5 +323,5 @@ const DevScene = (() => {
   function enter(el) { render(el); }
   function exit() {}
 
-  return { enter, exit, resetAll, resetCurrency, resetProgress, resetUnlocks, resetBuildings, resetWeapons, clearStagesUpTo, addCurrency, setDifficulty };
+  return { enter, exit, resetAll, resetCurrency, resetProgress, resetUnlocks, resetBuildings, resetWeapons, clearStagesUpTo, addCurrency, setDifficulty, clearBlessings, forcePart2Entry, switchProfile, wipePart2Save };
 })();

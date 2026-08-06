@@ -115,7 +115,22 @@ const COMPANION_ATK_STYLES = {
   gangnim:    { atk:'shot',  ult:'field', atkScaleX:2.4, atkScaleY:1.1 },
   // [UPDATE 2026-07-17] 도깨비 계열 신규 동료
   baksu:        { atk:'shot',  ult:'field' },
-  janggu_aebi:  { atk:'field', ult:'field' },
+  // [UPDATE 2026-07-24] 허무검사와 동일하게 장판형→발사형(동료→적)으로 변경. 이미지(238x165)가 이미 오른쪽 기준이라 회전 보정은 불필요, ultScaleX/Y만 비율 보정
+  janggu_aebi:  { atk:'field', ult:'shot', ultScaleX:2.2, ultScaleY:1.5 },
+  // [UPDATE 2026-07-17] 시즌4(귀허계) 신규 동료
+  hwansaengdongja: { atk:'heal',  ult:'field' },
+  // [UPDATE 2026-07-24] 이기어검 느낌 — 장판형에서 동료→적 발사형으로 변경 + ultScaleX/Y로 세로로 긴 검기 이미지(72x165) 비율 보정, 필살기답게 확대
+  heomugeomsa:     { atk:'shot',  ult:'shot', ultScaleX:2.2, ultScaleY:5.0 },
+  // [UPDATE 2026-07-24] 시즌5(선계) 영입 동료 — 백운선인(구름/빛 마법 원거리), 매화검선(검광 근접형)
+  // 매화검선 궁극기(참회의 일격)는 위→아래로 순차 노출되는 클립 리빌 연출(ultWipe)로 검이 쾅 내려찍는 느낌을 줌
+  // atkScaleX/Y — shot형은 기본 32x32로 찌그러지므로 원본 이미지 비율(98x55 / 109x106)에 맞게 보정
+  baekunseonin:    { atk:'shot',  ult:'field', atkScaleX:1.56, atkScaleY:0.88 },
+  maehwageomseon:  { atk:'shot',  ult:'field', atkScaleX:1.6,  atkScaleY:1.55, ultWipe:{ dur:0.18 } },
+  // [UPDATE 2026-07-31] 시즌7(어계) 영입 동료
+  // 미리내 — 별빛을 흩뿌리는 산탄(shot) + 황금 태극 만다라 장판(field). atkScale은 원본 비율(110x77)에 맞춤
+  mirinae: { atk:'shot',  ult:'field', atkScaleX:1.43, atkScaleY:1.0 },
+  // 천자 — 촉수가 내리꽂히는 임팩트(field) + "천 마리의 부름" 소용돌이 장판(field)
+  cheonja: { atk:'field', ult:'field' },
 };
 
 // 역할별 색상 (발사체 / 이펙트)
@@ -130,7 +145,8 @@ const ROLE_COLORS = {
 };
 
 class CompanionEntity {
-  constructor(data, slotIdx) {
+  // [UPDATE 2026-07-26] forceBaseStats — 히든 시너지 배치4 카메오 난입용. true면 실제 육성 별/각성 무시하고 0성 기준 스탯 고정(A안)
+  constructor(data, slotIdx, forceBaseStats) {
     this.id   = data.id;
     this.name = data.name;
     this.role = data.role;
@@ -148,8 +164,8 @@ class CompanionEntity {
     this.mainColor = colors.main;
     this.glowColor = colors.glow;
 
-    // 별/각성 데이터 (세이브에서 로드)
-    const _sd = (typeof Save !== 'undefined') ? Save.load() : null;
+    // 별/각성 데이터 (세이브에서 로드) — 카메오는 forceBaseStats로 0성 고정
+    const _sd = (typeof Save !== 'undefined' && !forceBaseStats) ? Save.load() : null;
     this.stars     = _sd?.companionStars?.[this.id]     || 0;
     this.awakening = _sd?.companionAwakening?.[this.id] || 0;
 
@@ -166,7 +182,8 @@ class CompanionEntity {
     // [UPDATE 2026-07-12] 근접 사거리 ×2 유지, 궁극기 사거리는 평타 사거리와 동일하게 통일(별도 공식 제거)
     const _isMeleeType = this.atkType === 'slash' || this.atkType === 'slam';
     this.atkRange    = (_isMeleeType ? cfg.range : (100 + this.stars * 5)) * 2;
-    this.ultRange    = this.atkRange;
+    // [UPDATE 2026-07-24] 근접 동료는 평타 사거리가 짧을 수밖에 없으니, 궁극기만큼은 원거리 동료 수준(최소)으로 더 멀리 닿게 분리
+    this.ultRange    = _isMeleeType ? (100 + this.stars * 5) * 2 : this.atkRange;
     // [UPDATE 2026-07-12] 강림차사로 40% 테스트해보고 "50%가 딱"이라고 확인됨 — 전체 동료에 50% 시작으로 적용
     this.atkEffectScale = 0.50 + this.stars * 0.05;
 
@@ -182,6 +199,9 @@ class CompanionEntity {
         case 'dmg':       this.atkDmg      = Math.floor(this.atkDmg * (1 + awk.val)); break;
         case 'pierce':    this.pierce      += awk.val; break;
         case 'projCount': this.projCount    = (this.projCount || 1) + awk.val; break;
+        // [UPDATE 2026-07-31] critRate는 여기서 대입만 되고 어디서도 읽히지 않아, 이 각성을 가진 동료 5종
+        // (박수·허무검사·가온·강림차사·매화검선 — 전부 1성)의 첫 각성이 아무 효과가 없었음.
+        // 아래 _rollDmg()에서 실제로 굴리도록 연결. 값은 0~1 비율(0.25 = 25%).
         case 'critRate':  this.critRate     = (this.critRate  || 0) + awk.val; break;
         case 'cooldown':  this.skillInterval *= (1 - awk.val); break;
         case 'healAmt':   this.healBonus    = (this.healBonus || 0) + awk.val; break;
@@ -225,11 +245,24 @@ class CompanionEntity {
 
     // 힐러 이펙트 목록
     this.healEffects = [];
+
+    // [UPDATE 2026-07-26] 히든 시너지(박수+꺽쇠 부자 동반)용 시각 크기 배율 — game.js에서 조건 만족 시 덮어씀
+    this._sizeMult = 1;
+
+    // [UPDATE 2026-07-26] 히든 시너지 배치3 — 강제발동 체인 트리거용 상태
+    // _chainLinks: game.js에서 조건 만족 시 채워넣는 { event:'atk'|'ult'|'heal', targetId, targetAction:'atk'|'ult'|'heal' } 목록
+    this._chainLinks = [];
+    this._firedAtk = false; this._firedUlt = false; this._firedHeal = false;
+    this._bossRushBoost = false; // 해원맥/강림차사: 보스 등장 중 궁극기 쿨 20%
+    this._questionMarks = []; // 봉황(생령 곁 맴돌기) 물음표 이펙트
   }
 
   // ── 업데이트: 반환값 = 발사할 Projectile 배열 (null 허용) ──
   update(dt, player, enemies) {
     const projs = [];
+
+    // [UPDATE 2026-07-26] 히든 시너지 배치3 — 이번 프레임 발동 플래그 리셋(강제발동 체인 판정용)
+    this._firedAtk = false; this._firedUlt = false; this._firedHeal = false;
 
     // 부활 처리
     if (this.dead) {
@@ -286,6 +319,12 @@ class CompanionEntity {
       }
     }
 
+    // [UPDATE 2026-07-26] 생령×봉황 히든 시너지 — 물음표 이펙트 페이드(모든 동료 공통, 실제로는 봉황만 쌓임)
+    if (this._questionMarks.length) {
+      for (const q of this._questionMarks) q.t += dt;
+      this._questionMarks = this._questionMarks.filter(q => q.t < 2.0);
+    }
+
     // ── 힐러: 플레이어 회복 ──
     if (this.role === 'healer') {
       this.skillCd -= dt;
@@ -294,7 +333,9 @@ class CompanionEntity {
         if (!player._healBlocked) {
           const heal = 18 + Math.floor(player.level * 1.5);
           player.hp = Math.min(player.hp + heal, player.maxHp);
+          player._lawHealAccum = (player._lawHealAccum || 0) + heal; // [UPDATE 2026-07-24] 흡수의 법칙 트리거용
           this.healEffects.push({ x: this.x, y: this.y, tx: player.x, ty: player.y, t: 0 });
+          this._firedHeal = true; // [UPDATE 2026-07-26] 히든 시너지: 아람×단비 강제발동 체인용
         }
       }
       this.healEffects = this.healEffects.filter(h => h.t < 0.6);
@@ -309,18 +350,47 @@ class CompanionEntity {
     if (this.atkCd <= 0 && aliveEnemies.length > 0) {
       this.atkCd = this.atkInterval;
       const p = this._createProjectile(aliveEnemies, player);
-      if (p) projs.push(p);
+      if (p) { projs.push(p); this._firedAtk = true; } // [UPDATE 2026-07-26] 히든 시너지: 가온×무사/아람×단비/매화검선×허무검사 강제발동 체인용
     }
 
     // ── 스킬 ──
+    // [UPDATE 2026-07-26] 히든 시너지: (해원맥/강림차사)×(상사화/저승나비) — 보스 등장 중엔 궁극기 쿨타임 20%
+    const _skillIntervalEff = (this._bossRushBoost && window._boss) ? this.skillInterval * 0.2 : this.skillInterval;
     this.skillCd -= dt;
     if (this.skillCd <= 0 && aliveEnemies.length > 0) {
-      this.skillCd = this.skillInterval;
+      this.skillCd = _skillIntervalEff;
       const sp = this._useSkill(aliveEnemies, player);
-      if (sp) projs.push(...(Array.isArray(sp) ? sp : [sp]));
+      if (sp) { projs.push(...(Array.isArray(sp) ? sp : [sp])); this._firedUlt = true; } // [UPDATE 2026-07-26] 히든 시너지: 매화검선×허무검사 강제발동 체인용
     }
 
     return projs;
+  }
+
+  // [UPDATE 2026-07-26] 히든 시너지 배치3 — 쿨타임 무시 강제 발동 (game.js 체인 트리거 2차 패스에서 호출)
+  forceAtk(enemies, player) {
+    const aliveEnemies = enemies.filter(e => !e.dead);
+    if (aliveEnemies.length === 0) return null;
+    const p = this._createProjectile(aliveEnemies, player);
+    if (p) this._firedAtk = true;
+    return p;
+  }
+
+  forceUlt(enemies, player) {
+    const aliveEnemies = enemies.filter(e => !e.dead);
+    if (aliveEnemies.length === 0) return null;
+    const sp = this._useSkill(aliveEnemies, player);
+    if (sp) this._firedUlt = true;
+    return sp;
+  }
+
+  forceHeal(player) {
+    if (this.role !== 'healer' || player._healBlocked) return null;
+    const heal = 18 + Math.floor(player.level * 1.5);
+    player.hp = Math.min(player.hp + heal, player.maxHp);
+    player._lawHealAccum = (player._lawHealAccum || 0) + heal;
+    this.healEffects.push({ x: this.x, y: this.y, tx: player.x, ty: player.y, t: 0 });
+    this._firedHeal = true;
+    return null;
   }
 
   _getTarget(enemies) {
@@ -334,6 +404,16 @@ class CompanionEntity {
     // 가장 가까운 적
     return alive.reduce((a, b) =>
       Math.hypot(a.x-this.x, a.y-this.y) < Math.hypot(b.x-this.x, b.y-this.y) ? a : b);
+  }
+
+  // [UPDATE 2026-07-31] 동료 치명타 판정 — critRate 각성이 실제 데미지에 반영되도록 신설.
+  // 플레이어 쪽 _critChance(0~100 백분율)와 달리 동료 critRate는 0~1 비율이므로 여기서 그대로 확률로 쓴다.
+  // 배율 1.5배는 플레이어 기본 치명타 배율(CONFIG.SINMOK.CRIT_BASE_MULT)과 맞춘 값.
+  _rollDmg(base) {
+    if (this.critRate > 0 && Math.random() < this.critRate) {
+      return Math.floor(base * (CONFIG?.SINMOK?.CRIT_BASE_MULT || 1.5));
+    }
+    return base;
   }
 
   _createProjectile(enemies, player) {
@@ -351,7 +431,8 @@ class CompanionEntity {
     const base    = { srcType, color: this.mainColor, glow: this.glowColor };
 
     // [UPDATE 2026-07-12] 공격 이펙트(도트) 크기 배율 — 별 레벨에 비례해 커짐 (atkEffectScale)
-    const _es = this.atkEffectScale != null ? this.atkEffectScale : 1;
+    // [UPDATE 2026-07-26] 최소 0.9배 보장 — 별 0개(0.5배)면 평타 이펙트도 거의 안 보였음(궁극기와 동일한 문제)
+    const _es = Math.max(this.atkEffectScale != null ? this.atkEffectScale : 1, 0.9);
 
     if (style === 'laser') {
       // 즉시 빔 데미지 (경로 내 모든 적)
@@ -362,7 +443,7 @@ class CompanionEntity {
         const ex = e.x - this.x, ey = e.y - this.y;
         const proj = ex * ux + ey * uy;
         if (proj < 0 || proj > d + e.size) continue;
-        if (Math.abs(ex * uy - ey * ux) < beamW + e.size) e.takeDamage(this.atkDmg);
+        if (Math.abs(ex * uy - ey * ux) < beamW + e.size) e.takeDamage(this._rollDmg(this.atkDmg));
       }
       return new Projectile(this.x, this.y - 20, 0, 0, 0, {
         ...base, type: `companion_${this.id}_atk`,
@@ -372,7 +453,7 @@ class CompanionEntity {
     }
 
     if (style === 'field') {
-      return new Projectile(target.x, target.y, 0, 0, this.atkDmg, {
+      return new Projectile(target.x, target.y, 0, 0, this._rollDmg(this.atkDmg), {
         ...base, type: `companion_${this.id}_atk`,
         radius: 8*_es, pierceAll: true, aoe: 80*_es, life: 0.8, field: true,
       });
@@ -380,7 +461,7 @@ class CompanionEntity {
 
     // shot (발사형) — [UPDATE 2026-07-06] ATK_STYLES에 atkScaleX/Y 지정 시 이미지 크기 배율 적용
     const _st = COMPANION_ATK_STYLES[this.id] || {};
-    return new Projectile(this.x, this.y, (dx/d)*320, (dy/d)*320, this.atkDmg, {
+    return new Projectile(this.x, this.y, (dx/d)*320, (dy/d)*320, this._rollDmg(this.atkDmg), {
       ...base, type: `companion_${this.id}_atk`,
       radius: 6*_es, pierce: this.pierce, life: 1.5,
       drawScaleX: (_st.atkScaleX || 1) * _es, drawScaleY: (_st.atkScaleY || 1) * _es,
@@ -393,7 +474,8 @@ class CompanionEntity {
     const ultStyle = COMPANION_ATK_STYLES[this.id]?.ult;
     const srcType  = `c_${this.id}_ult`;
     // [UPDATE 2026-07-12] 궁극기 사거리 제한 신설 — 예전엔 맵 전체 아무 적이나 대상이 될 수 있었음
-    const _ultRange = this.ultRange != null ? this.ultRange : 120;
+    // [UPDATE 2026-07-24] 평타 판정(atkRange+40)과 다르게 궁극기만 버퍼 없이 빡빡하게 걸려서 유난히 안 나가던 문제 — 동일하게 +40 버퍼 적용
+    const _ultRange = (this.ultRange != null ? this.ultRange : 120) + 40;
     const alive = enemies.filter(e => !e.dead && Math.hypot(e.x-this.x, e.y-this.y) <= _ultRange);
     if (alive.length === 0) return null;
 
@@ -403,7 +485,10 @@ class CompanionEntity {
     const d  = Math.hypot(dx, dy) || 1;
     const base = { srcType, color: this.mainColor, glow: this.glowColor };
     // [UPDATE 2026-07-12] 궁극기도 평타와 동일하게 atkEffectScale만큼 이펙트 크기 축소
-    const _es = this.atkEffectScale != null ? this.atkEffectScale : 1;
+    // [UPDATE 2026-07-26] 최소 0.9배를 _es 자체에서 보장 — 이전엔 shot형에만 별도로 _esUlt=Math.max(_es,0.9)를 만들어 썼는데
+    // field형(해원맥/강림차사 등)엔 그 처리가 없어서 별 0개 동료 궁극기가 radius 4/aoe 60짜리로 거의 안 보이던 버그가 있었음.
+    // 아예 소스에서 통일해서 laser/shot/field 전부 빠짐없이 최소 크기를 보장하도록 정리.
+    const _es = Math.max(this.atkEffectScale != null ? this.atkEffectScale : 1, 0.9);
 
     if (ultStyle === 'laser') {
       const beamW = 30 * _es;
@@ -412,7 +497,7 @@ class CompanionEntity {
         const ex = e.x - this.x, ey = e.y - this.y;
         const proj = ex * ux + ey * uy;
         if (proj < 0 || proj > d + e.size) continue;
-        if (Math.abs(ex * uy - ey * ux) < beamW + e.size) e.takeDamage(this.atkDmg * 2.5);
+        if (Math.abs(ex * uy - ey * ux) < beamW + e.size) e.takeDamage(this._rollDmg(this.atkDmg * 2.5));
       }
       return new Projectile(this.x, this.y - 20, 0, 0, 0, {
         ...base, type: `companion_${this.id}_ult`,
@@ -422,20 +507,27 @@ class CompanionEntity {
     }
 
     if (ultStyle === 'shot') {
+      // [UPDATE 2026-07-24] drawScaleX/Y가 없어 항상 기본 32x32로 찌그러져 그려지던 버그 —
+      // 세로로 긴 이미지(예: 허무검사 검기)가 정사각형에 눌려 거의 안 보이던 원인. ATK_STYLES의 ultScaleX/Y로 보정.
+      const _ust = COMPANION_ATK_STYLES[this.id] || {};
       return alive.slice(0, 3).map(e => {
         const ex = e.x - this.x, ey = e.y - this.y;
         const ed = Math.hypot(ex, ey) || 1;
-        return new Projectile(this.x, this.y, (ex/ed)*380, (ey/ed)*380, this.atkDmg * 2, {
+        return new Projectile(this.x, this.y, (ex/ed)*380, (ey/ed)*380, this._rollDmg(this.atkDmg * 2), {
           ...base, type: `companion_${this.id}_ult`,
           radius: 8*_es, pierce: this.pierce, life: 1.8,
+          drawScaleX: (_ust.ultScaleX || 1) * _es, drawScaleY: (_ust.ultScaleY || 1) * _es,
         });
       });
     }
 
     // field (장판형 궁극기)
-    return new Projectile(target.x, target.y, 0, 0, this.atkDmg * 2, {
+    // [UPDATE 2026-07-24] ultWipe — 위→아래로 순차 노출되는 클립 리빌(실제 이동 아님)로 "쾅" 내려찍는 느낌(매화검선 등)
+    const _ultWipe = COMPANION_ATK_STYLES[this.id]?.ultWipe;
+    return new Projectile(target.x, target.y, 0, 0, this._rollDmg(this.atkDmg * 2), {
       ...base, type: `companion_${this.id}_ult`,
       radius: 8*_es, pierceAll: true, aoe: 120*_es, life: 1.5, field: true,
+      wipeReveal: !!_ultWipe, wipeRevealDur: _ultWipe?.dur,
     });
   }
 
@@ -478,6 +570,7 @@ class CompanionEntity {
     ctx.save();
     ctx.translate(sx, sy + bob);
     if (this.facing < 0) ctx.scale(-1, 1);
+    if (this._sizeMult !== 1) ctx.scale(this._sizeMult, this._sizeMult); // [UPDATE 2026-07-26] 히든 시너지 크기 배율
 
     // ① 개별 스프라이트 파일 우선
     if (this.img && this.img.complete && this.img.naturalWidth > 0 && this.sprCfg) {
@@ -504,6 +597,21 @@ class CompanionEntity {
       ctx.fillRect(sx - _hbw/2, sy - H - 6, _hbw * (this.hp/this.maxHp), _hbh);
     }
     ctx.textAlign = 'left';
+
+    // [UPDATE 2026-07-26] 히든 시너지: 생령×봉황 — 생령이 공격할 때마다 봉황 머리 위에 물음표가 떴다가 2초간 페이드
+    if (this._questionMarks.length) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 14px sans-serif';
+      for (const q of this._questionMarks) {
+        const _fade = 1 - q.t / 2.0;
+        ctx.globalAlpha = Math.max(0, _fade);
+        ctx.fillStyle = '#fff060';
+        ctx.fillText('?', sx, sy - H - 14 - (1 - _fade) * 10);
+      }
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
 
     // 힐러 이펙트
     if (this.role === 'healer') this._drawHealEffects(ctx, camX, camY);

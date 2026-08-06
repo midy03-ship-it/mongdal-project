@@ -35,11 +35,11 @@ const LobbyScene = (() => {
             <div class="currency-group">
               <div class="currency">
                 <img class="cur-icon-img" src="${SPRITES.items.gold.src}">
-                <span class="cur-val" id="goldVal">${saveData.gold.toLocaleString()}</span>
+                <span class="cur-val" id="goldVal">${Format.num(saveData.gold)}</span>
               </div>
               <div class="currency">
                 <span class="cur-icon">💎</span>
-                <span class="cur-val" id="gemVal">${saveData.gems.toLocaleString()}</span>
+                <span class="cur-val" id="gemVal">${Format.num(saveData.gems)}</span>
               </div>
               <!-- [UPDATE 2026-07-16] 재화 목록 접기/펼치기 토글 버튼 — 기본 골드/다이아만, 누르면 나머지 재화 펼침 -->
               <button class="currency-toggle-btn" id="currencyToggleBtn" onclick="LobbyScene.toggleCurrencyExpand()">▼</button>
@@ -62,7 +62,7 @@ const LobbyScene = (() => {
                 return `
                 <div class="currency">
                   ${iconHtml}
-                  <span class="cur-val">${(saveData[c.key]||0).toLocaleString()}</span>
+                  <span class="cur-val">${Format.num((saveData[c.key]||0))}</span>
                 </div>`;
               }).join('')}
             </div>
@@ -149,6 +149,8 @@ const LobbyScene = (() => {
     _buildMerchantNpc(sceneArea);
     _buildSinmokCrack(sceneArea); // [UPDATE 2026-07-15] 260715_MTOPC.md 5번
     _buildChaosMarketNpc(sceneArea); // [UPDATE 2026-07-17] 260713_MTOPC.md 9번③
+    _buildGreatIthNpc(sceneArea);    // [UPDATE 2026-07-31] 시즌7(어계) 그레이트 이스
+    _buildVaultNpc(sceneArea); // [UPDATE 2026-07-19] 보물 창고 — 시즌1 클리어 시 등장
 
     // 플레이어 초기 위치: 화면 중앙 하단
     playerX = Math.round(screenW * 0.50);
@@ -247,6 +249,10 @@ const LobbyScene = (() => {
 
   function _openMerchantDialog(isKo) {
     if (document.getElementById('merchant-dialog')) return;
+    // [UPDATE 2026-07-26] 차원상인 UI 튜닝 — 고정 수량 버튼(1개/10개/5:1) 대신 슬라이더+키패드로 원하는 개수만큼
+    // 한 번에 구매/제조하는 위젯 3종으로 통일. 차원석→영혼석 경로는 삭제(영혼조각이 전 시즌에서 흔하게 드랍되어 중복이라 판단).
+    // 각 위젯의 선택 수량은 다이얼로그가 열려있는 동안 유지(재렌더 때마다 1로 리셋되지 않도록 클로저에 보관).
+    let _qtyDim = 1, _qtySoul = 1, _qtySeongi = 1;
     const sd = (typeof Save !== 'undefined') ? Save.load() : null;
     const overlay = document.createElement('div');
     overlay.id = 'merchant-dialog';
@@ -263,8 +269,9 @@ const LobbyScene = (() => {
       const soulFragments = sd2.soulFragments || 0;
       const soulStones    = sd2.soulStones    || 0;
       const season1Clear  = !!sd2.season1Clear;
-      const season2Clear  = !!sd2.season2Clear;
-      // 영혼 조각 합성: 시즌2 진입 가능하면 해금 (차원석 보유 또는 시즌1 클리어)
+      const season4Clear  = !!sd2.season4Clear;
+      // sullgiseok는 이제 소비처가 아니라 획득 대상이라 여기선 안 씀 — 위젯 쪽에서 gainKey로만 다룸
+      // 영혼 조각 합성: 시즌1 클리어 후 해금
       const canCraftSoul  = season1Clear;
 
       const sc = SPRITES?.lobbyNpcs?.merchant;
@@ -274,17 +281,23 @@ const LobbyScene = (() => {
       const GOLD_PER_STONE = 1000;
       // 최대 한 번에 구매 가능한 수량 (골드 보유량 기준)
       const maxBuy = Math.floor(gold / GOLD_PER_STONE);
+      const maxSoul   = Math.floor(soulFragments / 5);
+      const maxSeongi = Math.floor(chaewonseok / 5);
+      // [UPDATE 2026-07-26] 선택 수량은 다이얼로그가 열려있는 동안 유지 — 재화 소비로 max가 줄면 그만큼만 클램프
+      _qtyDim    = Math.max(0, Math.min(_qtyDim,    maxBuy));
+      _qtySoul   = Math.max(0, Math.min(_qtySoul,   maxSoul));
+      _qtySeongi = Math.max(0, Math.min(_qtySeongi, maxSeongi));
 
       // 상인 대사
       const greetKo = maxBuy > 0
-        ? `골드 ${gold.toLocaleString()}개가 있군. 차원석으로 교환할 수 있네.`
+        ? `골드 ${Format.num(gold)}개가 있군. 차원석으로 교환할 수 있네.`
         : gold >= 500
-          ? `골드가 조금 모자라네. ${GOLD_PER_STONE.toLocaleString()}개가 있어야 차원석 하나를 주지.`
+          ? `골드가 조금 모자라네. ${Format.num(GOLD_PER_STONE)}개가 있어야 차원석 하나를 주지.`
           : `골드가 없으면 거래가 안 된다네. 스테이지를 더 클리어해 보시게.`;
       const greetEn = maxBuy > 0
-        ? `You have ${gold.toLocaleString()} Gold. I can exchange it for Dimensional Stones.`
+        ? `You have ${Format.num(gold)} Gold. I can exchange it for Dimensional Stones.`
         : gold >= 500
-          ? `A bit short. You need ${GOLD_PER_STONE.toLocaleString()} Gold per Dimensional Stone.`
+          ? `A bit short. You need ${Format.num(GOLD_PER_STONE)} Gold per Dimensional Stone.`
           : `No Gold, no deal. Clear more stages to earn some.`;
 
       overlay.innerHTML = `
@@ -316,125 +329,53 @@ const LobbyScene = (() => {
           ">
             <div style="text-align:center;padding:0 4px;">
               <div style="font-size:9px;color:#a0b8c8;margin-bottom:3px;">${isKo ? '💰 골드' : '💰 Gold'}</div>
-              <div style="font-size:13px;color:#f0d060;font-weight:700;">${gold.toLocaleString()}</div>
+              <div style="font-size:13px;color:#f0d060;font-weight:700;">${Format.num(gold)}</div>
             </div>
             <div style="background:rgba(100,180,255,0.15);"></div>
             <div style="text-align:center;padding:0 4px;">
               <div style="font-size:9px;color:#a0b8c8;margin-bottom:3px;">${isKo ? '🔷 차원석' : '🔷 Dim.Stone'}</div>
-              <div style="font-size:13px;color:#60c0ff;font-weight:700;">${chaewonseok.toLocaleString()}</div>
+              <div style="font-size:13px;color:#60c0ff;font-weight:700;">${Format.num(chaewonseok)}</div>
             </div>
             <div style="background:rgba(100,180,255,0.15);"></div>
             <div style="text-align:center;padding:0 4px;">
               <div style="font-size:9px;color:#a0b8c8;margin-bottom:3px;">${isKo ? '👻 영혼조각' : '👻 Fragments'}</div>
-              <div style="font-size:13px;color:#90b8ff;font-weight:700;">${soulFragments.toLocaleString()}</div>
+              <div style="font-size:13px;color:#90b8ff;font-weight:700;">${Format.num(soulFragments)}</div>
             </div>
             <div style="background:rgba(100,180,255,0.15);"></div>
             <div style="text-align:center;padding:0 4px;">
               <div style="font-size:9px;color:#a0b8c8;margin-bottom:3px;">${isKo ? '💜 영혼석' : '💜 Soul Stone'}</div>
-              <div style="font-size:13px;color:#c080ff;font-weight:700;">${soulStones.toLocaleString()}</div>
+              <div style="font-size:13px;color:#c080ff;font-weight:700;">${Format.num(soulStones)}</div>
             </div>
           </div>
 
-          <!-- 교환 목록 -->
+          <!-- [UPDATE 2026-07-26] 교환 목록 — 슬라이더+키패드로 원하는 개수만큼 한 번에 구매/제조 -->
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-
-            <!-- 골드 → 차원석 ×1 -->
-            <div style="
-              background:rgba(100,180,255,0.06);border:1px solid rgba(100,180,255,0.25);
-              border-radius:10px;padding:10px 12px;
-              display:flex;align-items:center;gap:10px;
-            ">
-              <div style="flex:1;">
-                <div style="font-size:12px;color:#e0eeff;font-weight:600;">
-                  ${isKo ? '💰 골드 1,000 → 🔷 차원석 ×1' : '💰 1,000 Gold → 🔷 Dim. Stone ×1'}
-                </div>
-                <div style="font-size:10px;color:#80a0b8;margin-top:2px;">
-                  ${isKo ? `최대 ${maxBuy}개 구매 가능` : `Up to ${maxBuy} available`}
-                </div>
-              </div>
-              <button id="merch-btn-1" ${maxBuy < 1 ? 'disabled' : ''} style="
-                padding:7px 14px;border-radius:8px;cursor:${maxBuy >= 1 ? 'pointer' : 'not-allowed'};
-                border:1px solid rgba(100,180,255,${maxBuy >= 1 ? '0.6' : '0.2'});
-                background:rgba(80,140,255,${maxBuy >= 1 ? '0.18' : '0.04'});
-                color:${maxBuy >= 1 ? '#a0d0ff' : '#506070'};
-                font-size:12px;font-family:inherit;white-space:nowrap;
-              ">${isKo ? '교환' : 'Exchange'}</button>
-            </div>
-
-            <!-- 골드 → 차원석 ×10 -->
-            <div style="
-              background:rgba(100,180,255,0.06);border:1px solid rgba(100,180,255,0.25);
-              border-radius:10px;padding:10px 12px;
-              display:flex;align-items:center;gap:10px;
-            ">
-              <div style="flex:1;">
-                <div style="font-size:12px;color:#e0eeff;font-weight:600;">
-                  ${isKo ? '💰 골드 10,000 → 🔷 차원석 ×10' : '💰 10,000 Gold → 🔷 Dim. Stone ×10'}
-                </div>
-                <div style="font-size:10px;color:#80a0b8;margin-top:2px;">
-                  ${isKo ? '(골드 1,000당 차원석 1개)' : '(1 Stone per 1,000 Gold)'}
-                </div>
-              </div>
-              <button id="merch-btn-10" ${maxBuy < 10 ? 'disabled' : ''} style="
-                padding:7px 14px;border-radius:8px;cursor:${maxBuy >= 10 ? 'pointer' : 'not-allowed'};
-                border:1px solid rgba(100,180,255,${maxBuy >= 10 ? '0.6' : '0.2'});
-                background:rgba(80,140,255,${maxBuy >= 10 ? '0.18' : '0.04'});
-                color:${maxBuy >= 10 ? '#a0d0ff' : '#506070'};
-                font-size:12px;font-family:inherit;white-space:nowrap;
-              ">${isKo ? '교환' : 'Exchange'}</button>
-            </div>
-
-            <!-- 차원석 → 영혼석 (시즌2 클리어 후 해금) -->
-            <div style="
-              background:${season2Clear ? 'rgba(160,80,255,0.06)' : 'rgba(60,60,80,0.06)'};
-              border:1px solid ${season2Clear ? 'rgba(160,80,255,0.35)' : 'rgba(80,80,100,0.25)'};
-              border-radius:10px;padding:10px 12px;
-              display:flex;align-items:center;gap:10px;
-            ">
-              <div style="flex:1;">
-                <div style="font-size:12px;color:${season2Clear ? '#d8b0ff' : '#606080'};font-weight:600;">
-                  ${isKo ? '🔷 차원석 ×5 → 💜 영혼석 ×1' : '🔷 Dim. Stone ×5 → 💜 Soul Stone ×1'}
-                </div>
-                <div style="font-size:10px;color:${season2Clear ? '#9060c0' : '#404060'};margin-top:2px;">
-                  ${season2Clear
-                    ? (isKo ? `보유: ${chaewonseok}개 → 최대 ${Math.floor(chaewonseok/5)}개 제조 가능` : `Have ${chaewonseok} → up to ${Math.floor(chaewonseok/5)} craftable`)
-                    : (isKo ? '🔒 시즌2 클리어 후 해금' : '🔒 Unlock after clearing Season 2')}
-                </div>
-              </div>
-              <button id="merch-btn-soul" ${(!season2Clear || chaewonseok < 5) ? 'disabled' : ''} style="
-                padding:7px 14px;border-radius:8px;cursor:${(season2Clear && chaewonseok >= 5) ? 'pointer' : 'not-allowed'};
-                border:1px solid rgba(160,80,255,${(season2Clear && chaewonseok >= 5) ? '0.6' : '0.15'});
-                background:rgba(140,60,255,${(season2Clear && chaewonseok >= 5) ? '0.18' : '0.04'});
-                color:${(season2Clear && chaewonseok >= 5) ? '#d0a0ff' : '#505060'};
-                font-size:12px;font-family:inherit;white-space:nowrap;
-              ">${isKo ? '제조' : 'Craft'}</button>
-            </div>
-
-            <!-- 영혼 조각 → 영혼석 (시즌1 클리어 후 해금) -->
-            <div style="
-              background:${canCraftSoul ? 'rgba(80,100,255,0.06)' : 'rgba(60,60,80,0.06)'};
-              border:1px solid ${canCraftSoul ? 'rgba(100,140,255,0.35)' : 'rgba(80,80,100,0.25)'};
-              border-radius:10px;padding:10px 12px;
-              display:flex;align-items:center;gap:10px;
-            ">
-              <div style="flex:1;">
-                <div style="font-size:12px;color:${canCraftSoul ? '#a0c0ff' : '#606080'};font-weight:600;">
-                  ${isKo ? '👻 영혼 조각 ×5 → 💜 영혼석 ×1' : '👻 Soul Fragment ×5 → 💜 Soul Stone ×1'}
-                </div>
-                <div style="font-size:10px;color:${canCraftSoul ? '#6080b0' : '#404060'};margin-top:2px;">
-                  ${canCraftSoul
-                    ? (isKo ? `보유: ${soulFragments}개 → 최대 ${Math.floor(soulFragments/5)}개 제조 가능` : `Have ${soulFragments} → up to ${Math.floor(soulFragments/5)} craftable`)
-                    : (isKo ? '🔒 시즌1 클리어 후 해금' : '🔒 Unlock after clearing Season 1')}
-                </div>
-              </div>
-              <button id="merch-btn-craft-soul" ${(!canCraftSoul || soulFragments < 5) ? 'disabled' : ''} style="
-                padding:7px 14px;border-radius:8px;cursor:${(canCraftSoul && soulFragments >= 5) ? 'pointer' : 'not-allowed'};
-                border:1px solid rgba(100,140,255,${(canCraftSoul && soulFragments >= 5) ? '0.6' : '0.15'});
-                background:rgba(80,120,255,${(canCraftSoul && soulFragments >= 5) ? '0.18' : '0.04'});
-                color:${(canCraftSoul && soulFragments >= 5) ? '#a0c0ff' : '#505060'};
-                font-size:12px;font-family:inherit;white-space:nowrap;
-              ">${isKo ? '제조' : 'Craft'}</button>
-            </div>
+            ${_buyWidgetHTML({
+              id:'buy-dim', enabled:true, qty:_qtyDim, max:maxBuy, unitCost:GOLD_PER_STONE,
+              label:isKo?'💰 차원석 구매':'💰 Buy Dimension Stones',
+              unitCostText:isKo?`골드 ${Format.num(GOLD_PER_STONE)}당 1개`:`1 per ${Format.num(GOLD_PER_STONE)} Gold`,
+              costLabel:isKo?'필요 골드':'Cost',
+              accent:'#60c0ff', barColor:'rgba(100,180,255,0.06)', borderColor:'rgba(100,180,255,0.25)', textColor:'#e0eeff',
+              action:isKo?'구매':'Exchange',
+            })}
+            ${_buyWidgetHTML({
+              id:'buy-soul', enabled:canCraftSoul, qty:_qtySoul, max:maxSoul, unitCost:5,
+              label:isKo?'👻 영혼석 구매':'👻 Buy Soul Stones',
+              lockedText:isKo?'🔒 시즌1 클리어 후 해금':'🔒 Unlock after clearing Season 1',
+              unitCostText:isKo?'영혼조각 5개당 1개':'1 per 5 Soul Fragments',
+              costLabel:isKo?'필요 영혼조각':'Cost',
+              accent:'#90b8ff', barColor:'rgba(80,100,255,0.06)', borderColor:'rgba(100,140,255,0.35)', textColor:'#a0c0ff',
+              action:isKo?'제조':'Craft',
+            })}
+            ${_buyWidgetHTML({
+              id:'buy-seongi', enabled:season4Clear, qty:_qtySeongi, max:maxSeongi, unitCost:5,
+              label:isKo?'🔷 선기석 구매':'🔷 Buy Seongi Stones',
+              lockedText:isKo?'🔒 시즌4 클리어 후 해금':'🔒 Unlock after clearing Season 4',
+              unitCostText:isKo?'차원석 5개당 1개':'1 per 5 Dim. Stones',
+              costLabel:isKo?'필요 차원석':'Cost',
+              accent:'#a0d8e0', barColor:'rgba(88,152,168,0.08)', borderColor:'rgba(88,152,168,0.35)', textColor:'#a0d8e0',
+              action:isKo?'제조':'Craft',
+            })}
           </div>
 
           <!-- 닫기 버튼 -->
@@ -450,54 +391,117 @@ const LobbyScene = (() => {
       // 버튼 이벤트
       document.getElementById('merch-close').addEventListener('click', () => overlay.remove());
 
-      function doExchange(stoneAmt) {
-        const cost = stoneAmt * GOLD_PER_STONE;
+      _wireBuyWidget({ id:'buy-dim',    enabled:true,        max:maxBuy,   unitCost:GOLD_PER_STONE, costLabel:isKo?'필요 골드':'Cost',
+        getQty:()=>_qtyDim,    setQty:v=>_qtyDim=v,    spendKey:'gold',          gainKey:'chaewonseok' });
+      _wireBuyWidget({ id:'buy-soul',   enabled:canCraftSoul, max:maxSoul,  unitCost:5,               costLabel:isKo?'필요 영혼조각':'Cost',
+        getQty:()=>_qtySoul,   setQty:v=>_qtySoul=v,   spendKey:'soulFragments', gainKey:'soulStones' });
+      _wireBuyWidget({ id:'buy-seongi', enabled:season4Clear, max:maxSeongi,unitCost:5,               costLabel:isKo?'필요 차원석':'Cost',
+        getQty:()=>_qtySeongi, setQty:v=>_qtySeongi=v, spendKey:'chaewonseok',   gainKey:'sullgiseok' });
+    }
+
+    // [UPDATE 2026-07-26] 다량 구매/제조 위젯 — 슬라이더+키패드 입력, 잠금 시 안내 텍스트만 표시
+    function _buyWidgetHTML(cfg) {
+      if (!cfg.enabled) {
+        return `<div style="background:rgba(60,60,80,0.06);border:1px solid rgba(80,80,100,0.25);border-radius:10px;padding:10px 12px;">
+          <div style="font-size:12px;color:#606080;font-weight:600;margin-bottom:4px;">${cfg.label}</div>
+          <div style="font-size:10px;color:#404060;">${cfg.lockedText}</div>
+        </div>`;
+      }
+      const cost = cfg.qty * cfg.unitCost;
+      const canBuy = cfg.qty >= 1;
+      const disabledAttr = cfg.max < 1 ? 'disabled' : '';
+      return `<div style="background:${cfg.barColor};border:1px solid ${cfg.borderColor};border-radius:10px;padding:10px 12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:12px;color:${cfg.textColor};font-weight:600;">${cfg.label}</div>
+          <div style="font-size:9px;color:#7090a8;">${cfg.unitCostText}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <input type="range" id="${cfg.id}-slider" min="0" max="${cfg.max}" value="${cfg.qty}" style="flex:1;accent-color:${cfg.accent};" ${disabledAttr}>
+          <input type="number" id="${cfg.id}-num" min="0" max="${cfg.max}" value="${cfg.qty}" style="width:52px;padding:4px;border-radius:6px;
+            border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.35);color:#fff;font-size:12px;text-align:center;" ${disabledAttr}>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div id="${cfg.id}-cost" style="font-size:10px;color:#8098b0;">${cfg.costLabel}: ${Format.num(cost)}</div>
+          <button id="${cfg.id}-buy" ${canBuy ? '' : 'disabled'} style="
+            padding:6px 14px;border-radius:8px;cursor:${canBuy ? 'pointer' : 'not-allowed'};
+            border:1px solid ${cfg.accent}${canBuy ? '99' : '33'};
+            background:${cfg.accent}${canBuy ? '22' : '0a'};
+            color:${canBuy ? cfg.textColor : '#505060'};
+            font-size:12px;font-family:inherit;white-space:nowrap;
+          ">${cfg.action}</button>
+        </div>
+      </div>`;
+    }
+
+    // 위젯 이벤트 배선 — 슬라이더/숫자입력 동기화(전체 재렌더 없이 미리보기만 갱신) + 구매 버튼(실제 구매 시에만 재렌더)
+    function _wireBuyWidget(cfg) {
+      if (!cfg.enabled) return;
+      const slider = document.getElementById(cfg.id + '-slider');
+      const num    = document.getElementById(cfg.id + '-num');
+      const costEl = document.getElementById(cfg.id + '-cost');
+      const buyBtn = document.getElementById(cfg.id + '-buy');
+      if (!slider) return;
+      function sync(val) {
+        val = Math.max(0, Math.min(cfg.max, Math.round(Number(val)) || 0));
+        cfg.setQty(val);
+        slider.value = val; num.value = val;
+        if (costEl) costEl.textContent = costEl.textContent.split(':')[0] + ': ' + Format.num((val * cfg.unitCost));
+        if (buyBtn) buyBtn.disabled = val < 1;
+      }
+      slider.addEventListener('input', () => sync(slider.value));
+      num.addEventListener('input', () => sync(num.value));
+      if (buyBtn) buyBtn.addEventListener('click', () => {
+        const qty = cfg.getQty();
+        if (qty < 1) return;
+        const cost = qty * cfg.unitCost;
         const cur = (typeof Save !== 'undefined') ? Save.load() : {};
-        if ((cur.gold || 0) < cost) return;
-        cur.gold        = (cur.gold || 0) - cost;
-        cur.chaewonseok = (cur.chaewonseok || 0) + stoneAmt;
+        if ((cur[cfg.spendKey] || 0) < cost) return;
+        cur[cfg.spendKey] = (cur[cfg.spendKey] || 0) - cost;
+        cur[cfg.gainKey]  = (cur[cfg.gainKey]  || 0) + qty;
         if (typeof Save !== 'undefined') Save.save(cur);
         _render();
-      }
-
-      const btn1 = document.getElementById('merch-btn-1');
-      if (btn1 && maxBuy >= 1) btn1.addEventListener('click', () => doExchange(1));
-
-      const btn10 = document.getElementById('merch-btn-10');
-      if (btn10 && maxBuy >= 10) btn10.addEventListener('click', () => doExchange(10));
-
-      const btnCraftSoul = document.getElementById('merch-btn-craft-soul');
-      if (btnCraftSoul && canCraftSoul && soulFragments >= 5) {
-        btnCraftSoul.addEventListener('click', () => {
-          const cur3 = (typeof Save !== 'undefined') ? Save.load() : {};
-          if ((cur3.soulFragments || 0) < 5) return;
-          cur3.soulFragments = (cur3.soulFragments || 0) - 5;
-          cur3.soulStones    = (cur3.soulStones    || 0) + 1;
-          if (typeof Save !== 'undefined') Save.save(cur3);
-          _render();
-        });
-      }
-
-      const btnSoul = document.getElementById('merch-btn-soul');
-      if (btnSoul && season2Clear) {
-        const sd3 = (typeof Save !== 'undefined') ? Save.load() : {};
-        const cws = sd3.chaewonseok || 0;
-        if (cws >= 5) {
-          btnSoul.addEventListener('click', () => {
-            const cur2 = (typeof Save !== 'undefined') ? Save.load() : {};
-            if ((cur2.chaewonseok || 0) < 5) return;
-            cur2.chaewonseok = (cur2.chaewonseok || 0) - 5;
-            cur2.soulStones = (cur2.soulStones || 0) + 1;
-            if (typeof Save !== 'undefined') Save.save(cur2);
-            _render();
-          });
-        }
-      }
+      });
     }
 
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
     _render();
+  }
+
+  // ── 보물 창고 (시즌1 클리어 후 등장, 삼신할머니/차원상인과 동시 해금) ──
+  // [UPDATE 2026-07-19] 각 계의 특산품(하드 난이도 전용 드랍) 보관소. 혼돈 시장(0.20, 0.63)과 겹치지 않게 더 왼쪽/아래로 배치.
+  function _buildVaultNpc(sceneArea) {
+    const sd = (typeof Save !== 'undefined') ? Save.load() : null;
+    if (!sd?.season1Clear) return;
+    const isKo = (typeof Lang !== 'undefined') ? Lang.getCurrent() === 'ko' : true;
+    const sc = SPRITES?.lobbyNpcs?.vault;
+    const imgSrc = sc ? SpriteLoader.get(sc.src).src : '';
+
+    // [UPDATE 2026-07-19] 대장간 모루 옆(오른쪽 아래)으로 이동 — 사용자 스크린샷 피드백 반영
+    // [UPDATE 2026-07-19] 왼쪽으로 20px + 추가 50px - 오른쪽 20px - 오른쪽 10px, 아래로 20px - 위로 10px 미세조정
+    const npcX = Math.round((sceneArea.offsetWidth || 390) * 0.30) - 40;
+    const npcY = Math.round((sceneArea.offsetHeight || 680) * 0.53) + 10;
+
+    const btn = document.createElement('button');
+    btn.id = 'vault-npc';
+    btn.classList.add('lobby-interactive');
+    btn.style.cssText = `
+      position:absolute;left:${npcX}px;top:${npcY}px;transform:translateX(-50%);
+      background:none;border:none;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      z-index:8;padding:0;
+    `;
+    btn.innerHTML = `
+      ${imgSrc ? `<img src="${imgSrc}" style="height:58px;width:auto;image-rendering:pixelated;">` : '🗝️'}
+      <div style="
+        font-size:10px;color:#f0d080;
+        background:rgba(10,6,20,0.78);border:1px solid rgba(212,160,23,0.5);
+        border-radius:6px;padding:2px 8px;white-space:nowrap;
+        text-shadow:0 0 6px rgba(212,160,23,0.6);
+      ">${Lang.t('vault','title')}</div>
+    `;
+    btn.addEventListener('click', () => SceneManager.go('vault'));
+    sceneArea.appendChild(btn);
   }
 
   // ── 혼돈 시장 NPC (260713_MTOPC.md 9번③: 시즌3 해금 후 등장, 로비 상주·전투와 무관) ──
@@ -535,6 +539,172 @@ const LobbyScene = (() => {
     sceneArea.appendChild(btn);
   }
 
+  // ── 그레이트 이스 (이계의 상인) — 시즌7 어계 해금 후 등장 ──
+  // [UPDATE 2026-07-31] "슈브니구라스의 축복"을 개당 1골드에 판다. 터무니없이 싸고, 살 때마다 웃는다.
+  // 이 축복이 어계(100배 구간)를 뚫는 유일한 수단이지만 세이브에 영구 누적되어 황계에서 오염도로 뒤집힌다.
+  // 설계 전문은 WORLDBUILDING.md "어계→황계 전환 시스템" 참고.
+  function _buildGreatIthNpc(sceneArea) {
+    const sd = (typeof Save !== 'undefined') ? Save.load() : null;
+    // 어계에 실제로 갈 수 있게 된 시점부터 등장 — 그 전엔 존재 자체가 스포일러라 숨긴다
+    if (!sd || !sd.season6Clear || !isSeasonReleased(7)) return;
+    const isKo = (typeof Lang !== 'undefined') ? Lang.getCurrent() === 'ko' : true;
+
+    // [UPDATE 2026-07-31] 차원 상인(0.72 / 0.63)과 라벨이 겹쳐서 오른쪽 아래로 이동
+    const npcX = Math.round((sceneArea.offsetWidth || 390) * 0.88);
+    const npcY = Math.round((sceneArea.offsetHeight || 680) * 0.72);
+
+    const btn = document.createElement('button');
+    btn.id = 'great-ith-npc';
+    btn.classList.add('lobby-interactive');
+    btn.style.cssText = `
+      position:absolute;left:${npcX}px;top:${npcY}px;transform:translateX(-50%);
+      background:none;border:none;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      z-index:8;padding:0;
+    `;
+    const _giSc = SPRITES?.lobbyNpcs?.greatIth;
+    const _giImgSrc = _giSc ? SpriteLoader.get(_giSc.src).src : '';
+    btn.innerHTML = `
+      ${_giImgSrc ? `<img src="${_giImgSrc}" style="height:74px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 9px rgba(80,200,220,0.55));">` : `<div style="font-size:44px;filter:drop-shadow(0 0 8px rgba(80,200,220,0.7));">🌀</div>`}
+      <div style="
+        font-size:10px;color:#8ce0f0;
+        background:rgba(6,14,20,0.78);border:1px solid rgba(80,200,220,0.5);
+        border-radius:6px;padding:2px 8px;white-space:nowrap;
+        text-shadow:0 0 6px rgba(80,200,220,0.6);
+      ">${isKo ? '그레이트 이스' : 'Great Ith'}</div>
+    `;
+    btn.addEventListener('click', () => _openGreatIthDialog(isKo));
+    sceneArea.appendChild(btn);
+  }
+
+  // 구매할 때마다 뜨는 웃음. 살수록 길어져서 "뭔가 잘못됐다"는 감각이 서서히 쌓이게 한다.
+  const _ITH_LAUGHS = [
+    '하하', '하하하', '하하하하', '하하하하하', '하하하하하하',
+    '하하하하하하하하', '하하하하하하하하하하하하',
+  ];
+  function _ithLaugh(total) {
+    const i = Math.min(Math.floor(total / 150), _ITH_LAUGHS.length - 1);
+    return _ITH_LAUGHS[i];
+  }
+
+  function _openGreatIthDialog(isKo) {
+    if (document.getElementById('great-ith-dialog')) return;
+    const MAXB = CONFIG.BLESSING.MAX, PRICE = CONFIG.BLESSING.PRICE_GOLD;
+    let qty = 1;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'great-ith-dialog';
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.82);
+      display:flex;align-items:center;justify-content:center;
+      z-index:9999;font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+    `;
+
+    function _render(laughMsg) {
+      const sd = Save.load();
+      const have = sd.blessings || 0;
+      const gold = sd.gold || 0;
+      const room = Math.max(0, MAXB - have);
+      const maxAffordable = Math.min(room, Math.floor(gold / PRICE));
+      if (qty > maxAffordable) qty = maxAffordable;
+      if (qty < 1 && maxAffordable >= 1) qty = 1;
+      const cost = qty * PRICE;
+      const canBuy = maxAffordable >= 1 && qty >= 1;
+
+      overlay.innerHTML = `
+        <div style="
+          width:290px;background:#061016;border:1px solid rgba(80,200,220,0.45);
+          border-radius:14px;padding:20px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.85);
+        ">
+          <div style="text-align:center;font-size:15px;color:#8ce0f0;font-weight:700;margin-bottom:4px;">
+            ${isKo ? '그레이트 이스' : 'Great Ith'}
+          </div>
+          <div style="text-align:center;font-size:10px;color:rgba(140,224,240,0.45);margin-bottom:12px;">
+            ${isKo ? '이계의 상인' : 'Merchant of the Outer Realm'}
+          </div>
+
+          <div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.65;margin-bottom:12px;text-align:center;">
+            ${isKo
+              ? '"슈브니구라스의 축복이라네. 단돈 1골드."<br>"싸지? 싸고말고. 아주 싸다네."'
+              : '"The blessing of Shub-Niggurath. Just one gold."<br>"Cheap? Oh, it is very cheap indeed."'}
+          </div>
+
+          ${laughMsg ? `<div style="text-align:center;font-size:13px;color:#7ce0a0;margin-bottom:10px;
+            text-shadow:0 0 8px rgba(120,224,160,0.6);letter-spacing:.05em;">${laughMsg}</div>` : ''}
+
+          <div style="display:flex;justify-content:space-between;font-size:11px;
+            color:rgba(255,255,255,0.6);margin-bottom:4px;">
+            <span>${isKo ? '보유 축복' : 'Blessings'}</span>
+            <span style="color:#8ce0f0;font-weight:700;">${have} / ${MAXB}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;
+            color:rgba(255,255,255,0.6);margin-bottom:12px;">
+            <span>${isKo ? '보유 골드' : 'Gold'}</span>
+            <span style="color:#e8c060;">🪙 ${Format.num(gold)}</span>
+          </div>
+
+          <div style="font-size:10px;color:rgba(140,224,240,0.5);text-align:center;margin-bottom:8px;">
+            ${isKo ? `어계에서 전투력 ×${Format.num((1 + have))}` : `Combat ×${Format.num((1 + have))} in the Outer Realm`}
+          </div>
+
+          ${room <= 0 ? `
+            <div style="text-align:center;font-size:12px;color:#e08080;padding:10px 0;">
+              ${isKo ? '더 담을 수 없다.' : 'You cannot hold any more.'}
+            </div>` : `
+            <input id="ith-range" type="range" min="1" max="${Math.max(1, maxAffordable)}" value="${Math.max(1, qty)}"
+              style="width:100%;margin-bottom:8px;accent-color:#4ac0d8;" ${canBuy ? '' : 'disabled'}>
+            <div style="display:flex;gap:6px;margin-bottom:10px;">
+              ${[10, 100, 1000].map(n => `<button data-q="${n}" class="ith-q" style="
+                flex:1;padding:6px 0;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit;
+                background:rgba(80,200,220,0.12);border:1px solid rgba(80,200,220,0.3);color:#8ce0f0;
+              ">+${n}</button>`).join('')}
+              <button data-q="max" class="ith-q" style="
+                flex:1;padding:6px 0;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit;
+                background:rgba(80,200,220,0.2);border:1px solid rgba(80,200,220,0.45);color:#aef0ff;
+              ">MAX</button>
+            </div>
+            <button id="ith-buy" ${canBuy ? '' : 'disabled'} style="
+              width:100%;padding:11px 0;border-radius:9px;font-size:13px;font-family:inherit;font-weight:700;
+              cursor:${canBuy ? 'pointer' : 'not-allowed'};opacity:${canBuy ? 1 : 0.4};
+              background:rgba(80,200,220,0.2);border:1px solid rgba(80,200,220,0.5);color:#aef0ff;
+            ">${isKo ? `${qty}개 받기 · 🪙${Format.num(cost)}` : `Take ${qty} · 🪙${Format.num(cost)}`}</button>
+          `}
+
+          <button id="ith-close" style="
+            width:100%;margin-top:8px;padding:9px 0;border-radius:8px;font-size:12px;
+            background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+            color:rgba(255,255,255,0.5);font-family:inherit;cursor:pointer;
+          ">${isKo ? '닫기' : 'Close'}</button>
+        </div>
+      `;
+
+      const range = document.getElementById('ith-range');
+      if (range) range.addEventListener('input', e => { qty = parseInt(e.target.value, 10) || 1; _render(laughMsg); });
+      overlay.querySelectorAll('.ith-q').forEach(b => b.addEventListener('click', () => {
+        const v = b.dataset.q;
+        qty = v === 'max' ? maxAffordable : Math.min(maxAffordable, qty + parseInt(v, 10));
+        _render(laughMsg);
+      }));
+      const buy = document.getElementById('ith-buy');
+      if (buy) buy.addEventListener('click', () => {
+        const s = Save.load();
+        const n = Math.min(qty, MAXB - (s.blessings || 0), Math.floor((s.gold || 0) / PRICE));
+        if (n < 1) return;
+        s.gold = (s.gold || 0) - n * PRICE;
+        s.blessings = (s.blessings || 0) + n;
+        Save.save(s);
+        saveData = s;
+        qty = 1;
+        _render(_ithLaugh(s.blessings)); // 혼돈시장과 동일하게 다이얼로그만 다시 그린다(로비 재화 표시는 씬 재진입 시 갱신)
+      });
+      document.getElementById('ith-close').addEventListener('click', () => overlay.remove());
+    }
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    _render(null);
+  }
+
   function _openChaosMarketDialog(isKo) {
     if (document.getElementById('chaos-market-dialog')) return;
     let sd = Save.load();
@@ -568,7 +738,7 @@ const LobbyScene = (() => {
           </div>
           <div style="text-align:center;font-size:11px;color:rgba(208,160,255,0.6);margin-bottom:14px;">
             ${isKo ? '무엇이 나올진 아무도 모른다.' : 'No one knows what turns up next.'}
-            &nbsp;${_cimg('hondonseok',12)} ${hondon.toLocaleString()}
+            &nbsp;${_cimg('hondonseok',12)} ${Format.num(hondon)}
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
             ${!stock.length ? `
@@ -605,7 +775,7 @@ const LobbyScene = (() => {
                   background:${canBuy?'rgba(160,96,224,0.2)':'rgba(80,80,80,0.15)'};
                   border:1px solid ${canBuy?'rgba(160,96,224,0.6)':'rgba(255,255,255,0.1)'};
                   color:${canBuy?'#d0a0ff':'#606070'};
-                ">${_cimg('hondonseok',12)}${item.price}</button>
+                ">${_cimg('hondonseok',12)}${Format.num(item.price)}</button>
               </div>`;
             }).join('')}
           </div>
@@ -744,6 +914,9 @@ const LobbyScene = (() => {
     const sd = (typeof Save !== 'undefined') ? Save.load() : null;
     if (!sd || !Unlock.cleared(sd, 123)) return;
     const isKo = (typeof Lang !== 'undefined') ? Lang.getCurrent() === 'ko' : true;
+    // [UPDATE 2026-08-02] 시즌8 엔딩 감상 완료 + 파트2 미진입 상태면, 안에 파트2 진입 통로가 생겼다는
+    // 신호로 황금색 링 + 은은한 회전 효과를 추가. 그 외(파트2 진입 전/후 상관없이 평소)엔 기존 보라색 그대로.
+    const _part2Ready = !!(sd.season8ClearEnding && !Save.hasPart2Save());
     // 신목 좌표(px:0.50,py:0.23) 바로 옆에 배치
     const bx = Math.round(0.62 * screenW);
     const by = Math.round(0.20 * sceneH);
@@ -758,14 +931,30 @@ const LobbyScene = (() => {
       z-index:8;padding:0;
     `;
     btn.innerHTML = `
-      <div style="font-size:26px;filter:drop-shadow(0 0 6px rgba(120,60,200,0.8));animation:sinmokCrackPulse 2.4s ease-in-out infinite;">🕳️</div>
+      <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
+        ${_part2Ready ? `
+        <div style="
+          position:absolute;inset:0;border-radius:50%;
+          background:conic-gradient(from 0deg, rgba(255,210,110,0) 0%, rgba(255,210,110,0.55) 35%, rgba(255,210,110,0) 60%);
+          animation:sinmokGoldSpin 6s linear infinite;
+        "></div>
+        <div style="
+          position:absolute;inset:4px;border-radius:50%;
+          box-shadow:0 0 10px 2px rgba(255,200,100,0.55);
+          animation:sinmokCrackPulse 2.4s ease-in-out infinite;
+        "></div>` : ''}
+        <div style="font-size:26px;position:relative;z-index:1;
+          filter:drop-shadow(0 0 6px ${_part2Ready ? 'rgba(255,200,110,0.9)' : 'rgba(120,60,200,0.8)'});
+          animation:sinmokCrackPulse 2.4s ease-in-out infinite;">🕳️</div>
+      </div>
       <div style="
-        font-size:9px;color:#c8a0ff;
-        background:rgba(10,6,20,0.78);border:1px solid rgba(160,100,255,0.5);
+        font-size:9px;color:${_part2Ready ? '#ffd88a' : '#c8a0ff'};
+        background:rgba(10,6,20,0.78);border:1px solid ${_part2Ready ? 'rgba(255,210,130,0.6)' : 'rgba(160,100,255,0.5)'};
         border-radius:6px;padding:2px 8px;white-space:nowrap;
       ">???</div>
       <style>
         @keyframes sinmokCrackPulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+        @keyframes sinmokGoldSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
       </style>
     `;
     btn.addEventListener('click', () => _enterMemorySpace(isKo));
@@ -810,7 +999,13 @@ const LobbyScene = (() => {
       img:{arr:'intro', idx:4},
       textKo:'모든 것이 폐허가 된 지금, 삼신할머니가 마지막 무당을 깨웠다.\n— 하나였던 달이 둘로 갈라지더니, 다시 하나로 겹쳐지는 꿈이었다.',
       textEn:'Now that everything lies in ruins, Samsin Halmi awakened the last shaman.\n— A dream where one moon split in two, then merged back into one.' },
-    { x:86.3, y:28.0 },
+    // [UPDATE 2026-08-02] 시즌8(황계, 파트1 최종) 엔딩 — 아카식과 부적 에필로그 마지막 슬라이드("난 기억해")
+    { x:86.3, y:28.0,
+      labelKo:'시즌8', labelEn:'Season 8',
+      unlockCond: sd => !!sd.season8Clear,
+      img:{arr:'endingS8', idx:9},
+      textKo:'아무것도 남길 수 없었지만, 아무것도 모르는 부적 하나가 남았다.\n"...난 기억해."',
+      textEn:'Nothing could remain — yet a single talisman, unwritten even by the Record, did.\n"...I remember."' },
     { x:92.2, y:86.5 },
     { x:90.2, y:91.6 },
     { x:76.5, y:22.7,
@@ -819,8 +1014,18 @@ const LobbyScene = (() => {
       img:{arr:'ending', idx:0},
       textKo:'현계의 원혼들이 잠들었다.\n귀인국에 오랜만에 평화가 찾아왔다.',
       textEn:'The restless spirits of the Living World are at rest.\nPeace has returned to Gwi-In-Guk at last.' },
-    { x:67.3, y:15.5 },
-    { x:63.4, y:28.3 },
+    { x:67.3, y:15.5,
+      labelKo:'시즌6', labelEn:'Season 6',
+      unlockCond: sd => !!sd.season6Clear,
+      img:{arr:'endingS6', idx:4},
+      textKo:'법칙의 일부를 얻었다.\n하늘이 갈라진 틈 너머, 어계가 그녀를 기다리고 있었다.',
+      textEn:'She had obtained a piece of Law.\nBeyond the tear in the sky, the Outer Realm awaited her.' },
+    { x:63.4, y:28.3,
+      labelKo:'시즌7', labelEn:'Season 7',
+      unlockCond: sd => !!sd.season7Clear,
+      img:{arr:'endingS7', idx:4},
+      textKo:'하나였던 것은 둘이 된다.\n그러나 둘이 된 것은... 마침내 서로를 찾는다.',
+      textEn:'What was one becomes two.\nBut what has become two... will, at last, find each other.' },
     { x:67.3, y:96.0 },
     { x:44.4, y:23.9,
       labelKo:'시즌2', labelEn:'Season 2',
@@ -828,9 +1033,24 @@ const LobbyScene = (() => {
       img:{arr:'endingS2', idx:1},
       textKo:'타락에서 돌아온 바리공주가 상사화 한 송이를 건넨다.\n"이 꽃처럼... 나도 누군가를 다시 만날 수 있을까."',
       textEn:'Princess Bari, returned from corruption, offers a single sangsahwa flower.\n"Like this flower... could I meet someone again too?"' },
-    { x:21.0, y:11.2 },
-    { x:23.0, y:20.3 },
-    { x:26.1, y:86.0 },
+    { x:21.0, y:11.2,
+      labelKo:'시즌3', labelEn:'Season 3',
+      unlockCond: sd => !!sd.season3Clear,
+      img:{arr:'endingS3', idx:2},
+      textKo:'도깨비들의 흥겨운 뒤풀이 속에서, 꺽쇠는 조용히 한 아이를 바라보았다.\n"...언젠가는, 말해줘야겠지."',
+      textEn:'Amid the dokkaebi\'s cheerful after-party, Ggeoksoe quietly watched a child.\n"...Someday, I\'ll have to tell him."' },
+    { x:23.0, y:20.3,
+      labelKo:'시즌4', labelEn:'Season 4',
+      unlockCond: sd => !!sd.season4Clear,
+      img:{arr:'endingS4', idx:3},
+      textKo:'넋들이 편안히 흩어지는 곳, 선계.\n애기씨는 처음으로 그 이름을 알았다.',
+      textEn:'A place where souls could finally rest — the Celestial Realm.\nAegissi learned its name for the first time.' },
+    { x:26.1, y:86.0,
+      labelKo:'시즌5', labelEn:'Season 5',
+      unlockCond: sd => !!sd.season5Clear,
+      img:{arr:'endingS5', idx:2},
+      textKo:'"고맙다, 애기씨야. 하지만... 이건 시작에 불과했던 것 같구나."\n수호신이 낮게 읊조렸다.',
+      textEn:'"Thank you, Aegissi. But... I fear this was only the beginning."\nThe guardian god murmured, low and quiet.' },
     { x:23.5, y:91.6 },
   ];
 
@@ -839,45 +1059,32 @@ const LobbyScene = (() => {
     return orb.unlockCond ? !!orb.unlockCond(sd) : true;
   }
 
-  // 기억 조각 카드 — 균열 팝업 위에 이미지+대사 한 장만 조용히 띄움(씬 전환/BGM 없음)
+  // orb.img.arr → 전체 재생 대상 매핑. 'intro'는 서막 전체, 'ending'/'endingS2'..'endingS5'는
+  // 해당 시즌 엔딩 전체(SLIDES_S2~S5, 시즌1은 params 없이 기본 SLIDES). ending-scene.js의 _SEASON_ENDINGS와 대응.
+  const _MEMORY_SEASON_OF_ARR = { ending: 1, endingS2: 2, endingS3: 3, endingS4: 4, endingS5: 5, endingS6: 6, endingS7: 7, endingS8: 8 };
+
+  // [UPDATE 2026-07-31] 기억 조각 1장짜리 스니펫 카드 대신, 서막/엔딩을 처음부터 끝까지 전체 재생하도록 변경.
+  // IntroScene·EndingScene 둘 다 세이브에 아무것도 쓰지 않는 순수 재생이라(그레이드/스킵해도 로비로 복귀할 뿐),
+  // 몇 번을 다시 봐도 안전하다. 재생이 끝나면 두 씬 모두 자동으로 SceneManager.go('lobby')로 돌아온다.
   function playMemoryScene(idx) {
     const orb = MEMORY_ORBS[idx];
     const sd  = Save.load();
     if (!orb || !_memoryOrbUnlocked(orb, sd)) return;
-    const isKo = Lang.getCurrent() === 'ko';
-    const existing = document.getElementById('memory-snippet-card');
-    if (existing) existing.remove();
 
-    const sc = SPRITES?.[orb.img.arr]?.[orb.img.idx];
-    const imgSrc = sc ? SpriteLoader.get(sc.src).src : '';
-    const text = (isKo ? orb.textKo : orb.textEn) || '';
+    // 팝업 위에 떠 있던 오버레이(기억의 공간, 균열 등)를 먼저 걷어내고 씬 전체 전환으로 넘어간다
+    document.getElementById('memory-space-overlay')?.remove();
+    document.getElementById('memory-snippet-card')?.remove();
 
-    const card = document.createElement('div');
-    card.id = 'memory-snippet-card';
-    card.style.cssText = `
-      position:fixed;inset:0;background:rgba(0,0,0,0.85);
-      display:flex;align-items:center;justify-content:center;
-      z-index:10000;font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;padding:20px;
-    `;
-    card.innerHTML = `
-      <div style="
-        width:100%;max-width:320px;background:rgba(10,6,20,0.97);
-        border:1.5px solid rgba(200,180,255,0.5);border-radius:16px;
-        padding:16px;box-shadow:0 0 30px rgba(160,120,255,0.3);
-      ">
-        ${imgSrc ? `<img src="${imgSrc}" style="width:100%;border-radius:10px;margin-bottom:12px;display:block;">` : ''}
-        <div style="font-size:12px;color:#e0d0ff;line-height:1.7;white-space:pre-line;text-align:center;">
-          ${text}
-        </div>
-        <button onclick="document.getElementById('memory-snippet-card').remove()" style="
-          width:100%;margin-top:14px;padding:9px;border-radius:10px;
-          background:rgba(160,100,255,0.15);border:1px solid rgba(160,100,255,0.5);
-          color:#d8c0ff;font-size:12px;cursor:pointer;font-family:inherit;
-        ">${Lang.t('ui','back')}</button>
-      </div>
-    `;
-    card.addEventListener('click', e => { if (e.target === card) card.remove(); });
-    document.body.appendChild(card);
+    if (orb.img.arr === 'intro') {
+      // [UPDATE 2026-07-31] 명부전 재생은 서막 7장 전체를 보여주되 타이틀 로고 화면은 건너뛴다
+      // (실제 첫 실행 인트로는 그대로 7장 + 로고로 끝남 — intro-scene.js의 _skipTitleScreen 참고)
+      SceneManager.go('intro', { skipTitle: true });
+      return;
+    }
+    const season = _MEMORY_SEASON_OF_ARR[orb.img.arr];
+    // [UPDATE 2026-08-02] replay:true — 기억의 공간 재생은 "시즌 N 완료" 카드 없이 슬라이드 끝나면 바로 로비로.
+    // 실제 인게임 클리어 엔딩(game.js에서 트리거)에는 이 플래그가 없어 카드가 그대로 뜬다.
+    SceneManager.go('ending', season && season !== 1 ? { season, replay: true } : { replay: true });
   }
 
   // [UPDATE 2026-07-16] 260716: 기록의 공간 — 회전 소용돌이 배경 위에 야명주 핫스팟을 배치해
@@ -922,6 +1129,15 @@ const LobbyScene = (() => {
             transform-origin:${Math.round(VORTEX_CX)}px ${Math.round(VORTEX_CY)}px;
             animation:memoryHallSpin 50s linear infinite;">
         </div>
+        ${(sd.season8ClearEnding && !Save.hasPart2Save()) ? `
+        <button onclick="LobbyScene.openPart2Entry()" title="${isKo?'???':'???'}" style="
+          position:absolute;left:${maskLeft}px;top:${maskTop}px;width:${maskSize}px;height:${maskSize}px;
+          border-radius:50%;padding:0;background:radial-gradient(circle,rgba(255,200,220,0.18),transparent 70%);
+          border:1px solid rgba(255,180,200,0.55);cursor:pointer;
+          box-shadow:0 0 18px rgba(255,150,180,0.5);animation:part2VortexPulse 2.4s ease-in-out infinite;
+        "></button>
+        <style>@keyframes part2VortexPulse { 0%,100% { opacity:0.55; } 50% { opacity:0.95; } }</style>
+        ` : ''}
         ${MEMORY_ORBS.map((o, idx) => {
           const unlocked = _memoryOrbUnlocked(o, sd);
           return `
@@ -962,6 +1178,123 @@ const LobbyScene = (() => {
     document.body.appendChild(overlay);
   }
 
+  // [UPDATE 2026-08-02] 파트2 MVP 진입 시퀀스 — 시즌8 최종 엔딩 감상 완료 후, 기억의 공간 소용돌이
+  // 중심부가 클릭 가능해짐(균열은 아카식 밖 예외 공간이라는 설정). 3단 컨펌을 전부 통과해야 진입.
+  // [UPDATE 2026-08-02] "완전히 새로 시작"으로 확정 — 파트1 세이브는 절대 안 건드리고,
+  // Save.setActiveProfile('part2')로 완전히 별도의 로컬스토리지 슬롯으로 전환(_activatePart2() 참고).
+  // 상세 스펙: MONGDAL_PART2_DESIGN.md §1.6
+  const _PART2_CONFIRM_TEXTS = [
+    { ko: '[파트2] 이제는 우리가 구할 때입니다.\n진입하시겠습니까?', en: '[Part 2] Now it is our turn to save her.\nWill you proceed?' },
+    { ko: '다시는 지금의 세계로 올 수 없습니다.\n각오되셨습니까?', en: 'You can never return to this world again.\nAre you prepared?' },
+    { ko: '한 번 더, 마지막으로,\n당신의 모든 걸 포기하고 그녀를 구하시겠습니까?', en: 'One last time —\nwill you give up everything to save her?' },
+  ];
+
+  // [UPDATE 2026-08-02] 파트2 진입 게이트 — "다양한 경험과 무기가 없다면 애기씨를 구할 수 없다"는
+  // 개연성 확보용 최소 요건. 동료/펫/법칙은 제외(개연성 약함/파밍 편차 큼), 대신 전 던전 1회 이상 +
+  // 주무기 5종 전부 해금으로 "웬만큼 다 해본 사람"인지만 확인. 시즌1~8 이지 클리어는 파트2 진입 자체가
+  // 시즌8 엔딩 이후라 자동 충족되므로 별도 체크 불필요.
+  const _PART2_DUNGEONS = [
+    { id:'ganghwaseok',   ko:'강화석 던전',  en:'Reinforcement Stone Dungeon' },
+    { id:'infinite',      ko:'무한 던전',    en:'Infinite Dungeon' },
+    { id:'bossrush',      ko:'보스 러시',    en:'Boss Rush' },
+    { id:'cheonunseok',   ko:'천운석 던전',  en:'Heaven-Fortune Stone Dungeon' },
+    { id:'cheonryeonggwa',ko:'천령과 던전',  en:'Heavenly Spirit Fruit Dungeon' },
+    { id:'taegeukseok',   ko:'태극석 던전',  en:'Taegeuk Stone Dungeon' },
+    { id:'hondonseok',    ko:'혼돈석 던전',  en:'Chaos Stone Dungeon' },
+    { id:'sullriseok',    ko:'술리석 던전',  en:'Sullri Stone Dungeon' },
+  ];
+  const _PART2_WEAPONS = [
+    { id:'talisman',    ko:'부적',      en:'Talisman' },
+    { id:'sword',       ko:'신검',      en:'Divine Sword' },
+    { id:'bow',         ko:'신궁',      en:'Divine Bow' },
+    { id:'staff',       ko:'무당 지팡이', en:'Shaman Staff' },
+    { id:'scythe_main', ko:'영혼낫',    en:'Soul Scythe' },
+  ];
+  function _part2Requirements(sd) {
+    const missing = [];
+    for (const d of _PART2_DUNGEONS) if (!sd[d.id + 'Record']) missing.push(d);
+    const owned = sd.unlockedWeapons || ['talisman'];
+    for (const w of _PART2_WEAPONS) if (!owned.includes(w.id)) missing.push(w);
+    return { met: missing.length === 0, missing };
+  }
+
+  function openPart2Entry() {
+    const isKo = (typeof Lang !== 'undefined') ? Lang.getCurrent() === 'ko' : true;
+    const sd = Save.load();
+    const req = _part2Requirements(sd);
+    if (!req.met) { _showPart2NotReady(req.missing, isKo); return; }
+    _part2ConfirmStep(0, isKo);
+  }
+
+  function _showPart2NotReady(missing, isKo) {
+    const overlay = document.createElement('div');
+    overlay.id = 'part2-notready-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10001;
+      display:flex;align-items:center;justify-content:center;padding:20px;
+      font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+    `;
+    overlay.innerHTML = `
+      <div style="max-width:320px;width:100%;background:rgba(15,8,20,0.96);border:1px solid rgba(200,160,255,0.5);
+        border-radius:14px;padding:22px 20px;text-align:center;box-shadow:0 0 30px rgba(150,100,220,0.25);">
+        <div style="font-size:13px;color:#e0c8ff;line-height:1.8;margin-bottom:14px;">
+          ${isKo ? '다양한 경험과 무기가 없다면, 애기씨를 구할 수 없다.' : 'Without varied experience and weapons, Aegissi cannot be saved.'}
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.55);text-align:left;line-height:1.9;
+          max-height:180px;overflow-y:auto;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:16px;">
+          ${missing.map(m => `· ${isKo ? m.ko : m.en}`).join('<br>')}
+        </div>
+        <button id="part2NotReadyClose" style="padding:9px 22px;border-radius:8px;background:rgba(255,255,255,0.08);
+          border:1px solid rgba(255,255,255,0.2);color:#ccc;font-size:12px;cursor:pointer;font-family:inherit;">${isKo ? '닫기' : 'Close'}</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('part2NotReadyClose').addEventListener('click', () => overlay.remove());
+  }
+
+  function _part2ConfirmStep(step, isKo) {
+    if (step >= _PART2_CONFIRM_TEXTS.length) { _activatePart2(); return; }
+    const t = _PART2_CONFIRM_TEXTS[step];
+    const overlay = document.createElement('div');
+    overlay.id = 'part2-confirm-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10001;
+      display:flex;align-items:center;justify-content:center;padding:20px;
+      font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+    `;
+    overlay.innerHTML = `
+      <div style="max-width:320px;width:100%;background:rgba(15,8,20,0.96);border:1px solid rgba(255,180,200,0.5);
+        border-radius:14px;padding:24px 20px;text-align:center;box-shadow:0 0 30px rgba(255,140,170,0.25);">
+        <div style="font-size:13px;color:#ffd0dc;line-height:1.8;margin-bottom:22px;white-space:pre-line;">${isKo ? t.ko : t.en}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="part2ConfirmNo" style="padding:9px 22px;border-radius:8px;background:rgba(255,255,255,0.08);
+            border:1px solid rgba(255,255,255,0.2);color:#ccc;font-size:12px;cursor:pointer;font-family:inherit;">${isKo ? '아니오' : 'No'}</button>
+          <button id="part2ConfirmYes" style="padding:9px 22px;border-radius:8px;background:rgba(255,120,150,0.22);
+            border:1px solid rgba(255,150,180,0.65);color:#ffd0dc;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">${isKo ? '예' : 'Yes'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('part2ConfirmNo').addEventListener('click', () => overlay.remove());
+    document.getElementById('part2ConfirmYes').addEventListener('click', () => {
+      overlay.remove();
+      _part2ConfirmStep(step + 1, isKo);
+    });
+  }
+
+  // [UPDATE 2026-08-02] "완전히 새로 시작"으로 최종 확정 — 파트1 세이브 안에 끼워넣던 방식(saveData.part2)을
+  // 버리고, 아예 별도 로컬스토리지 슬롯(Save.setActiveProfile('part2'))으로 전환. 파트1 세이브는 절대 안 건드림.
+  // 이 스위치 이후로는 game.js/character.js/blacksmith-scene.js 등 Save.load()/Save.save()를 쓰는 모든 코드가
+  // 자동으로 텅 빈 새 세이브(골드0·무기 talisman만·동료펫 없음)를 보게 된다 — 개별 파일 수정 불필요.
+  function _activatePart2() {
+    document.getElementById('memory-space-overlay')?.remove();
+    Save.setActiveProfile('part2');
+    const freshP2 = Save.load(); // 프로필 전환 직후라 이 load()는 파트2의 새 세이브(비어있음)를 반환
+    // 박수 스프라이트 교체/동료 목록 제외 로직이 season8ClearEnding 플래그 하나로 동작하므로,
+    // 파트2 세이브에도 이 플래그를 심어둬야 로비/인게임에서 박수로 정상 표시됨.
+    freshP2.season8ClearEnding = true;
+    Save.save(freshP2);
+    SceneManager.go('lobby');
+  }
+
   function _openDimensionalMap(isKo) {
     if (document.getElementById('dimensional-map-overlay')) return;
     const mapImg = SPRITES?.worldMap ? SpriteLoader.get(SPRITES.worldMap.src) : null;
@@ -974,26 +1307,41 @@ const LobbyScene = (() => {
     // [UPDATE 2026-07-14] 260714_MTOPC.md 6번: 시즌=계 1:1 구조로 정리 — 아직 실제 콘텐츠(scene)가 없는 계는 unlock 조건과 무관하게 항상 잠금 표시.
     // 기존 chapter6/chapter8 조건은 시즌=계 구조 확정 전의 옛 컨셉(단일 캠페인 챕터 진행형) 잔재라 제거.
     const ZONES = [
-      { x:110, y: 32, r:24, ko:'원계',   en:'Primal Realm',   scene:null,          unlock:null,           color:'#00ffee' },
-      { x: 44, y: 83, r:29, ko:'어계',   en:'Outer Realm',    scene:null,          unlock:null,           color:'#cc44ff' },
-      { x:175, y:109, r:29, ko:'황계',   en:'Ruined Realm',   scene:null,          unlock:null,           color:'#ffcc00' },
-      { x:110, y:198, r:34, ko:'선계',   en:'Celestial Realm',scene:null,          unlock:null,           color:'#ffffff' },
+      // [UPDATE 2026-07-24] 시즌6(원계) 콘텐츠 등록 완료 — 진입 가능해짐 (그동안 scene:null로 항상 잠겨있었음)
+      { x:110, y: 32, r:24, ko:'원계',   en:'Primal Realm',   scene:'stageSelect', unlock:'season5Clear', color:'#8898c8', season:6 },
+      // [UPDATE 2026-07-31] 시즌7(어계) 콘텐츠 등록 완료 — 진입 가능해짐 (그동안 scene:null로 항상 잠겨있었음)
+      { x: 44, y: 83, r:29, ko:'어계',   en:'Outer Realm',    scene:'stageSelect', unlock:'season6Clear', color:'#cc44ff', season:7 },
+      // [UPDATE 2026-07-31] 시즌8(황계) 콘텐츠 등록 완료 — 진입 가능해짐
+      { x:175, y:109, r:29, ko:'황계',   en:'Ruined Realm',   scene:'stageSelect', unlock:'season7Clear', color:'#ffcc00', season:8 },
+      // [UPDATE 2026-07-22] 시즌5(선계) 콘텐츠 등록 완료 — 진입 가능해짐 (그동안 scene:null로 항상 잠겨있었음)
+      { x:110, y:198, r:34, ko:'선계',   en:'Celestial Realm',scene:'stageSelect', unlock:'season4Clear', color:'#5898a8', season:5 },
       { x: 82, y:314, r:37, ko:'현계',   en:'Mortal Realm',   scene:'stageSelect', unlock:null,           color:'#80ff80', season:1 },
       { x:148, y:403, r:34, ko:'유명계', en:'Shadow Realm',   scene:'stageSelect', unlock:'season1Clear', color:'#8080ff', season:2 },
       // [UPDATE 2026-07-14] 시즌3(망랑계) 콘텐츠 등록 완료 — 진입 가능해짐
       { x: 44, y:467, r:37, ko:'망랑계', en:'Chaos Realm',    scene:'stageSelect', unlock:'season2Clear', color:'#ff8800', season:3 },
-      { x:110, y:563, r:42, ko:'귀허계', en:'Void Realm',     scene:null,          unlock:null,           color:'#ff4444' },
+      // [UPDATE 2026-07-17] 시즌4(귀허계) 콘텐츠 등록 완료 — 진입 가능해짐 (그동안 scene:null로 항상 잠겨있었음)
+      { x:110, y:563, r:42, ko:'귀허계', en:'Void Realm',     scene:'stageSelect', unlock:'season3Clear', color:'#6858a0', season:4 },
     ];
 
     const save = Save.load();
     const season1Clear = save.season1Clear || false;
     const season2Clear = save.season2Clear || false;
+    const season3Clear = save.season3Clear || false;
+    const season4Clear = save.season4Clear || false;
+    const season5Clear = save.season5Clear || false;
 
+    // [UPDATE 2026-07-24] season5Clear 분기 누락 수정 — 시즌6 추가하며 발견. 시즌5까지는 unlock 조건이
+    // 없었거나(scene:null로 항상 잠김) 필요 없었지만, 시즌6부터 실제로 이 분기를 타야 함.
     function isUnlocked(z) {
       if (!z.scene) return false; // 아직 실제로 진입할 스테이지가 없는 계는 조건과 무관하게 항상 잠금
+      // [UPDATE 2026-07-17] 콘텐츠 배포 플래그(CONFIG.CONTENT_RELEASE) 추가 — 스토리 조건 충족해도 플래그가 꺼져있으면 잠김
+      if (z.season && !isSeasonReleased(z.season)) return false;
       if (!z.unlock) return true;
       if (z.unlock === 'season1Clear') return season1Clear;
       if (z.unlock === 'season2Clear') return season2Clear;
+      if (z.unlock === 'season3Clear') return season3Clear;
+      if (z.unlock === 'season4Clear') return season4Clear;
+      if (z.unlock === 'season5Clear') return season5Clear;
       return false;
     }
 
@@ -1005,8 +1353,23 @@ const LobbyScene = (() => {
       z-index:9999;font-family:'Noto Serif KR',serif;
     `;
 
+    // [UPDATE 2026-07-19] 화면 크기에 맞춰 꽉 차게 확대 — 원본 비율(219:640) 유지 안 하고 화면 폭/높이 각각에 맞춰 늘림.
+    // ZONES 좌표계는 219x640 그대로 유지한 채 배경 이미지+클릭영역만 transform:scale()로 비균등 확대.
+    // [UPDATE 2026-07-19] 라벨 글자는 transform 상속받으면 가로/세로 비율이 달라 같이 찌그러져서(사용자 지적),
+    // 라벨만 container 밖(el 직속)으로 빼서 화면 절대좌표로 직접 계산 + 균등 배율(_labelScale)만 적용
+    const _scaleX = Math.min(window.innerWidth * 0.94, 440) / IMG_W;
+    const _scaleY = (window.innerHeight * 0.88) / IMG_H;
+    const _labelScale = Math.min(_scaleX, _scaleY);
+    // container는 el 안에서 flex 중앙정렬되므로, 스케일 중심(center center) = 뷰포트 중앙과 일치
+    function _scaledPos(x, y) {
+      return {
+        left: window.innerWidth  / 2 + (x - IMG_W / 2) * _scaleX,
+        top:  window.innerHeight / 2 + (y - IMG_H / 2) * _scaleY,
+      };
+    }
     const container = document.createElement('div');
-    container.style.cssText = `position:relative;width:${IMG_W}px;height:${IMG_H}px;flex-shrink:0;`;
+    container.style.cssText = `position:relative;width:${IMG_W}px;height:${IMG_H}px;flex-shrink:0;
+      transform:scale(${_scaleX}, ${_scaleY});transform-origin:center center;`;
 
     if (mapSrc) {
       const img = document.createElement('img');
@@ -1049,13 +1412,14 @@ const LobbyScene = (() => {
           const toast = document.createElement('div');
           toast.id = 'dim-map-lock-toast';
           toast.textContent = isKo ? '🔒 아직 열리지 않은 계입니다' : '🔒 This realm has not opened yet';
+          // [UPDATE 2026-07-19] container(비균등 스케일 적용됨) 대신 el 직속으로 붙여서 글자가 안 찌그러지게
           toast.style.cssText = `
-            position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+            position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
             background:rgba(20,10,30,0.92);border:1px solid rgba(255,255,255,0.25);
             color:#e8dcc8;font-size:11px;padding:8px 14px;border-radius:10px;
             white-space:nowrap;z-index:11;pointer-events:none;opacity:0;transition:opacity .25s ease;
           `;
-          container.appendChild(toast);
+          el.appendChild(toast);
           requestAnimationFrame(() => { toast.style.opacity = '1'; });
           setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 250); }, 1400);
         });
@@ -1063,12 +1427,16 @@ const LobbyScene = (() => {
       container.appendChild(tap);
 
       // 간판 라벨 (로비 건물 간판 스타일, 각 계 색상 유지)
+      // [UPDATE 2026-07-19] container는 가로/세로 비율이 다르게 늘어나 있어서(_scaleX≠_scaleY) 그 안에 글자를
+      // 넣으면 같이 찌그러짐 — 라벨만 el 직속으로 빼서 화면 절대좌표(_scaledPos)로 배치 + 균등 배율(_labelScale)만 적용
+      const _lp = _scaledPos(z.x, z.y - z.r - 20);
       const lbl = document.createElement('div');
       lbl.textContent = (unlocked ? '' : '🔒 ') + (isKo ? z.ko : z.en);
       lbl.style.cssText = `
-        position:absolute;
-        left:${z.x}px;top:${z.y - z.r - 20}px;
-        transform:translateX(-50%);
+        position:fixed;
+        left:${_lp.left}px;top:${_lp.top}px;
+        transform:translateX(-50%) scale(${_labelScale});
+        transform-origin:top center;
         background:rgba(10,6,20,0.85);
         border:1px solid ${unlocked ? z.color : 'rgba(255,255,255,0.15)'};
         border-radius:6px;padding:3px 10px;
@@ -1078,9 +1446,9 @@ const LobbyScene = (() => {
         box-shadow:${unlocked ? `0 0 8px ${z.color}55, inset 0 0 6px rgba(0,0,0,0.6)` : 'none'};
         text-shadow:${unlocked ? `0 0 6px ${z.color}99` : 'none'};
         letter-spacing:.05em;
-        z-index:2;
+        z-index:10000;
       `;
-      container.appendChild(lbl);
+      el.appendChild(lbl);
     });
 
     const closeBtn = document.createElement('div');
@@ -1105,8 +1473,13 @@ const LobbyScene = (() => {
     const el = document.getElementById('player-sprite');
     if (!el) return;
 
+    // [UPDATE 2026-08-02] 버그 수정: 비율이 135:158(애기씨 스프라이트 원본 비율)로 하드코딩돼 있어서,
+    // 다른 비율의 스프라이트(박수, drawW:50/drawH:100 ≈ 1:2)를 억지로 이 박스에 욱여넣어 가로로 눌려
+    // "뚱뚱해" 보이는 원인이었음. 실제 스프라이트 설정의 drawW/drawH 비율을 그대로 쓰도록 수정.
+    const _sc = Player.getSpriteConfig();
+    const _spriteRatio = (_sc?.drawW && _sc?.drawH) ? (_sc.drawW / _sc.drawH) : (135/158);
     const pH = Math.round(sceneH * 0.09);  // 작게
-    const pW = Math.round(pH * (135/158));
+    const pW = Math.round(pH * _spriteRatio);
     const bounce = playerMoving ? Math.round(Math.abs(Math.sin(walkPhase)) * 3) : 0;
 
     el.style.width  = pW + 'px';
@@ -1117,8 +1490,7 @@ const LobbyScene = (() => {
     el.style.transform = `scaleX(${playerDir})`;
 
     if (!el._sprLoaded) {
-      const sc = Player.getSpriteConfig();
-      const img = SpriteLoader.get(sc.src);
+      const img = SpriteLoader.get(_sc.src);
       if (img?.src) {
         el.src = img.src;
         if (img.complete) { el._sprLoaded = true; el.style.display = 'block'; }
@@ -1486,6 +1858,30 @@ const LobbyScene = (() => {
           ">🎁 ${Lang.t('settingsMenu','redeemCode')}</button>
         </div>
 
+        <!-- [UPDATE 2026-07-17] 세이브 코드 내보내기/불러오기 (PC↔모바일 진행상황 이동용) -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:12px;color:rgba(200,160,255,0.6);letter-spacing:.1em;margin-bottom:10px;">
+            ${Lang.t('settingsMenu','saveCode')}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="document.getElementById('settings-modal').remove();LobbyScene.openSaveExportDialog();" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(80,160,120,0.18);border:1px solid rgba(100,220,160,0.4);color:rgba(160,240,190,0.9);
+            ">${Lang.t('settingsMenu','saveCodeExport')}</button>
+            <button onclick="document.getElementById('settings-modal').remove();LobbyScene.openSaveImportDialog();" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(80,120,160,0.18);border:1px solid rgba(100,180,220,0.4);color:rgba(160,210,240,0.9);
+            ">${Lang.t('settingsMenu','saveCodeImport')}</button>
+          </div>
+          <!-- [UPDATE 2026-07-31] 복구 버튼 — 불러오기로 덮어쓴 적이 있어 백업이 실제로 있을 때만 노출.
+               평소엔 쓸 일 없는 기능이라 상시 노출하면 오히려 오조작을 유발함 -->
+          ${Save.hasBackup() ? `
+          <button onclick="document.getElementById('settings-modal').remove();LobbyScene.openSaveRestoreConfirm();" style="
+            width:100%;margin-top:8px;padding:9px 0;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;
+            background:rgba(150,120,80,0.16);border:1px solid rgba(220,180,110,0.35);color:rgba(240,210,150,0.9);
+          ">${Lang.t('settingsMenu','saveCodeRestore')}</button>` : ''}
+        </div>
+
         <!-- [UPDATE 2026-07-16] 초기화(리부트) 버튼 — 보상 없음, 3단계 경고 확인 후 완전 초기화 -->
         <div style="margin-bottom:20px;">
           <button onclick="document.getElementById('settings-modal').remove();LobbyScene.openRebootConfirm(1);" style="
@@ -1583,7 +1979,7 @@ const LobbyScene = (() => {
       if (result.ok) {
         const rewardStr = result.parts.map(p => {
           const icon = p.key==='gold' ? '🪙' : p.key==='gems' ? '💎' : _cimg(p.key,12);
-          return `${icon}+${p.amount.toLocaleString()}`;
+          return `${icon}+${Format.num(p.amount)}`;
         }).join(' ');
         msgEl.style.color = '#80f0a0';
         msgEl.innerHTML = (isKo?'수령 완료! ':'Redeemed! ') + rewardStr;
@@ -1596,6 +1992,254 @@ const LobbyScene = (() => {
     };
     document.getElementById('redeem-code-submit').addEventListener('click', _submit);
     document.getElementById('redeem-code-input').addEventListener('keydown', e => { if (e.key==='Enter') _submit(); });
+  }
+
+  // [UPDATE 2026-07-17] 세이브 코드 내보내기 — saveData를 통째로 텍스트 코드로 변환해 복사할 수 있게 표시
+  function openSaveExportDialog() {
+    const existing = document.getElementById('save-export-modal');
+    if (existing) { existing.remove(); return; }
+    const sd = Save.load();
+    const code = Save.exportCode(sd);
+    const modal = document.createElement('div');
+    modal.id = 'save-export-modal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:200;
+      background:rgba(0,0,0,0.8);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+      padding:20px;
+    `;
+    modal.innerHTML = `
+      <div style="
+        background:#0e0a1a;border:1px solid rgba(100,220,160,0.4);
+        border-radius:14px;padding:24px 20px;width:100%;max-width:320px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.8);
+      ">
+        <div style="text-align:center;font-size:15px;color:#a0f0c0;font-weight:700;margin-bottom:10px;">
+          ${Lang.t('settingsMenu','saveCodeExportTitle')}
+        </div>
+        <div style="font-size:11px;color:rgba(200,220,210,0.7);line-height:1.5;margin-bottom:12px;">
+          ${Lang.t('settingsMenu','saveCodeExportDesc')}
+        </div>
+        <textarea id="save-export-text" readonly style="
+          width:100%;box-sizing:border-box;height:120px;padding:10px;border-radius:8px;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);
+          color:#d8c8b8;font-size:10px;font-family:monospace;resize:none;margin-bottom:10px;
+        ">${code}</textarea>
+        <div id="save-export-msg" style="font-size:11px;min-height:16px;margin-bottom:10px;text-align:center;color:#80f0a0;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="save-export-copy" style="
+            flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+            background:rgba(100,220,160,0.2);border:1px solid rgba(100,220,160,0.5);color:#a0f0c0;font-weight:700;
+          ">${Lang.t('settingsMenu','saveCodeCopyBtn')}</button>
+          <button onclick="document.getElementById('save-export-modal').remove()" style="
+            flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+            background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);
+          ">${Lang.t('ui','back')}</button>
+        </div>
+      </div>
+    `;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+
+    document.getElementById('save-export-copy').addEventListener('click', async () => {
+      const msgEl = document.getElementById('save-export-msg');
+      const ta = document.getElementById('save-export-text');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(code);
+          msgEl.textContent = Lang.t('settingsMenu','saveCodeCopied');
+        } else {
+          throw new Error('no clipboard api');
+        }
+      } catch (e) {
+        // 클립보드 API 미지원 환경 — 텍스트 영역을 직접 선택해서 수동 복사하도록 안내
+        ta.focus(); ta.select();
+        msgEl.style.color = '#ffd870';
+        msgEl.textContent = Lang.t('settingsMenu','saveCodeCopyManual');
+      }
+    });
+  }
+
+  // [UPDATE 2026-07-17] 세이브 코드 불러오기 — 붙여넣은 코드를 검증 후 미리보기를 보여주고, 확인해야 실제 적용
+  function openSaveImportDialog() {
+    const existing = document.getElementById('save-import-modal');
+    if (existing) { existing.remove(); return; }
+    const modal = document.createElement('div');
+    modal.id = 'save-import-modal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:200;
+      background:rgba(0,0,0,0.8);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+      padding:20px;
+    `;
+    document.body.appendChild(modal);
+
+    const _renderInput = () => {
+      modal.innerHTML = `
+        <div style="
+          background:#0e0a1a;border:1px solid rgba(100,180,220,0.4);
+          border-radius:14px;padding:24px 20px;width:100%;max-width:320px;
+          box-shadow:0 8px 32px rgba(0,0,0,0.8);
+        ">
+          <div style="text-align:center;font-size:15px;color:#a0d0f0;font-weight:700;margin-bottom:14px;">
+            ${Lang.t('settingsMenu','saveCodeImportTitle')}
+          </div>
+          <textarea id="save-import-text" placeholder="${Lang.t('settingsMenu','saveCodeImportPlaceholder')}" style="
+            width:100%;box-sizing:border-box;height:100px;padding:10px;border-radius:8px;
+            background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);
+            color:#e8dcc8;font-size:11px;font-family:monospace;margin-bottom:10px;
+          "></textarea>
+          <div id="save-import-msg" style="font-size:11px;min-height:16px;margin-bottom:10px;text-align:center;color:#ff8080;"></div>
+          <div style="display:flex;gap:8px;">
+            <button id="save-import-submit" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(100,180,220,0.2);border:1px solid rgba(100,180,220,0.5);color:#a0d0f0;font-weight:700;
+            ">${Lang.t('settingsMenu','saveCodeImportSubmit')}</button>
+            <button onclick="document.getElementById('save-import-modal').remove()" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);
+            ">${Lang.t('ui','back')}</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('save-import-submit').addEventListener('click', () => {
+        const raw = document.getElementById('save-import-text').value;
+        const result = Save.parseCode(raw);
+        if (!result.ok) {
+          const msgEl = document.getElementById('save-import-msg');
+          msgEl.textContent = result.error === 'checksum'
+            ? Lang.t('settingsMenu','saveCodeChecksumError')
+            : Lang.t('settingsMenu','saveCodeInvalid');
+          return;
+        }
+        _renderPreview(result.payload, result.preview);
+      });
+    };
+
+    const _renderPreview = (payload, pv) => {
+      const deviceLabel = pv.device === 'mobile' ? Lang.t('settingsMenu','deviceMobile') : Lang.t('settingsMenu','devicePC');
+      const savedAtLocal = new Date(pv.savedAt).toLocaleString(); // 보는 기기의 로컬 시간대로 자동 변환
+      const row = (label, val) => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:#e8dcc8;">
+          <span style="color:rgba(200,220,240,0.6);">${label}</span><span>${val}</span>
+        </div>`;
+      modal.innerHTML = `
+        <div style="
+          background:#0e0a1a;border:1px solid rgba(100,180,220,0.4);
+          border-radius:14px;padding:24px 20px;width:100%;max-width:320px;
+          box-shadow:0 8px 32px rgba(0,0,0,0.8);
+        ">
+          <div style="text-align:center;font-size:15px;color:#a0d0f0;font-weight:700;margin-bottom:14px;">
+            ${Lang.t('settingsMenu','saveCodePreviewTitle')}
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:9px;padding:10px 12px;margin-bottom:14px;">
+            ${row(Lang.t('settingsMenu','saveCodePreviewVersion'), pv.gameVersion)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewStage'), pv.maxStage)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewAchievements'), pv.achievementsCount)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewBuildings'), pv.buildingsCount)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewCompanions'), pv.companionsCount)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewPets'), pv.petsCount)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewCurrency'), `🪙${Format.num(pv.gold)} 💎${Format.num(pv.gems)}`)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewSavedAt'), savedAtLocal)}
+            ${row(Lang.t('settingsMenu','saveCodePreviewDevice'), deviceLabel)}
+          </div>
+          <div style="font-size:11px;color:#ff9090;text-align:center;margin-bottom:14px;line-height:1.5;white-space:pre-line;">
+            ${Lang.t('settingsMenu','saveCodeApplyWarn')}
+          </div>
+          <div id="save-import-applied-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;text-align:center;color:#80f0a0;"></div>
+          <div style="display:flex;gap:8px;">
+            <button id="save-import-apply" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(220,120,100,0.2);border:1px solid rgba(255,140,120,0.5);color:#ffb0a0;font-weight:700;
+            ">${Lang.t('settingsMenu','saveCodeApply')}</button>
+            <button onclick="document.getElementById('save-import-modal').remove()" style="
+              flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+              background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);
+            ">${Lang.t('settingsMenu','saveCodeCancel')}</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('save-import-apply').addEventListener('click', () => {
+        Save.applyCode(payload);
+        document.getElementById('save-import-apply').disabled = true;
+        document.getElementById('save-import-applied-msg').textContent = Lang.t('settingsMenu','saveCodeApplied');
+        setTimeout(() => {
+          const m = document.getElementById('save-import-modal');
+          if (m) m.remove();
+          SceneManager.go('lobby');
+        }, 1200);
+      });
+    };
+
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    _renderInput();
+  }
+
+  // [UPDATE 2026-07-31] 세이브 코드 복구 — 불러오기가 덮어쓰기 직전에 자동 보관해둔 백업으로 되돌린다.
+  // 백업은 1회용(복구하면 소모)이라, 실행 전 확인 단계를 한 번 둔다.
+  function openSaveRestoreConfirm() {
+    const existing = document.getElementById('save-restore-modal');
+    if (existing) { existing.remove(); return; }
+    const modal = document.createElement('div');
+    modal.id = 'save-restore-modal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:200;
+      background:rgba(0,0,0,0.8);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;
+      padding:20px;
+    `;
+    modal.innerHTML = `
+      <div style="
+        background:#0e0a1a;border:1px solid rgba(220,180,110,0.4);
+        border-radius:14px;padding:24px 20px;width:100%;max-width:320px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.8);
+      ">
+        <div style="text-align:center;font-size:15px;color:#f0d090;font-weight:700;margin-bottom:12px;">
+          ${Lang.t('settingsMenu','saveCodeRestoreTitle')}
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);text-align:center;margin-bottom:12px;line-height:1.6;">
+          ${Lang.t('settingsMenu','saveCodeRestoreDesc')}
+        </div>
+        <div style="font-size:11px;color:#ff9090;text-align:center;margin-bottom:14px;line-height:1.5;white-space:pre-line;">
+          ${Lang.t('settingsMenu','saveCodeRestoreWarn')}
+        </div>
+        <div id="save-restore-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;text-align:center;color:#80f0a0;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="save-restore-confirm" style="
+            flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+            background:rgba(220,180,110,0.2);border:1px solid rgba(220,180,110,0.5);color:#f0d090;font-weight:700;
+          ">${Lang.t('settingsMenu','saveCodeRestoreConfirm')}</button>
+          <button onclick="document.getElementById('save-restore-modal').remove()" style="
+            flex:1;padding:10px 0;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+            background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);
+          ">${Lang.t('settingsMenu','saveCodeCancel')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    document.getElementById('save-restore-confirm').addEventListener('click', () => {
+      const btn = document.getElementById('save-restore-confirm');
+      const msgEl = document.getElementById('save-restore-msg');
+      const restored = Save.restoreBackup();
+      if (!restored) { // 다른 탭에서 이미 복구했거나 스토리지가 막힌 경우
+        msgEl.style.color = '#ff8080';
+        msgEl.textContent = Lang.t('settingsMenu','saveCodeRestoreFail');
+        btn.disabled = true;
+        return;
+      }
+      btn.disabled = true;
+      msgEl.textContent = Lang.t('settingsMenu','saveCodeRestoreDone');
+      setTimeout(() => {
+        const m = document.getElementById('save-restore-modal');
+        if (m) m.remove();
+        SceneManager.go('lobby'); // 복구된 세이브로 로비 전체 재구성
+      }, 1200);
+    });
   }
 
   // [UPDATE 2026-07-16] 초기화(리부트) — 보상 없음을 3단계로 강조 확인 후 세이브 완전 초기화.
@@ -1990,5 +2634,6 @@ const LobbyScene = (() => {
   }
 
   return { enter, exit, openSettings, setLang, toggleBgm, openTutorial, _tutorialNext, _tutorialPrev, devClearChapter, devResetChapters, openRedeemCodeDialog,
-    openRebootConfirm, executeReboot, toggleCurrencyExpand, playMemoryScene };
+    openRebootConfirm, executeReboot, toggleCurrencyExpand, playMemoryScene,
+    openSaveExportDialog, openSaveImportDialog, openSaveRestoreConfirm, openPart2Entry };
 })();

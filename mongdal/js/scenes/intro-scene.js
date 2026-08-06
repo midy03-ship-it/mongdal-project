@@ -6,6 +6,10 @@ const IntroScene = (() => {
   let seqTimer = null;
   let currentSlide = 0;
   let skipped = false;
+  // [UPDATE 2026-07-31] 명부전(기억의 공간)에서 서막을 다시 볼 때 쓰는 플래그.
+  // 실제 첫 실행 인트로(lang-select.js)는 그대로 7장 + 타이틀 로고로 끝나지만,
+  // 명부전 재생은 로고 없이 7장만 보여주고 곧장 로비로 돌아간다(params.skipTitle = true로 호출).
+  let _skipTitleScreen = false;
 
   // ── 슬라이드 배경/색상 설정 (언어 무관) ──
   const SLIDE_STYLES = [
@@ -29,10 +33,11 @@ const IntroScene = (() => {
   }
 
   // ── 렌더 ──
-  function enter(container) {
+  function enter(container, params) {
     el = container;
     skipped = false;
     currentSlide = 0;
+    _skipTitleScreen = !!params?.skipTitle;
     AudioManager.play('intro');
 
     el.innerHTML = `
@@ -50,7 +55,7 @@ const IntroScene = (() => {
           transition:background 1.2s ease;
         "></div>
 
-        <!-- 타이틀 화면 (마지막) -->
+        <!-- 타이틀 화면 (마지막) — 명부전 재생(_skipTitleScreen)일 땐 아예 쓰이지 않고 지나감 -->
         <div id="intro-title" style="
           position:absolute;inset:0;
           display:flex;flex-direction:column;
@@ -116,7 +121,7 @@ const IntroScene = (() => {
       skipToTitle();
     });
 
-    // 탭으로 다음 슬라이드 or 스킵
+    // 탭으로 스킵(타이틀 화면이 이미 떠 있으면 그대로 로비로)
     document.getElementById('intro-root').addEventListener('click', () => {
       if (document.getElementById('intro-title').style.opacity === '1') {
         goLobby();
@@ -136,8 +141,9 @@ const IntroScene = (() => {
   function showSlide(idx) {
     if (skipped) return;
     const SLIDES = getSlides();
+    // [UPDATE 2026-07-31] 명부전 재생(_skipTitleScreen)이면 로고 없이 바로 로비로, 실제 첫 인트로는 그대로 타이틀 화면으로.
     if (idx >= SLIDES.length) {
-      showTitle();
+      if (_skipTitleScreen) { skipped = true; goLobby(); } else { showTitle(); }
       return;
     }
     currentSlide = idx;
@@ -238,10 +244,12 @@ const IntroScene = (() => {
     }, 500);
   }
 
+  // [UPDATE 2026-07-31] 명부전 재생(_skipTitleScreen)일 땐 타이틀 화면 없이 바로 로비로,
+  // 실제 첫 인트로는 원래대로 타이틀 화면으로 스킵한다.
   function skipToTitle() {
     clearTimeout(seqTimer);
     clearTimeout(autoTimer);
-    showTitle();
+    if (_skipTitleScreen) { skipped = true; goLobby(); } else { showTitle(); }
   }
 
   function goLobby() {

@@ -43,6 +43,7 @@ JS_ORDER = [
     'js/data/monsters.js',
     'js/core/save.js',
     'js/core/lang.js',
+    'js/core/format.js',
     'js/core/audio.js',
     'js/core/unlock.js',
     'js/data/promo-codes.js',
@@ -68,6 +69,7 @@ JS_ORDER = [
     'js/scenes/player-scene.js',
     'js/scenes/character.js',
     'js/scenes/pet.js',
+    'js/scenes/vault-scene.js',
     'js/scenes/game.js',
     'js/scenes/shop-scene.js',
     'js/scenes/achievement-scene.js',
@@ -86,6 +88,7 @@ MAIN_JS = """
     SceneManager.register('playerScene', PlayerScene);
     SceneManager.register('character',   CharacterScene);
     SceneManager.register('pet',         PetScene);
+    SceneManager.register('vault',       VaultScene);
     SceneManager.register('game',        GameScene);
     SceneManager.register('shop',        ShopScene);
     SceneManager.register('achievement', AchievementScene);
@@ -138,7 +141,7 @@ def inject_images(js_code):
         # sprites 폴더: key를 경로로 변환 (첫 _ 를 / 로)
         rel = key.replace('_', '/', 1)  # enemies_mangryeong → enemies/mangryeong
         # 더 정확하게: 알려진 폴더 목록으로 매칭
-        for folder in ['title','intro','lobbyBg','player','companions','enemies',
+        for folder in ['title','intro','lobbyBg','player_parts','player','companions','enemies',
                        'lobbyBuildings','effects','icons','slots','items','weapons','bosses','pets',
                        'companion_effects','tiles','stage','ending','lobbyNpcs','worldMap']:
             prefix = folder + '_'

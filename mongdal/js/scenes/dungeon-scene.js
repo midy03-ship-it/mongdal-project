@@ -135,7 +135,7 @@ const DungeonScene = (() => {
           <div style="font-size:17px;letter-spacing:.15em;color:#e0c8ff;">
             ⛩️ ${isEn ? 'Dungeon' : '던전'}
           </div>
-          <div style="font-size:12px;color:#f0c840;">${_cimg('gold')}${gold.toLocaleString()} 💎${gems}</div>
+          <div style="font-size:12px;color:#f0c840;">${_cimg('gold')}${Format.num(gold)} 💎${gems}</div>
         </div>
 
         <!-- 재화 현황 -->
@@ -218,8 +218,8 @@ const DungeonScene = (() => {
         </div>
         <div style="font-size:11px;color:rgba(220,200,255,0.6);margin-bottom:10px;">
           ${isEn
-            ? `Infinite Dungeon runs start from kill ${startKills.toLocaleString()} (monsters scale accordingly).`
-            : `무한던전 진입 시 ${startKills.toLocaleString()}킬 지점부터 시작합니다 (몬스터 배율도 그 기준).`}
+            ? `Infinite Dungeon runs start from kill ${Format.num(startKills)} (monsters scale accordingly).`
+            : `무한던전 진입 시 ${Format.num(startKills)}킬 지점부터 시작합니다 (몬스터 배율도 그 기준).`}
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="DungeonScene.downgradeDungeon()" ${lv<=0?'disabled':''} style="
@@ -235,11 +235,11 @@ const DungeonScene = (() => {
             background:${canAfford?'rgba(200,140,255,0.25)':'rgba(80,80,80,0.2)'};
             border:1px solid ${canAfford?'rgba(220,170,255,0.6)':'rgba(255,255,255,0.1)'};
             color:${canAfford?'#e8d0ff':'rgba(255,255,255,0.3)'};
-          ">${_cimg('gold')}${cost.gold.toLocaleString()} ${_cimg('cheonunseok')}${cost.cheonunseok.toLocaleString()} → Lv.${lv+1}</button>
+          ">${_cimg('gold')}${Format.num(cost.gold)} ${_cimg('cheonunseok')}${Format.num(cost.cheonunseok)} → Lv.${lv+1}</button>
         </div>
         ${lv>0 ? `<div style="font-size:9px;color:rgba(220,200,255,0.4);margin-top:6px;text-align:center;">
-          ${isEn ? `Lv down refunds ${_dungeonUpgradeCost(lv-1).gold.toLocaleString()} Gold + ${_dungeonUpgradeCost(lv-1).cheonunseok.toLocaleString()} Sky Stone`
-                 : `레벨 다운 시 ${_dungeonUpgradeCost(lv-1).gold.toLocaleString()}골드 + ${_dungeonUpgradeCost(lv-1).cheonunseok.toLocaleString()}천운석 환급`}
+          ${isEn ? `Lv down refunds ${Format.num(_dungeonUpgradeCost(lv-1).gold)} Gold + ${Format.num(_dungeonUpgradeCost(lv-1).cheonunseok)} Sky Stone`
+                 : `레벨 다운 시 ${Format.num(_dungeonUpgradeCost(lv-1).gold)}골드 + ${Format.num(_dungeonUpgradeCost(lv-1).cheonunseok)}천운석 환급`}
         </div>` : ''}
       </div>`;
   }

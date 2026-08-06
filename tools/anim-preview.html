@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽달퇴마록 - 캐릭터 파츠 합체 미리보기</title>
+<style>
+  :root{ color-scheme: dark; }
+  body{ margin:0; background:#14161b; color:#e8e8ee; font-family:"Malgun Gothic",sans-serif; font-size:13px; }
+  h1{ font-size:16px; margin:0; padding:12px 16px; background:#1c1f27; border-bottom:1px solid #333; }
+  h2{ font-size:12px; color:#8fd0ff; margin:0 0 6px; text-transform:uppercase; letter-spacing:.05em; }
+  h3{ font-size:11px; color:#9fb0c0; margin:10px 0 4px; }
+  .wrap{ display:flex; gap:16px; padding:16px; align-items:flex-start; flex-wrap:wrap; }
+  .panel{ background:#1c1f27; border:1px solid #333; border-radius:8px; padding:12px 14px; }
+  .col-left{ width:360px; display:flex; flex-direction:column; gap:14px; }
+  .col-right{ flex:1; min-width:420px; display:flex; flex-direction:column; gap:14px; }
+  .row{ display:flex; align-items:center; gap:8px; margin:4px 0; }
+  .row label{ width:76px; flex-shrink:0; color:#aab; }
+  input[type=number]{ width:60px; background:#0f1116; border:1px solid #333; color:#e8e8ee; border-radius:4px; padding:3px 5px; }
+  input[type=range]{ flex:1; }
+  input[type=file]{ font-size:12px; }
+  select{ background:#0f1116; color:#e8e8ee; border:1px solid #333; border-radius:4px; padding:3px 5px; flex:1; }
+  button{ background:#2a4a6a; color:#fff; border:1px solid #3a6a9a; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:12px; }
+  button:hover{ background:#356090; }
+  button.ghost{ background:transparent; border:1px solid #444; color:#aab; }
+  button.ghost:hover{ border-color:#888; color:#fff; }
+  button.active{ background:#3a8a4a; border-color:#4aba5a; }
+  .thumbs{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .thumb{ position:relative; width:52px; height:52px; background:#0f1116; border:2px solid #333; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; }
+  .thumb.sel{ border-color:#4ad0ff; }
+  .thumb img{ max-width:100%; max-height:100%; image-rendering:pixelated; }
+  .thumb .idx{ position:absolute; top:1px; left:3px; font-size:9px; color:#888; }
+  .thumb .del{ position:absolute; top:0; right:2px; font-size:11px; color:#f66; cursor:pointer; }
+  #stage{ background:
+      linear-gradient(45deg,#2a2c33 25%,transparent 25%),
+      linear-gradient(-45deg,#2a2c33 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#2a2c33 75%),
+      linear-gradient(-45deg,transparent 75%,#2a2c33 75%);
+    background-size:16px 16px; background-position:0 0,0 8px,8px -8px,-8px 0px;
+    border:1px solid #333; border-radius:8px; cursor:grab; touch-action:none;
+  }
+  #stage:active{ cursor:grabbing; }
+  .hint{ color:#778; font-size:11px; line-height:1.5; margin-top:6px; }
+  .side-tag{ display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:4px; vertical-align:-2px; }
+  .tag-L{ background:#4ad0ff; } .tag-R{ background:#ff9a4a; }
+  textarea{ width:100%; height:160px; background:#0f1116; color:#9fe0a0; border:1px solid #333; border-radius:6px; font-family:monospace; font-size:11px; padding:8px; box-sizing:border-box; resize:vertical; }
+  .toolbar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  hr{ border:none; border-top:1px solid #2a2d36; margin:10px 0; }
+  .zoombox{ display:flex; align-items:center; gap:6px; }
+  .badge{ background:#2a2d36; border-radius:4px; padding:2px 6px; font-size:11px; color:#9ab; }
+  .pivotbox{ position:relative; width:120px; height:120px; background:#0f1116; border:1px solid #333; border-radius:6px; cursor:crosshair; overflow:hidden; }
+  .pivotbox canvas{ position:absolute; top:0; left:0; }
+  .anim-sub{ border-left:2px solid #2a2d36; padding-left:10px; margin:6px 0 6px 4px; }
+  .checkline{ display:flex; align-items:center; gap:6px; font-size:12px; color:#cdd; margin:4px 0; }
+</style>
+</head>
+<body>
+<h1>🧍 캐릭터 파츠 합체 미리보기 &nbsp;<span class="badge">몸통 + 팔 파츠 조립/애니메이션 확인용 (게임 미사용, 로컬 툴)</span></h1>
+<div class="wrap">
+
+  <!-- ─────────── 왼쪽: 업로드 & 조정 ─────────── -->
+  <div class="col-left">
+
+    <div class="panel">
+      <h2>1. 몸통 (얼굴+몸통+신발)</h2>
+      <input type="file" id="bodyInput" accept="image/*">
+      <div class="row" style="margin-top:8px;">
+        <label>스케일</label>
+        <input type="range" id="bodyScale" min="1" max="16" step="0.5" value="6">
+        <span class="badge" id="bodyScaleVal">6x</span>
+      </div>
+    </div>
+
+    <div id="armPanels"></div>
+
+  </div>
+
+  <!-- ─────────── 오른쪽: 캔버스 & 재생 ─────────── -->
+  <div class="col-right">
+
+    <div class="panel">
+      <h2>합체 미리보기</h2>
+      <div class="toolbar" style="margin-bottom:8px;">
+        <div class="zoombox">캔버스 확대 <input type="range" id="viewZoom" min="1" max="6" step="0.5" value="2"> <span class="badge" id="viewZoomVal">2x</span></div>
+        <button class="ghost" id="toggleGuide">앵커/피벗 가이드 on/off</button>
+        <button id="playBtn">▶ 애니메이션 재생</button>
+      </div>
+      <div class="toolbar" style="margin-bottom:8px;">
+        <span class="badge">드래그/방향키 조정 대상:</span>
+        <button id="targetL" class="active">🔵 왼팔</button>
+        <button id="targetR" class="ghost">🟠 오른팔</button>
+      </div>
+      <canvas id="stage" width="700" height="700"></canvas>
+      <div class="hint">위에서 조정 대상을 고른 뒤 캔버스를 드래그하거나 방향키로 앵커 위치를 옮기세요(Alt+드래그/Shift+방향키로도 반대쪽을 즉시 조정할 수 있음). 오른팔이 안 움직이는 것처럼 보이면 오른팔 쪽에 이미지를 아직 안 올리신 건 아닌지도 확인해주세요.</div>
+    </div>
+
+    <div class="panel">
+      <h2>현재 설정값 (구현 시 그대로 전달해주면 됩니다)</h2>
+      <textarea id="exportBox" readonly></textarea>
+      <div class="toolbar" style="margin-top:8px;">
+        <button id="copyBtn">📋 복사</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const stage = $('stage'), ctx = stage.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+let bodyImg = null;
+let dragTarget = 'L';
+let showGuide = true;
+
+// [UPDATE] 왼팔/오른팔은 이제 완전히 독립된 업로드 풀을 가짐(공유 풀에서 배정하던 이전 방식 폐지).
+// 각 side.frames: [{img,name}] 자체 배열, side.curFrame: 정지 상태(또는 애니메이션 꺼짐)일 때 보여줄 프레임 인덱스.
+// side.frameAnimOn: 2장 이상이면 프레임을 순서대로/왕복으로 자동 전환하는 애니메이션 사용 여부.
+function newSide(flip, defaultX){
+  return {
+    frames: [], curFrame: 0,
+    scale:1, x:defaultX, y:0, rot:0, flip, pivotX:null, pivotY:null,
+    frameAnimOn:false, frameMode:'loop', frameFps:4,
+    rotAnimOn:false, rotFrom:-20, rotTo:20, rotPeriod:1,
+    fadeOn:false, fadeShow:600, fadeHide:600, fadeSmooth:true,
+  };
+}
+
+const state = {
+  bodyScale: 6,
+  viewZoom: 2,
+  L: newSide(false, -14),
+  R: newSide(true, 14),
+};
+
+// ── 왼팔/오른팔 조정 패널 동적 생성 ──
+function armPanelHTML(side, label, tagClass){
+  return `
+    <div class="panel">
+      <h2><span class="side-tag ${tagClass}"></span>${label} 이미지 업로드 (여러 장 = 자동 반복 애니메이션)</h2>
+      <input type="file" id="armInput${side}" accept="image/*" multiple>
+      <div class="thumbs" id="armThumbs${side}"></div>
+      <div class="hint">1장만 올리면 아래 회전/페이드로 움직이고, 2장 이상 올리면 "프레임 애니메이션"으로 순서대로(또는 왕복) 자동 전환됩니다.<br>썸네일 클릭 = 정지 상태에서 보여줄 기본 프레임 지정.</div>
+    </div>
+    <div class="panel">
+      <h2><span class="side-tag ${tagClass}"></span>${label} 배치</h2>
+      <div class="row"><label>스케일</label><input type="range" id="arm${side}Scale" min="0.2" max="3" step="0.05" value="1"><span class="badge" id="arm${side}ScaleVal">1.0x</span></div>
+      <div class="row"><label>앵커 X</label><input type="number" id="arm${side}X" value="0"></div>
+      <div class="row"><label>앵커 Y</label><input type="number" id="arm${side}Y" value="0"></div>
+      <div class="row"><label>기본 각도</label><input type="range" id="arm${side}Rot" min="-180" max="180" value="0"><span class="badge" id="arm${side}RotVal">0°</span></div>
+      <div class="row"><label>좌우반전</label><input type="checkbox" id="arm${side}Flip" ${side==='R'?'checked':''}></div>
+      <h3>회전축(피벗) — 이미지 안에서 클릭해 지정</h3>
+      <div class="row"><div class="pivotbox" id="pivotBox${side}"><canvas width="120" height="120" id="pivotCanvas${side}"></canvas></div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span class="badge">X:<span id="pivot${side}XVal">-</span> Y:<span id="pivot${side}YVal">-</span></span>
+          <button class="ghost" id="pivot${side}Reset">중앙으로 리셋</button>
+        </div>
+      </div>
+      <h3>프레임 애니메이션 (업로드 2장 이상일 때)</h3>
+      <div class="anim-sub">
+        <div class="checkline"><input type="checkbox" id="arm${side}FrameAnimOn"> 프레임 자동 전환 사용</div>
+        <div class="row"><label>방식</label>
+          <select id="arm${side}FrameMode">
+            <option value="loop">반복 (1→2→1→2...)</option>
+            <option value="pingpong">왕복 (1→2→3→2→1...)</option>
+          </select>
+        </div>
+        <div class="row"><label>속도(FPS)</label><input type="number" id="arm${side}FrameFps" value="4" min="0.5" step="0.5"></div>
+      </div>
+      <h3>회전/페이드 애니메이션 (프레임 애니메이션과 동시 사용 가능)</h3>
+      <div class="anim-sub">
+        <div class="checkline"><input type="checkbox" id="arm${side}RotAnimOn"> 회전 왕복</div>
+        <div class="row"><label>시작각</label><input type="number" id="arm${side}RotFrom" value="-20"><label style="width:auto;margin-left:8px;">끝각</label><input type="number" id="arm${side}RotTo" value="20"></div>
+        <div class="row"><label>주기(초)</label><input type="number" id="arm${side}RotPeriod" value="1" step="0.1"></div>
+        <div class="checkline" style="margin-top:8px;"><input type="checkbox" id="arm${side}FadeOn"> 나타남/사라짐</div>
+        <div class="row"><label>보임(ms)</label><input type="number" id="arm${side}FadeShow" value="600"></div>
+        <div class="row"><label>숨김(ms)</label><input type="number" id="arm${side}FadeHide" value="600"></div>
+        <div class="checkline"><input type="checkbox" id="arm${side}FadeSmooth" checked> 부드럽게(페이드) — 끄면 즉시 on/off</div>
+      </div>
+      ${side==='R' ? '<button class="ghost" id="mirrorLtoR">왼팔 위치/회전/피벗 설정을 오른팔에 미러 복사 (이미지 자체는 복사 안 됨)</button>' : ''}
+    </div>`;
+}
+$('armPanels').innerHTML = armPanelHTML('L','왼팔','tag-L') + armPanelHTML('R','오른팔','tag-R');
+$('armLX').value = state.L.x; $('armRX').value = state.R.x;
+
+// ── 몸통 업로드 ──
+$('bodyInput').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const img = new Image();
+  img.onload = ()=>{ bodyImg = img; render(); };
+  img.src = URL.createObjectURL(f);
+});
+
+// ── 팔 이미지 업로드 (좌/우 독립) ──
+for(const side of ['L','R']){
+  $(`armInput${side}`).addEventListener('change', e=>{
+    const s = state[side];
+    for(const f of e.target.files){
+      const img = new Image();
+      const entry = { img, name:f.name };
+      img.onload = ()=>{ render(); refreshThumbs(side); drawPivotBox(side); };
+      img.src = URL.createObjectURL(f);
+      s.frames.push(entry);
+    }
+    refreshThumbs(side);
+    e.target.value = '';
+  });
+}
+
+function refreshThumbs(side){
+  const s = state[side];
+  const el = $(`armThumbs${side}`);
+  el.innerHTML = '';
+  s.frames.forEach((f,i)=>{
+    const d = document.createElement('div');
+    d.className = 'thumb' + (i===s.curFrame?' sel':'');
+    d.innerHTML = `<span class="idx">${i+1}</span><img src="${f.img.src}"><span class="del" data-i="${i}">×</span>`;
+    d.addEventListener('click', ev=>{
+      if(ev.target.classList.contains('del')){
+        s.frames.splice(i,1);
+        if(s.curFrame>=s.frames.length) s.curFrame = Math.max(0,s.frames.length-1);
+        refreshThumbs(side); drawPivotBox(side); render();
+        return;
+      }
+      s.curFrame = i;
+      refreshThumbs(side); drawPivotBox(side); render();
+    });
+    el.appendChild(d);
+  });
+}
+
+// ── 파츠 조정 컨트롤 ──
+for(const side of ['L','R']){
+  const s = state[side];
+  $(`arm${side}X`).addEventListener('input', e=>{ s.x = +e.target.value; render(); });
+  $(`arm${side}Y`).addEventListener('input', e=>{ s.y = +e.target.value; render(); });
+  $(`arm${side}Scale`).addEventListener('input', e=>{ s.scale = +e.target.value; $(`arm${side}ScaleVal`).textContent = s.scale.toFixed(2)+'x'; render(); });
+  $(`arm${side}Rot`).addEventListener('input', e=>{ s.rot = +e.target.value; $(`arm${side}RotVal`).textContent = s.rot+'°'; render(); });
+  $(`arm${side}Flip`).addEventListener('change', e=>{ s.flip = e.target.checked; render(); });
+  $(`arm${side}FrameAnimOn`).addEventListener('change', e=>{ s.frameAnimOn = e.target.checked; });
+  $(`arm${side}FrameMode`).addEventListener('change', e=>{ s.frameMode = e.target.value; });
+  $(`arm${side}FrameFps`).addEventListener('input', e=>{ s.frameFps = Math.max(0.5,+e.target.value); });
+  $(`arm${side}RotAnimOn`).addEventListener('change', e=>{ s.rotAnimOn = e.target.checked; });
+  $(`arm${side}RotFrom`).addEventListener('input', e=>{ s.rotFrom = +e.target.value; });
+  $(`arm${side}RotTo`).addEventListener('input', e=>{ s.rotTo = +e.target.value; });
+  $(`arm${side}RotPeriod`).addEventListener('input', e=>{ s.rotPeriod = Math.max(0.05,+e.target.value); });
+  $(`arm${side}FadeOn`).addEventListener('change', e=>{ s.fadeOn = e.target.checked; });
+  $(`arm${side}FadeShow`).addEventListener('input', e=>{ s.fadeShow = Math.max(1,+e.target.value); });
+  $(`arm${side}FadeHide`).addEventListener('input', e=>{ s.fadeHide = Math.max(1,+e.target.value); });
+  $(`arm${side}FadeSmooth`).addEventListener('change', e=>{ s.fadeSmooth = e.target.checked; });
+  $(`pivot${side}Reset`).addEventListener('click', ()=>{ s.pivotX=null; s.pivotY=null; drawPivotBox(side); render(); });
+}
+
+$('bodyScale').addEventListener('input', e=>{ state.bodyScale = +e.target.value; $('bodyScaleVal').textContent = state.bodyScale+'x'; render(); });
+$('viewZoom').addEventListener('input', e=>{ state.viewZoom = +e.target.value; $('viewZoomVal').textContent = state.viewZoom+'x'; render(); });
+$('toggleGuide').addEventListener('click', ()=>{ showGuide = !showGuide; render(); });
+
+$('mirrorLtoR').addEventListener('click', ()=>{
+  const L = state.L, R = state.R;
+  R.x = -L.x; R.y = L.y; R.scale = L.scale; R.rot = -L.rot; R.flip = !L.flip;
+  R.pivotX = L.pivotX; R.pivotY = L.pivotY;
+  R.frameAnimOn = L.frameAnimOn; R.frameMode = L.frameMode; R.frameFps = L.frameFps;
+  R.rotAnimOn = L.rotAnimOn; R.rotFrom = L.rotFrom; R.rotTo = L.rotTo; R.rotPeriod = L.rotPeriod;
+  R.fadeOn = L.fadeOn; R.fadeShow = L.fadeShow; R.fadeHide = L.fadeHide; R.fadeSmooth = L.fadeSmooth;
+  $('armRX').value=R.x; $('armRY').value=R.y; $('armRScale').value=R.scale; $('armRScaleVal').textContent=R.scale.toFixed(2)+'x';
+  $('armRRot').value=R.rot; $('armRRotVal').textContent=R.rot+'°'; $('armRFlip').checked=R.flip;
+  $('armRFrameAnimOn').checked=R.frameAnimOn; $('armRFrameMode').value=R.frameMode; $('armRFrameFps').value=R.frameFps;
+  $('armRRotAnimOn').checked=R.rotAnimOn; $('armRRotFrom').value=R.rotFrom; $('armRRotTo').value=R.rotTo; $('armRRotPeriod').value=R.rotPeriod;
+  $('armRFadeOn').checked=R.fadeOn; $('armRFadeShow').value=R.fadeShow; $('armRFadeHide').value=R.fadeHide; $('armRFadeSmooth').checked=R.fadeSmooth;
+  drawPivotBox('R'); render();
+});
+
+// ── 피벗 지정용 미니 캔버스 ──
+function drawPivotBox(side){
+  const s = state[side];
+  const c = $(`pivotCanvas${side}`), pctx = c.getContext('2d');
+  pctx.clearRect(0,0,120,120);
+  const frame = s.frames[s.curFrame];
+  if(!frame || !frame.img.complete || !frame.img.naturalWidth) return;
+  const img = frame.img;
+  const z = Math.min(110/img.width, 110/img.height);
+  const dw = img.width*z, dh = img.height*z;
+  const ox = (120-dw)/2, oy=(120-dh)/2;
+  pctx.imageSmoothingEnabled = false;
+  pctx.drawImage(img, ox, oy, dw, dh);
+  const px = s.pivotX==null ? img.width/2 : s.pivotX;
+  const py = s.pivotY==null ? img.height/2 : s.pivotY;
+  pctx.strokeStyle = side==='L' ? '#4ad0ff' : '#ff9a4a';
+  pctx.fillStyle = pctx.strokeStyle;
+  pctx.lineWidth = 1.5;
+  const mx = ox+px*z, my = oy+py*z;
+  pctx.beginPath(); pctx.moveTo(mx-6,my); pctx.lineTo(mx+6,my); pctx.moveTo(mx,my-6); pctx.lineTo(mx,my+6); pctx.stroke();
+  pctx.beginPath(); pctx.arc(mx,my,3,0,Math.PI*2); pctx.fill();
+  $(`pivot${side}XVal`).textContent = Math.round(px);
+  $(`pivot${side}YVal`).textContent = Math.round(py);
+  c._meta = { ox, oy, z, img };
+}
+for(const side of ['L','R']){
+  $(`pivotBox${side}`).addEventListener('click', e=>{
+    const c = $(`pivotCanvas${side}`);
+    if(!c._meta) return;
+    const r = c.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const { ox, oy, z, img } = c._meta;
+    let px = (cx-ox)/z, py = (cy-oy)/z;
+    px = Math.max(0, Math.min(img.width, px));
+    py = Math.max(0, Math.min(img.height, py));
+    const s = state[side];
+    s.pivotX = px; s.pivotY = py;
+    drawPivotBox(side); render();
+  });
+}
+
+// [UPDATE] Alt 키가 브라우저/OS에 가로채여 오른팔 드래그가 씹히는 경우가 있어서,
+// "지금 조정 대상"을 버튼으로 명시적으로 고르는 방식을 기본으로 삼음 (Alt/Shift는 그 자리에서 반대쪽을 임시로 조정하는 보조 수단으로 유지).
+$('targetL').addEventListener('click', ()=>{ dragTarget='L'; $('targetL').classList.remove('ghost'); $('targetL').classList.add('active'); $('targetR').classList.add('ghost'); $('targetR').classList.remove('active'); });
+$('targetR').addEventListener('click', ()=>{ dragTarget='R'; $('targetR').classList.remove('ghost'); $('targetR').classList.add('active'); $('targetL').classList.add('ghost'); $('targetL').classList.remove('active'); });
+
+// ── 캔버스 드래그 (앵커 위치) ──
+let dragging = false, dragStart = null;
+stage.addEventListener('pointerdown', e=>{
+  const target = e.altKey ? (dragTarget==='L'?'R':'L') : dragTarget;
+  dragging = true;
+  const s = state[target];
+  dragStart = { x:e.clientX, y:e.clientY, sx:s.x, sy:s.y, target };
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const dx = (e.clientX - dragStart.x) / state.viewZoom / state.bodyScale;
+  const dy = (e.clientY - dragStart.y) / state.viewZoom / state.bodyScale;
+  const obj = state[dragStart.target];
+  obj.x = Math.round(dragStart.sx + dx);
+  obj.y = Math.round(dragStart.sy + dy);
+  $(`arm${dragStart.target}X`).value=obj.x; $(`arm${dragStart.target}Y`).value=obj.y;
+  render();
+});
+window.addEventListener('pointerup', ()=>{ dragging=false; });
+
+window.addEventListener('keydown', e=>{
+  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
+  e.preventDefault();
+  const side = e.shiftKey ? (dragTarget==='L'?'R':'L') : dragTarget;
+  const obj = state[side];
+  if(e.key==='ArrowUp') obj.y -= 1;
+  if(e.key==='ArrowDown') obj.y += 1;
+  if(e.key==='ArrowLeft') obj.x -= 1;
+  if(e.key==='ArrowRight') obj.x += 1;
+  $(`arm${side}X`).value = obj.x; $(`arm${side}Y`).value = obj.y;
+  render();
+});
+
+// ── 애니메이션 재생 (프레임 전환 + 회전 왕복 + 나타남/사라짐, 전부 동시 적용 가능) ──
+let playing = false, rafId = null;
+$('playBtn').addEventListener('click', ()=>{
+  playing = !playing;
+  $('playBtn').textContent = playing ? '⏸ 정지' : '▶ 애니메이션 재생';
+  $('playBtn').classList.toggle('active', playing);
+  if(playing) loop(); else if(rafId) cancelAnimationFrame(rafId);
+});
+function loop(){
+  if(!playing) return;
+  render();
+  rafId = requestAnimationFrame(loop);
+}
+
+function currentFrameIdx(s, t){
+  const n = s.frames.length;
+  if(n===0) return -1;
+  if(!s.frameAnimOn || n<2) return s.curFrame;
+  const step = Math.floor(t/1000 * s.frameFps);
+  if(s.frameMode==='pingpong'){
+    const period = 2*(n-1);
+    const pos = step % period;
+    return pos < n ? pos : period - pos;
+  }
+  return step % n; // loop
+}
+function animatedRot(s, t){
+  if(!s.rotAnimOn) return s.rot;
+  const p = s.rotPeriod*1000;
+  const phase = (t % (p*2)) / p;
+  const tri = phase<=1 ? phase : 2-phase;
+  return s.rotFrom + (s.rotTo - s.rotFrom) * tri;
+}
+function animatedAlpha(s, t){
+  if(!s.fadeOn) return 1;
+  const cycle = s.fadeShow + s.fadeHide;
+  const m = t % cycle;
+  if(!s.fadeSmooth) return m < s.fadeShow ? 1 : 0;
+  const fadeLen = Math.min(s.fadeShow, s.fadeHide) * 0.25;
+  if(m < s.fadeShow){
+    if(m < fadeLen) return m/fadeLen;
+    if(m > s.fadeShow-fadeLen) return (s.fadeShow-m)/fadeLen;
+    return 1;
+  } else {
+    const mm = m - s.fadeShow;
+    if(mm < fadeLen) return 1-mm/fadeLen;
+    return 0;
+  }
+}
+
+// ── 렌더 ──
+function drawArm(s, cx, cy, t){
+  const idx = currentFrameIdx(s, t);
+  if(idx < 0) return;
+  const frame = s.frames[idx];
+  if(!frame || !frame.img.complete || !frame.img.naturalWidth) return;
+  const img = frame.img;
+  const scale = state.bodyScale * s.scale;
+  const rot = animatedRot(s, t);
+  const alpha = animatedAlpha(s, t);
+  if(alpha <= 0) return;
+  const px = s.pivotX==null ? img.width/2 : s.pivotX;
+  const py = s.pivotY==null ? img.height/2 : s.pivotY;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx + s.x*state.bodyScale, cy + s.y*state.bodyScale);
+  ctx.rotate(rot * Math.PI/180);
+  ctx.scale(s.flip ? -scale : scale, scale);
+  ctx.drawImage(img, -px, -py);
+  ctx.restore();
+}
+
+function render(){
+  const now = playing ? performance.now() : 0;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,stage.width,stage.height);
+  ctx.save();
+  ctx.scale(state.viewZoom, state.viewZoom);
+
+  const cx = (stage.width/state.viewZoom)/2;
+  const cy = (stage.height/state.viewZoom)/2;
+  const scale = state.bodyScale;
+
+  if(bodyImg){
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(bodyImg, cx - bodyImg.width*scale/2, cy - bodyImg.height*scale/2, bodyImg.width*scale, bodyImg.height*scale);
+  }
+
+  drawArm(state.R, cx, cy, now);
+  drawArm(state.L, cx, cy, now);
+
+  if(showGuide){
+    ctx.strokeStyle = 'rgba(255,255,255,.25)';
+    ctx.lineWidth = 1/state.viewZoom;
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,stage.height/state.viewZoom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(stage.width/state.viewZoom,cy); ctx.stroke();
+    for(const [s,color] of [[state.L,'#4ad0ff'],[state.R,'#ff9a4a']]){
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(cx+s.x*scale, cy+s.y*scale, 3/state.viewZoom, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  ctx.restore();
+  updateExport();
+}
+
+function updateExport(){
+  const pack = s => ({
+    frames: s.frames.map(f=>f.name),
+    defaultFrame: s.curFrame,
+    scale: s.scale, anchorX: s.x, anchorY: s.y, restAngleDeg: s.rot, flipX: s.flip,
+    pivot: s.pivotX==null?'center':{ x: Math.round(s.pivotX), y: Math.round(s.pivotY) },
+    frameAnim: (s.frameAnimOn && s.frames.length>1) ? { mode:s.frameMode, fps:s.frameFps } : null,
+    rotateAnim: s.rotAnimOn ? { fromDeg:s.rotFrom, toDeg:s.rotTo, periodSec:s.rotPeriod } : null,
+    fadeAnim: s.fadeOn ? { showMs:s.fadeShow, hideMs:s.fadeHide, smooth:s.fadeSmooth } : null,
+  });
+  const data = { bodyScaleRef: state.bodyScale, leftArm: pack(state.L), rightArm: pack(state.R) };
+  $('exportBox').value = JSON.stringify(data, null, 2);
+}
+
+$('copyBtn').addEventListener('click', ()=>{
+  $('exportBox').select();
+  document.execCommand('copy');
+  $('copyBtn').textContent = '✓ 복사됨';
+  setTimeout(()=> $('copyBtn').textContent='📋 복사', 1200);
+});
+
+render();
+</script>
+</body>
+</html>

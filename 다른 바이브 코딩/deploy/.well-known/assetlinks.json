@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.netlify.ephemeral_kleicha_70ce81.twa",
+        "sha256_cert_fingerprints": ["77:64:18:44:50:3B:73:3E:2A:2C:1A:16:81:0E:21:53:FC:9A:9D:EA:98:4C:DE:45:7B:CD:08:93:91:55:F3:C9"]
+      }
+    }]

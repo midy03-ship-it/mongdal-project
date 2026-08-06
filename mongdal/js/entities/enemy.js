@@ -1,5 +1,25 @@
 // enemy.js - 챕터별 몬스터 시스템 (10종 + 공격 패턴)
 
+// [UPDATE 2026-07-19] 최적화: 모든 적이 매 프레임 createRadialGradient()로 발광 오라를 새로 그리고 있었음
+// — 적이 많이 쌓이는 던전에서 렉의 큰 원인. 색상+반경 조합별로 한 번만 오프스크린 캔버스에 렌더링해두고
+// drawImage()로 재사용(색상/크기 종류가 몬스터 타입만큼 유한해서 캐시가 금방 안정됨)
+const _glowSpriteCache = {};
+function _getGlowSprite(color, radius) {
+  const r = Math.max(1, Math.round(radius));
+  const key = color + '_' + r;
+  let spr = _glowSpriteCache[key];
+  if (spr) return spr;
+  const size = r * 2;
+  const cv = document.createElement('canvas');
+  cv.width = size; cv.height = size;
+  const c = cv.getContext('2d');
+  const g = c.createRadialGradient(r, r, 0, r, r, r);
+  g.addColorStop(0, color); g.addColorStop(1, 'transparent');
+  c.fillStyle = g; c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2); c.fill();
+  _glowSpriteCache[key] = cv;
+  return cv;
+}
+
 // MONSTERS.defs에서 동적으로 ENEMY_TYPES 생성
 function buildEnemyTypes() {
   const types = {};
@@ -207,6 +227,7 @@ class Enemy {
 
   takeDamage(dmg, isCritical, srcType) {
     if (this.dead) return;
+    if (this._isAfterimage) return; // [UPDATE 2026-07-17] 시즌4 과거 잔상 — 충돌판정 없음(공격/피격 불가)
     if (this._glitchInvisActive) return; // [UPDATE 2026-07-17] 글리치 "투명" — 투명화 중 피격 무효
     if (this._markedDmgMult && this._markedDmgMult > 1)
       dmg = Math.floor(dmg * this._markedDmgMult);
@@ -236,6 +257,12 @@ class Enemy {
     const sx = this.x - camX, sy = this.y - camY;
     const s  = this.size;
 
+    // [UPDATE 2026-07-17] 시즌4 과거 잔상 — alpha 0.15~0.45 사이를 8Hz로 깜빡임(존재가 불안정한 느낌)
+    if (this._isAfterimage) {
+      ctx.save();
+      ctx.globalAlpha = 0.15 + (0.5 + 0.5*Math.sin(this._flickerT*8*Math.PI*2)) * 0.30;
+    }
+
     // ── 사망 이펙트 ──
     if (this.dead) {
       const alpha = Math.max(0, 1 - this.deathT * 2.5);
@@ -249,10 +276,10 @@ class Enemy {
       return;
     }
 
-    // ── 발광 오라 ──
-    const grd = ctx.createRadialGradient(sx,sy,0,sx,sy,s*1.9);
-    grd.addColorStop(0, this.glowColor); grd.addColorStop(1, 'transparent');
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(sx,sy,s*1.9,0,Math.PI*2); ctx.fill();
+    // ── 발광 오라 ── (캐시된 스프라이트 재사용 — createRadialGradient 매프레임 생성 제거)
+    const _glowR = s*1.9;
+    const _glowSpr = _getGlowSprite(this.glowColor, _glowR);
+    ctx.drawImage(_glowSpr, sx-_glowR, sy-_glowR);
 
     // ── 엘리트 금색 외곽선 ──
     if (this.isElite) {
@@ -262,6 +289,17 @@ class Enemy {
       ctx.shadowColor = '#ffc830';
       ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.arc(sx, sy, s + 8, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+
+    // [UPDATE 2026-07-17] 시즌4 실체화 몹(과거 잔상 합체) — 옅은 은백색 발광 아웃라인으로 일반 몹과 구분
+    if (this._isReincarnated) {
+      ctx.save();
+      ctx.strokeStyle = `rgba(224,232,255,${0.55 + Math.sin(this.t * 2.5) * 0.25})`;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#e0e8ff';
+      ctx.shadowBlur = 9;
+      ctx.beginPath(); ctx.arc(sx, sy, s + 6, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     }
 
@@ -320,17 +358,10 @@ class Enemy {
       ctx.restore();
     }
 
-    // [UPDATE 2026-07-17] 260713_MTOPC.md 9번④: 글리치 modifier 배지 — 별도 이미지 없이 아이콘으로 표기
-    if (this.glitchMods && this.glitchMods.length) {
-      const _badgeIcon = { fast:'💨', slowGiant:'🐢', split:'🔀', invis:'👻' };
-      ctx.save();
-      ctx.font = `${Math.round(s*0.7)}px serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      this.glitchMods.forEach((m, i) => {
-        ctx.fillText(_badgeIcon[m] || '', sx + s*0.9 + i*(s*0.6), sy - s - 6);
-      });
-      ctx.restore();
-    }
+    // [UPDATE 2026-07-26] 글리치 modifier 이모지 배지 제거 — 유저 피드백: 렌더링 버그처럼 보인다는 혼동이 있어
+    // 배지 표시만 없앰(글리치 modifier 자체의 게임플레이 효과는 그대로 유지, 시각 표기만 제거)
+
+    if (this._isAfterimage) ctx.restore(); // flicker globalAlpha 해제
   }
 
   _drawShape(ctx, s) {

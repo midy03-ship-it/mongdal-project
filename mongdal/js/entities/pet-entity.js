@@ -6,6 +6,7 @@ class PetEntity {
     this.markCount=data.markCount||1; this.confuseRangeMult=data.confuseRangeMult||1; // [UPDATE 2026-07-11]
     // [UPDATE 2026-07-17] autoCollect 펫별 범위 커스터마이징(싸리=강다리보다 느리지만 더 넓게 주움). 미지정시 기존 강다리 수치로 폴백
     this.fetchRangeMult=data.fetchRangeMult||3; this.pullRadius=data.pullRadius||100;
+    this.seekMode=data.seekMode||'nearest'; // [UPDATE 2026-07-24] 'nearest'(강다리) / 'cluster'(싸리)
     this.orbitRadius=28+slotIdx*12;
     this.orbitAngle=slotIdx*(Math.PI*2/3)+Math.PI;
     this.orbitSpd=1.2+slotIdx*0.3;
@@ -23,7 +24,8 @@ class PetEntity {
       zodiac_horse:'zodiac_horse',zodiac_goat:'zodiac_goat',zodiac_monkey:'zodiac_monkey',
       zodiac_rooster:'zodiac_rooster',zodiac_dog:'zodiac_dog',zodiac_pig:'zodiac_pig',
       jeoseung_nabi:'jeoseung_nabi',sangsahwa:'sangsahwa', // [UPDATE 2026-07-06] 시즌2 펫
-      ssari:'ssari',gongi:'gongi'}; // [UPDATE 2026-07-17] 도깨비 계열 신규 펫
+      ssari:'ssari',gongi:'gongi', // [UPDATE 2026-07-17] 도깨비 계열 신규 펫
+      sujeong:'sujeong',bulssi:'bulssi'}; // [UPDATE 2026-07-17] 시즌4(귀허계) 신규 펫
     const sk = petSprMap[this.id];
     const sc = sk && SPRITES?.pets?.[sk];
     this.img = sc ? SpriteLoader.get(sc.src) : null;
@@ -55,22 +57,38 @@ class PetEntity {
         }
       }
       if(!this._fetchTarget || this._fetchTarget.dead){
+        // [UPDATE 2026-07-24] 강다리(nearest)/싸리(cluster) 타겟팅 분리 —
+        // 예전엔 둘 다 "플레이어 기준 최근접 1개"로 완전히 동일하게 동작해서 범위/속도 숫자만 다르고 행동 차이가 없었음.
+        // cluster 모드는 반경 내 아이템끼리 뭉친 정도(주변 70px 내 개수)를 우선시해서 "가장 많이 모인 곳"으로 향함.
         const range=(player.magnetRange||60)*this.fetchRangeMult;
-        let best=null, bestD=range;
+        const candidates=[];
         for(const arr of [items.xpOrbs,items.goldDrops,items.bigGoldDrops,items.soulDrops]){
           if(!arr) continue;
           for(const it of arr){
             if(it.dead||it.attractState==='magnet') continue;
-            const d=Math.hypot(it.x-player.x,it.y-player.y);
-            if(d<bestD){ bestD=d; best=it; }
+            if(Math.hypot(it.x-player.x,it.y-player.y)<range) candidates.push(it);
           }
+        }
+        let best=null;
+        if(this.seekMode==='cluster' && candidates.length){
+          const clusterR=70;
+          let bestScore=-1, bestD=Infinity;
+          for(const it of candidates){
+            let cnt=0;
+            for(const other of candidates) if(other!==it && Math.hypot(other.x-it.x,other.y-it.y)<clusterR) cnt++;
+            const d=Math.hypot(it.x-player.x,it.y-player.y);
+            if(cnt>bestScore || (cnt===bestScore && d<bestD)){ bestScore=cnt; bestD=d; best=it; }
+          }
+        } else {
+          let bestD=Infinity;
+          for(const it of candidates){ const d=Math.hypot(it.x-player.x,it.y-player.y); if(d<bestD){ bestD=d; best=it; } }
         }
         this._fetchTarget=best;
       }
       if(this._fetchTarget && !this._fetchTarget.dead){
         const t=this._fetchTarget;
         const dx=t.x-this.x, dy=t.y-this.y, d=Math.hypot(dx,dy)||1;
-        const spd=this.value||70; // 레벨 스케일링된 값(70~91) 그대로 이동속도로 사용
+        const spd=this.value||70; // 레벨 스케일링된 값 그대로 이동속도로 사용(펫마다 기본값 다름)
         if(d<16){ t.magnetPull(); this._fetchTarget=null; this._sparkle('#ffe070',5); this.triggerFlash=1; }
         else { this.x+=(dx/d)*spd*dt; this.y+=(dy/d)*spd*dt; }
         this.sparkles=this.sparkles.filter(s=>s.life>0);
@@ -113,6 +131,7 @@ class PetEntity {
       case 'regen':
         if(!player._healBlocked){
           player.hp=Math.min(player.hp+(this.value||PC.REGEN_AMOUNT),player.maxHp);
+          player._lawHealAccum = (player._lawHealAccum || 0) + (this.value||PC.REGEN_AMOUNT); // [UPDATE 2026-07-24] 흡수의 법칙 트리거용
           this._sparkle('#60ff60',6);this.triggerFlash=1;
         }
         return true;
@@ -205,7 +224,11 @@ function applyPetPassives(activePetData,player,weapons){
   for(const pd of activePetData){
     switch(pd.effect){
       case 'defense':    player._damageReduction=(player._damageReduction||0)+pd.value; break;
-      case 'crit':       player._critChance=(player._critChance||0)+pd.value; player._critMult=Math.max(player._critMult||1.5,1.8); break;
+      // [UPDATE 2026-07-31] 🔥 스케일 불일치 수정 — 펫 데이터의 crit value는 0~1 비율(0.25 = 25%)인데
+      // player._critChance는 0~100 백분율 스케일이다(weapons.js의 `Math.random()*100 < _critChance` 판정 기준,
+      // 신목 PER_LV.critChance:5 · 선술 perLv:5 · 오행 금 +8 전부 백분율). 그대로 더하고 있어서
+      // "치명타 확률 +25%"라고 적힌 펫이 실제로는 +0.25%p만 주고 있었음 — 100배 약하게 적용되던 버그.
+      case 'crit':       player._critChance=(player._critChance||0)+pd.value*100; player._critMult=Math.max(player._critMult||1.5,1.8); break;
       case 'xp_boost':   player._xpMult=(player._xpMult||1)+pd.value; break;
       // [UPDATE 2026-07-06] 전용 필드(_cdrPet)에 누적 후 통합 재계산 — 스탯 픽이 펫 효과 덮어쓰는 버그 방지
       case 'cooldown':   player._cdrPet=(player._cdrPet||0)+pd.value; recalcCdReduction(player); break;

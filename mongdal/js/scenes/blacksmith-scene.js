@@ -6,17 +6,14 @@ const BlacksmithScene = (() => {
 
   let _activeSlot = 0; // 현재 선택된 슬롯 인덱스
 
+  // [UPDATE 2026-08-06] 이름/설명 텍스트는 lang.js(TEXT.ko/en.blacksmith.weapons.<id>)로 이관 —
+  // 여기엔 언어 무관 데이터(아이콘/기본제공 여부)만 남김.
   const WEAPON_LIST = [
-    { id: 'talisman',    name: '부적',        nameEn: 'Talisman', icon: '📜', free: true,
-      desc: '귀신을 봉인하는 부적을 날린다.',       descEn: 'Launches a sealing talisman.' },
-    { id: 'sword',       name: '신검',        nameEn: 'Sword',    icon: '⚔️', free: false,
-      desc: '신령한 검으로 적을 베어낸다.',          descEn: 'Slash enemies with a divine sword.' },
-    { id: 'bow',         name: '신궁',        nameEn: 'Bow',      icon: '🏹', free: false,
-      desc: '정확한 화살로 적을 꿰뚫는다.',          descEn: 'Pierce enemies with precise arrows.' },
-    { id: 'staff',       name: '무당 지팡이',  nameEn: 'Staff',   icon: '🪄', free: false,
-      desc: '영혼체가 주변을 선회하며 공격한다.',     descEn: 'Spirit orbs orbit and strike foes.' },
-    { id: 'scythe_main', name: '영혼낫',      nameEn: 'Scythe',  icon: '🌙', free: false,
-      desc: '초승달 낫이 주변을 회전하며 베어낸다.',  descEn: 'A crescent scythe rotates and slashes.' },
+    { id: 'talisman',    icon: '📜', free: true },
+    { id: 'sword',       icon: '⚔️', free: false },
+    { id: 'bow',         icon: '🏹', free: false },
+    { id: 'staff',       icon: '🪄', free: false },
+    { id: 'scythe_main', icon: '🌙', free: false },
   ];
 
   // [UPDATE 2026-07-06] 강화 비용: 누적 강화 단계(currentLv) 자체 기준으로 계속 상승
@@ -25,6 +22,17 @@ const BlacksmithScene = (() => {
     const tier  = currentLv;
     const ganghwa = tier * 50;
     const gold    = Math.round(tier * 150 * 1.5);
+    return { ganghwa, gold };
+  }
+
+  // [UPDATE 2026-08-06] x1/x10 일괄강화 표시용 총비용(레벨별 실합산) — player-scene.js의 upgradeCostBatch와 동일 패턴.
+  function upgradeCostBatch(startLv, count) {
+    let ganghwa = 0, gold = 0;
+    for (let i = 0; i < count; i++) {
+      const c = upgradeCost(startLv + i);
+      ganghwa += c.ganghwa;
+      gold += c.gold;
+    }
     return { ganghwa, gold };
   }
 
@@ -116,7 +124,6 @@ const BlacksmithScene = (() => {
     const chaewon        = saveData.chaewonseok || 0;
     const levels         = saveData.weaponLevels || {};
     const transcend       = saveData.weaponTranscend || {};
-    const isEn           = Lang.getCurrent() === 'en';
 
     const _hasNormal  = (saveData.clearedStagesNormal || []).length > 0;
     const _hasHard    = (saveData.clearedStagesHard   || []).length > 0;
@@ -151,17 +158,17 @@ const BlacksmithScene = (() => {
               border:2px solid ${active ? _diffColors[i] : locked ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)'};
               background:${active ? `${_diffColors[i]}18` : 'rgba(0,0,0,0.2)'};
               opacity:${locked ? 0.35 : 1};position:relative;">
-            <div style="font-size:8px;color:${_diffColors[i]};margin-bottom:3px;letter-spacing:.04em;">${isEn?`Slot ${i+1}`:`슬롯 ${i+1}`}</div>
+            <div style="font-size:8px;color:${_diffColors[i]};margin-bottom:3px;letter-spacing:.04em;">${Lang.get('blacksmith.slotLabel').replace('{n}', i+1)}</div>
             ${locked
               ? `<div style="font-size:18px;">🔒</div><div style="font-size:7px;color:#5a4a4a;">${_unlockLabels[i]}</div>`
               : wdef
                 ? (img
                     ? `<img src="${img.src}" style="width:32px;height:32px;object-fit:contain;image-rendering:pixelated;">`
                     : `<div style="font-size:22px;">${wdef.icon}</div>`)
-                  + `<div style="font-size:8px;color:#c8b8e8;margin-top:1px;">${isEn?wdef.nameEn:wdef.name}</div>`
-                : `<div style="font-size:22px;opacity:0.3;">⬜</div><div style="font-size:8px;color:#555;">${isEn?'Empty':'비어있음'}</div>`
+                  + `<div style="font-size:8px;color:#c8b8e8;margin-top:1px;">${Lang.get('blacksmith.weapons.' + wdef.id + '.name')}</div>`
+                : `<div style="font-size:22px;opacity:0.3;">⬜</div><div style="font-size:8px;color:#555;">${Lang.get('blacksmith.empty')}</div>`
             }
-            ${active && !locked ? `<div style="position:absolute;bottom:2px;right:4px;font-size:7px;color:${_diffColors[i]};">${isEn?'▶Active':'▶선택중'}</div>` : ''}
+            ${active && !locked ? `<div style="position:absolute;bottom:2px;right:4px;font-size:7px;color:${_diffColors[i]};">${Lang.get('blacksmith.active')}</div>` : ''}
           </div>`;
         }).join('')}
       </div>`;
@@ -186,12 +193,12 @@ const BlacksmithScene = (() => {
             font-size:22px;cursor:pointer;padding:4px 8px;
           ">←</button>
           <div style="font-size:17px;letter-spacing:.15em;color:#e0c8ff;">
-            ⚒️ ${isEn ? 'Blacksmith' : '대장간'}
+            ⚒️ ${Lang.get('blacksmith.title')}
           </div>
           <div style="font-size:13px;color:#f0c840;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
-            <span>${_cimg('gold')} ${gold.toLocaleString()}</span>
-            <span style="color:#c0e0ff;">${_cimg('ganghwaseok')} ${ganghwa}</span>
-            <span style="color:#d0a0ff;">${_cimg('soulStones')} ${yeongon}</span>
+            <span>${_cimg('gold')} ${Format.num(gold)}</span>
+            <span style="color:#c0e0ff;">${_cimg('ganghwaseok')} ${Format.num(ganghwa)}</span>
+            <span style="color:#d0a0ff;">${_cimg('soulStones')} ${Format.num(yeongon)}</span>
           </div>
         </div>
 
@@ -202,24 +209,101 @@ const BlacksmithScene = (() => {
         <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
           background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
           <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
-            ${isEn?'Element Relations (highlighted = current slot)':'오행 상생상극 (반전 = 선택한 슬롯)'}
+            ${Lang.get('blacksmith.elementRelations')}
           </div>
           ${elementPentagramSVG(_otherSlotEls, _activeSlotEl, 150)}
         </div>
 
         <!-- 무기 목록 -->
         <div id="bs-weapon-list" class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:12px;">
-          ${WEAPON_LIST.map(w => weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, _slotCount, isEn?['Slot 1','Slot 2','Slot 3']:['슬롯 1','슬롯 2','슬롯 3'], _diffColors, transcend, yeongon, chaewon, _otherSlotEls)).join('')}
+          ${WEAPON_LIST.map(w => weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, _slotCount, [1,2,3].map(n => Lang.get('blacksmith.slotLabel').replace('{n}', n)), _diffColors, transcend, yeongon, chaewon, _otherSlotEls)).join('')}
+          ${saveData.season8ClearEnding ? aegissiTalismanCard(saveData, gold, ganghwa) : ''}
         </div>
       </div>
     `;
   }
 
-  function weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, isEn, slotCount, diffLabels, diffColors, transcend, yeongon, chaewon, otherSlotEls) {
+  // [UPDATE 2026-08-02] 수호 부적(내부 필드명 aegissiTalisman은 하위호환용으로 유지) — 파트2 전용, "기록이 허락되지 않은" 별도 개체.
+  // [UPDATE 2026-08-05] 이름 확정: 애기씨의 부적 → 수호 부적. HP는 300 * hpLv(내구 강화 레벨)로 스케일.
+  // 이미지만 부적(talisman) 무기 스프라이트를 재사용할 뿐, 실제 장착/캐릭터 창과는 완전히 무관 —
+  // selectedMainWeapons/unlockedWeapons를 전혀 건드리지 않는 독립 저장 필드(saveData.aegissiTalisman).
+  // 강화 스킴은 기존 upgradeCost()를 그대로 재사용하되, 내구(HP)·일반(위력) 2개 트랙을 각자 독립 레벨로 운용.
+  function aegissiTalismanCard(saveData, gold, ganghwa) {
+    const t = saveData.aegissiTalisman || { hpLv: 1, pwrLv: 1 };
+    const img = SPRITES?.weapons?.talisman ? SpriteLoader.get(SPRITES.weapons.talisman.src) : null;
+    const hpCost  = upgradeCost(t.hpLv);
+    const pwrCost = upgradeCost(t.pwrLv);
+    const canHp  = ganghwa >= hpCost.ganghwa  && gold >= hpCost.gold;
+    const canPwr = ganghwa >= pwrCost.ganghwa && gold >= pwrCost.gold;
+    return `
+      <div style="
+        background:rgba(120,40,60,0.08);border:1px solid rgba(220,140,170,0.35);
+        border-radius:14px;padding:12px 14px;margin-top:4px;
+      ">
+        <div style="font-size:10px;color:#ff9ab0;letter-spacing:.05em;margin-bottom:8px;">
+          ⚠️ ${Lang.get('blacksmith.talismanCard.banner')}
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="flex-shrink:0;width:52px;height:52px;">
+            ${img
+              ? `<img src="${img.src}" style="width:52px;height:52px;object-fit:contain;image-rendering:pixelated;">`
+              : `<div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:30px;">📜</div>`}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:bold;color:#ffd0dc;margin-bottom:3px;">
+              ${Lang.get('blacksmith.talismanCard.title')}
+            </div>
+            <div style="font-size:11px;color:rgba(255,208,220,0.55);line-height:1.4;">
+              ${Lang.get('blacksmith.talismanCard.desc')}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-size:11px;color:#ffb0c0;">${Lang.get('blacksmith.talismanCard.durability')} Lv.${t.hpLv} (HP ${300*t.hpLv})</span>
+            <button onclick="BlacksmithScene.upgradeTalisman('hp')" style="
+              font-size:11px;padding:5px 10px;border-radius:7px;cursor:${canHp?'pointer':'not-allowed'};
+              font-family:inherit;
+              background:${canHp?'rgba(255,150,170,0.18)':'rgba(80,80,80,0.2)'};
+              border:1px solid ${canHp?'rgba(255,150,170,0.5)':'rgba(255,255,255,0.1)'};
+              color:${canHp?'#ffb0c0':'rgba(255,255,255,0.25)'};
+            ">${_cimg('ganghwaseok')}${Format.num(hpCost.ganghwa)} ${_cimg('gold')}${Format.num(hpCost.gold)} ${Lang.get('blacksmith.enhance')}</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-size:11px;color:#ffd0dc;">${Lang.get('blacksmith.talismanCard.power')} Lv.${t.pwrLv} (DMG ${50+(t.pwrLv-1)*3})</span>
+            <button onclick="BlacksmithScene.upgradeTalisman('pwr')" style="
+              font-size:11px;padding:5px 10px;border-radius:7px;cursor:${canPwr?'pointer':'not-allowed'};
+              font-family:inherit;
+              background:${canPwr?'rgba(255,180,200,0.18)':'rgba(80,80,80,0.2)'};
+              border:1px solid ${canPwr?'rgba(255,180,200,0.5)':'rgba(255,255,255,0.1)'};
+              color:${canPwr?'#ffd0dc':'rgba(255,255,255,0.25)'};
+            ">${_cimg('ganghwaseok')}${Format.num(pwrCost.ganghwa)} ${_cimg('gold')}${Format.num(pwrCost.gold)} ${Lang.get('blacksmith.enhance')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function upgradeTalisman(track) {
+    const saveData = Save.load();
+    if (!saveData.aegissiTalisman) saveData.aegissiTalisman = { hpLv: 1, pwrLv: 1 };
+    const key = track === 'hp' ? 'hpLv' : 'pwrLv';
+    const lv = saveData.aegissiTalisman[key] || 1;
+    const cost = upgradeCost(lv);
+    if ((saveData.ganghwaseok || 0) < cost.ganghwa) return;
+    if ((saveData.gold || 0) < cost.gold) return;
+    saveData.ganghwaseok -= cost.ganghwa;
+    saveData.gold        -= cost.gold;
+    saveData.aegissiTalisman[key] = lv + 1;
+    Save.save(saveData);
+    rerender(saveData);
+  }
+
+  function weaponCard(w, unlocked, selectedMains, gold, ganghwa, levels, slotCount, diffLabels, diffColors, transcend, yeongon, chaewon, otherSlotEls) {
     const isOwned    = unlocked.includes(w.id);
     const canBuy     = !isOwned && gold >= WEAPON_PRICE;
-    const name       = isEn ? w.nameEn : w.name;
-    const desc       = isEn ? w.descEn : w.desc;
+    const name       = Lang.get('blacksmith.weapons.' + w.id + '.name');
+    const desc       = Lang.get('blacksmith.weapons.' + w.id + '.desc');
     const lv         = (levels[w.id] || 1);
     const awakening  = getAwakening(lv);
     const lvLabel    = getLvLabel(lv);
@@ -264,38 +348,43 @@ const BlacksmithScene = (() => {
     if (isEquippedInActive) {
       actionBtn = `<div style="font-size:11px;padding:5px 10px;border-radius:7px;
         background:rgba(100,200,120,0.2);border:1px solid rgba(120,220,140,0.5);
-        color:#80f0a0;">✓ ${diffLabels[_activeSlot]} ${isEn?'Equipped':'장착중'}</div>`;
+        color:#80f0a0;">✓ ${diffLabels[_activeSlot]} ${Lang.get('blacksmith.equipped')}</div>`;
     } else if (isOwned && equippedSlots.length > 0) {
       // [UPDATE 2026-07-11] 이미 다른 슬롯에 장착된 무기는 선택 불가 — 캐릭터 화면과 동일한 규칙.
       // (예전엔 여기서 선택 허용 → 원래 슬롯이 조용히 비워져서, 오행 슬롯매칭 시너지가 인덱스 밀림으로 꼬이는 원인이 됨)
       actionBtn = `<div style="font-size:10px;padding:5px 10px;border-radius:7px;
         background:rgba(80,80,80,0.15);border:1px solid rgba(255,255,255,0.08);color:#6a5a4a;">
-        🔒 ${isEn?`In ${diffLabels[equippedSlots[0]]}`:`${diffLabels[equippedSlots[0]]}에 장착중`}</div>`;
+        🔒 ${Lang.get('blacksmith.equippedIn').replace('{slot}', diffLabels[equippedSlots[0]])}</div>`;
     } else if (isOwned) {
       actionBtn = `<button onclick="BlacksmithScene.selectWeapon('${w.id}')" style="
         font-size:11px;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;
         background:rgba(140,80,220,0.3);border:1px solid rgba(200,160,255,0.5);color:#e0c8ff;">
-        ${isEn?`Equip: ${diffLabels[_activeSlot]}`:`${diffLabels[_activeSlot]}에 장착`}</button>`;
+        ${Lang.get('blacksmith.equipTo').replace('{slot}', diffLabels[_activeSlot])}</button>`;
     } else if (w.free) {
-      actionBtn = `<div style="font-size:11px;color:rgba(200,160,255,0.4);">${isEn?'Default':'기본 제공'}</div>`;
+      actionBtn = `<div style="font-size:11px;color:rgba(200,160,255,0.4);">${Lang.get('blacksmith.default')}</div>`;
     } else {
       actionBtn = `<button onclick="BlacksmithScene.buyWeapon('${w.id}')" style="
         font-size:11px;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;
         background:${canBuy?'rgba(200,160,40,0.3)':'rgba(80,80,80,0.2)'};
         border:1px solid ${canBuy?'rgba(240,200,64,0.6)':'rgba(255,255,255,0.1)'};
         color:${canBuy?'#f0c840':'rgba(255,255,255,0.25)'};
-        ${!canBuy?'cursor:not-allowed;':''}"> ${_cimg('gold')}${WEAPON_PRICE.toLocaleString()}</button>`;
+        ${!canBuy?'cursor:not-allowed;':''}"> ${_cimg('gold')}${Format.num(WEAPON_PRICE)}</button>`;
     }
 
-    // 강화 버튼 (보유 시만)
+    // [UPDATE 2026-08-06] 강화 버튼 x1/x10 (보유 시만) — "하나씩 누르기 힘들다" 피드백, 캐릭터 스탯 강화와 동일 패턴.
+    // 이미 액션버튼(장착/장착중 등)이 한 줄을 거의 채우고 있어서, 강화 버튼은 그 아래 별도 줄로 뺌(2열).
     const upgradeBtn = isOwned
-      ? `<button onclick="BlacksmithScene.upgradeWeapon('${w.id}')" style="
-          font-size:11px;padding:5px 10px;border-radius:7px;cursor:${canUpgrade?'pointer':'not-allowed'};
-          font-family:inherit;
-          background:${canUpgrade?'rgba(192,224,255,0.15)':'rgba(80,80,80,0.2)'};
-          border:1px solid ${canUpgrade?'rgba(192,224,255,0.5)':'rgba(255,255,255,0.1)'};
-          color:${canUpgrade?'#c0e0ff':'rgba(255,255,255,0.25)'};
-        ">${_cimg('ganghwaseok')}${cost.ganghwa} ${_cimg('gold')}${cost.gold.toLocaleString()} ${isEn?'Enhance':'강화'}</button>`
+      ? [1, 10].map(n => {
+          const bc = upgradeCostBatch(lv, n);
+          const canUp = ganghwa >= bc.ganghwa && gold >= bc.gold;
+          return `<button onclick="BlacksmithScene.${n===1?`upgradeWeapon('${w.id}')`:`upgradeWeaponBulk('${w.id}',${n})`}" style="
+              flex:1;font-size:11px;padding:5px 4px;border-radius:7px;cursor:${canUp?'pointer':'not-allowed'};
+              font-family:inherit;
+              background:${canUp?'rgba(192,224,255,0.15)':'rgba(80,80,80,0.2)'};
+              border:1px solid ${canUp?'rgba(192,224,255,0.5)':'rgba(255,255,255,0.1)'};
+              color:${canUp?'#c0e0ff':'rgba(255,255,255,0.25)'};
+            ">×${n} ${_cimg('ganghwaseok')}${Format.num(bc.ganghwa)} ${_cimg('gold')}${Format.num(bc.gold)}</button>`;
+        }).join('')
       : '';
 
     // [UPDATE 2026-07-08] 초월 섹션 (5각 Lv4 도달 후 노출)
@@ -310,21 +399,21 @@ const BlacksmithScene = (() => {
         yeongon >= tCost.soul && gold >= tCost.gold &&
         ganghwa >= tCost.ganghwa && chaewon >= tCost.chaewon;
       const tCostLabel = tCost
-        ? `${_cimg('soulStones')}${tCost.soul} ${_cimg('gold')}${tCost.gold.toLocaleString()}`
-          + (tCost.ganghwa ? ` ${_cimg('ganghwaseok')}${tCost.ganghwa}` : '')
-          + (tCost.chaewon ? ` ${_cimg('chaewonseok')}${tCost.chaewon}` : '')
+        ? `${_cimg('soulStones')}${Format.num(tCost.soul)} ${_cimg('gold')}${Format.num(tCost.gold)}`
+          + (tCost.ganghwa ? ` ${_cimg('ganghwaseok')}${Format.num(tCost.ganghwa)}` : '')
+          + (tCost.chaewon ? ` ${_cimg('chaewonseok')}${Format.num(tCost.chaewon)}` : '')
         : '';
       transcendHtml = `
         <div style="margin-top:8px;padding:8px 10px;border-radius:9px;
           background:rgba(255,215,120,0.06);border:1px solid rgba(255,215,120,0.25);">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
             <span style="font-size:11px;color:#ffd878;">
-              ✨ ${isEn?'Transcend':'초월'} ${tRank}/${TRANSCEND_MAX_RANK}
-              <span style="color:rgba(255,216,120,0.6);">(+${TRANSCEND_CUM_PCT[tRank]}%${isEn?' dmg':'데미지'})</span>
-              ${tRank >= 8 ? `<span style="color:#a0ffc0;">★${isEn?'Sub-mechanic active':'서브 메커닉 발동'}</span>` : ''}
+              ✨ ${Lang.get('blacksmith.transcend')} ${tRank}/${TRANSCEND_MAX_RANK}
+              <span style="color:rgba(255,216,120,0.6);">(+${TRANSCEND_CUM_PCT[tRank]}%${Lang.get('blacksmith.dmgSuffix')})</span>
+              ${tRank >= 8 ? `<span style="color:#a0ffc0;">★${Lang.get('blacksmith.subMechanicActive')}</span>` : ''}
             </span>
             ${tMax
-              ? `<span style="font-size:10px;color:#ffd878;">MAX</span>`
+              ? `<span style="font-size:10px;color:#ffd878;">${Lang.get('blacksmith.transcendMax')}</span>`
               : `<button onclick="BlacksmithScene.upgradeTranscend('${w.id}')" style="
                   font-size:10px;padding:4px 8px;border-radius:6px;cursor:${tCanUp?'pointer':'not-allowed'};
                   font-family:inherit;
@@ -338,7 +427,7 @@ const BlacksmithScene = (() => {
     } else if (isOwned) {
       transcendHtml = `
         <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.25);">
-          🔒 ${isEn?'Transcend unlocks at ★MAX (5-awaken Lv4)':'초월은 5각 Lv4(★MAX) 도달 시 해금'}
+          🔒 ${Lang.get('blacksmith.transcendLocked')}
         </div>`;
     }
 
@@ -374,15 +463,19 @@ const BlacksmithScene = (() => {
             </div>
             <div style="font-size:11px;color:rgba(200,160,255,0.5);line-height:1.4;">${desc}</div>
             ${isOwned ? `<div style="font-size:10px;color:rgba(192,224,255,0.4);margin-top:3px;">
-              ${isEn?`Next: ${getLvLabel(lv+1)} · ${_cimg('ganghwaseok')}${cost.ganghwa} · ${_cimg('gold')}${cost.gold.toLocaleString()}`:`다음: ${getLvLabel(lv+1)} · ${_cimg('ganghwaseok')}${cost.ganghwa}개 · ${_cimg('gold')}${cost.gold.toLocaleString()}`}
+              ${Lang.get('blacksmith.next')}: ${getLvLabel(lv+1)} · ${_cimg('ganghwaseok')}${Format.num(cost.ganghwa)}${Lang.get('blacksmith.unitSuffix')} · ${_cimg('gold')}${Format.num(cost.gold)}
             </div>` : ''}
             ${transcendHtml}
           </div>
         </div>
         <!-- 하단: 버튼들 -->
-        <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;">
-          ${actionBtn}
-          ${upgradeBtn}
+        <!-- [UPDATE 2026-08-06] 강화가 x1/x10 두 버튼으로 늘면서 액션버튼(장착 등)과 한 줄에 다 못 들어가
+             화면 밖으로 밀려날 수 있어서, 액션버튼 줄 / 강화버튼 줄로 2열 분리. -->
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:flex-end;align-items:center;">
+            ${actionBtn}
+          </div>
+          ${isOwned ? `<div style="display:flex;gap:6px;">${upgradeBtn}</div>` : ''}
         </div>
       </div>
     `;
@@ -439,6 +532,25 @@ const BlacksmithScene = (() => {
     rerender(saveData);
   }
 
+  // [UPDATE 2026-08-06] x10 일괄강화 — 1개씩 순서대로 사되 재화가 떨어지면 그 시점에서 멈춤(부분구매 허용).
+  function upgradeWeaponBulk(weaponId, count) {
+    const saveData = Save.load();
+    const unlocked = saveData.unlockedWeapons || ['talisman'];
+    if (!unlocked.includes(weaponId)) return;
+    if (!saveData.weaponLevels) saveData.weaponLevels = {};
+    for (let i = 0; i < count; i++) {
+      const lv = saveData.weaponLevels[weaponId] || 1;
+      const cost = upgradeCost(lv);
+      if ((saveData.ganghwaseok || 0) < cost.ganghwa) break;
+      if ((saveData.gold || 0) < cost.gold) break;
+      saveData.ganghwaseok -= cost.ganghwa;
+      saveData.gold        -= cost.gold;
+      saveData.weaponLevels[weaponId] = lv + 1;
+    }
+    Save.save(saveData);
+    rerender(saveData);
+  }
+
   // [UPDATE 2026-07-08] 무기 초월: 재료 소모 후 랭크 +1
   function upgradeTranscend(weaponId) {
     const saveData = Save.load();
@@ -464,5 +576,5 @@ const BlacksmithScene = (() => {
     rerender(saveData);
   }
 
-  return { enter, exit, buyWeapon, selectWeapon, upgradeWeapon, selectSlot, upgradeTranscend };
+  return { enter, exit, buyWeapon, selectWeapon, upgradeWeapon, upgradeWeaponBulk, selectSlot, upgradeTranscend, upgradeTalisman };
 })();

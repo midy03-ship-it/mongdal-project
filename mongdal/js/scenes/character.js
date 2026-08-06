@@ -34,7 +34,9 @@ const CharacterScene = (() => {
     const stars    = saveData.companionStars     || {};
     const awakenings = saveData.companionAwakening || {};
     const uniFrags = saveData.universalFragments || 0;
-    const list     = GAME_DATA.companions;
+    // [UPDATE 2026-08-02] 시즌8 엔딩 감상 완료 시점부터 박수는 동료가 아니라 주인공 본인이므로 목록에서 제외
+    // (player.js의 스프라이트 교체 조건과 동일 시점으로 맞춤 — part2.active가 아니라 season8ClearEnding)
+    const list     = saveData.season8ClearEnding ? GAME_DATA.companions.filter(c => c.id !== 'baksu') : GAME_DATA.companions;
     // [UPDATE 2026-07-11] 펜타그램/카드 테두리용 — 현재 편성된 동료들의 오행 목록
     const _activeCompEls = active.map(id => list.find(c=>c.id===id)?.element).filter(Boolean);
 

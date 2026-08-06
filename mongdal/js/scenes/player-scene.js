@@ -6,6 +6,55 @@ const PlayerScene = (() => {
   let _statsExpandedRow = null;   // [UPDATE 2026-07-13] 상세 탭에서 탭한 스탯 행(브레이크다운 확대 표시)
   let _codexOpen = false;         // [UPDATE 2026-07-14] 260714_MTOPC.md 5번: 해금 도감 팝업 상태
   let _deckOpen = false;          // [UPDATE 2026-07-16] 260716_MTOPC.md 2번⑥: 덱(무기셋) 저장/불러오기 팝업 상태
+  let _seonsulOpen = false;       // [UPDATE 2026-07-22] 선술 스킬트리(시즌5) 팝업 상태
+  let _seonsulResetConfirm = false; // 초기화 버튼 2단계 확인
+  let _seonsulPending = null;     // [UPDATE 2026-07-23] 노드 클릭 시 뜨는 설명+Y/N 확인 팝업 상태
+  let _currencyOpen = false;       // [UPDATE 2026-07-26] 재화 팝업 상태
+  let _currencyExpandedKey = null; // [UPDATE 2026-07-26] 재화 창에서 탭한 재화(획득처 펼쳐보기)
+
+  // [UPDATE 2026-07-26] 재화 획득처 정리 — 캐릭터 화면 상단 재화 창용. 코드에서 실제 지급 경로를 확인해서 작성
+  // (dungeon-scene.js DUNGEON_DEFS, lobby.js 차원상인 제조, shop-scene.js 재화교환, game.js 드랍 로직 참고)
+  const CURRENCY_INFO = [
+    { key:'gold', icon:'gold', name:'골드', nameEn:'Gold',
+      sources: ['몬스터 처치 시 기본 드랍', '스테이지 클리어 보상', '무한 던전(🌀, 서낭당 해금) 처치 드랍', '차원 상인(로비)/상점 재화교환: 다이아 1개 → 골드 500개'],
+      sourcesEn: ['Basic drop from defeating monsters', 'Stage clear reward', 'Infinite Dungeon (🌀, unlocked at Guardian Shrine) kill drops', 'Dimension Merchant(Lobby)/Shop exchange: 1 Diamond → 500 Gold'] },
+    { key:'gems', icon:'💎', name:'다이아', nameEn:'Diamond',
+      sources: ['보스 러시 던전(👹, 서낭당 해금) 처치 보상', '일반 스테이지 챕터보스 처치 시 확정 +1', '하드 난이도 스테이지 클리어 보상', '업적 달성 보상(한번형/누적 마일스톤 모두)', '초보자 선물(스테이지 5~20 최초클리어)'],
+      sourcesEn: ['Boss Rush Dungeon (👹, unlocked at Guardian Shrine) kill reward', 'Guaranteed +1 on defeating a chapter boss', 'Hard difficulty stage clear reward', 'Achievement rewards (one-time & infinite milestones)', 'Beginner gift (first clear of stage 5-20)'] },
+    { key:'ganghwaseok', icon:'ganghwaseok', name:'강화석', nameEn:'Enhance Stone',
+      sources: ['강화석 던전(🔧, 대장간 해금) — 골드 대신 드랍', '차원 상인/상점 재화교환: 다이아 1개 → 강화석 50개'],
+      sourcesEn: ['Enhance Stone Dungeon (🔧, unlocked at Blacksmith) — drops instead of gold', 'Dimension Merchant/Shop exchange: 1 Diamond → 50 Enhance Stones'] },
+    { key:'cheonunseok', icon:'cheonunseok', name:'천운석', nameEn:'Sky Stone',
+      sources: ['천운석 던전(🪨, 장승당 해금) — 골드 대신 드랍', '차원 상인/상점 재화교환: 다이아 1개 → 천운석 40개'],
+      sourcesEn: ['Sky Stone Dungeon (🪨, unlocked at Totem Hall) — drops instead of gold', 'Dimension Merchant/Shop exchange: 1 Diamond → 40 Sky Stones'] },
+    { key:'cheonryeonggwa', icon:'cheonryeonggwa', name:'천령과', nameEn:'Spirit Fruit',
+      sources: ['천령과 던전(🍑, 용왕 연못 해금) — 골드 대신 드랍', '차원 상인/상점 재화교환: 다이아 1개 → 천령과 35개'],
+      sourcesEn: ['Spirit Fruit Dungeon (🍑, unlocked at Dragon King Pond) — drops instead of gold', 'Dimension Merchant/Shop exchange: 1 Diamond → 35 Spirit Fruits'] },
+    { key:'taegeukseok', icon:'taegeukseok', name:'태극석', nameEn:'Taeguk Stone',
+      sources: ['태극석 던전(💠, 신목 해금) — 골드 대신 드랍', '차원 상인/상점 재화교환: 다이아 1개 → 태극석 20개'],
+      sourcesEn: ['Taeguk Stone Dungeon (💠, unlocked at Sacred Tree) — drops instead of gold', 'Dimension Merchant/Shop exchange: 1 Diamond → 20 Taeguk Stones'] },
+    { key:'chaewonseok', icon:'chaewonseok', name:'차원석', nameEn:'Dimension Stone',
+      sources: ['스테이지 101(시즌2) 이후 일반 스테이지에서 골드 대신 자연 드랍(10%)', '로비 차원 상인: 골드 1,000 → 차원석 1개 교환', '상점 재화교환: 다이아 1개 → 차원석 20개'],
+      sourcesEn: ['From stage 101 (Season 2) onward, replaces gold drops in regular stages (10%)', 'Lobby Dimension Merchant: 1,000 Gold → 1 Dimension Stone', 'Shop exchange: 1 Diamond → 20 Dimension Stones'] },
+    { key:'hondonseok', icon:'hondonseok', name:'혼돈석', nameEn:'Chaos Stone',
+      sources: ['혼돈석 던전(🌪️, 시즌2 클리어 후 해금) — 골드 대신 드랍', '차원 상인/상점 재화교환: 다이아 1개 → 혼돈석 15개'],
+      sourcesEn: ['Chaos Stone Dungeon (🌪️, unlocked after clearing Season 2) — drops instead of gold', 'Dimension Merchant/Shop exchange: 1 Diamond → 15 Chaos Stones'] },
+    { key:'sullriseok', icon:'sullriseok', name:'순리석', nameEn:'Sunri Stone',
+      sources: ['순리석 던전(🌊, 시즌3 클리어 후 해금) — 골드 대신 드랍', '시즌4 스토리 스테이지(301~400)에서 골드 대신 자연 드랍(12%)', '차원 상인/상점 재화교환: 다이아 1개 → 순리석 15개'],
+      sourcesEn: ['Sunri Stone Dungeon (🌊, unlocked after clearing Season 3) — drops instead of gold', 'From Season 4 story stages (301-400), replaces gold drops (12%)', 'Dimension Merchant/Shop exchange: 1 Diamond → 15 Sunri Stones'] },
+    { key:'soulStones', icon:'soulStones', name:'영혼석', nameEn:'Soul Stone',
+      sources: ['스테이지 101(시즌2) 이후 "빅골드" 드랍이 영혼석으로 대체됨', '로비 차원 상인: 영혼조각 → 영혼석 제작(시즌1 클리어 후)', '로비 차원 상인: 차원석 ×5 → 영혼석 ×1 제작(시즌2 클리어 후)', '상점 재화교환: 다이아 1개 → 영혼석 10개'],
+      sourcesEn: ['From stage 101 (Season 2) onward, replaces "big gold" drops', 'Lobby Dimension Merchant: craft Soul Fragments → Soul Stone (after clearing Season 1)', 'Lobby Dimension Merchant: craft Dimension Stone ×5 → Soul Stone ×1 (after clearing Season 2)', 'Shop exchange: 1 Diamond → 10 Soul Stones'] },
+    { key:'sullgiseok', icon:'🔷', name:'선기석', nameEn:'Seongi Stone',
+      sources: ['로비 차원 상인: 차원석 ×5 → 선기석 ×1 제작(시즌4 클리어 후 해금)'],
+      sourcesEn: ['Lobby Dimension Merchant: craft Dimension Stone ×5 → Seongi Stone ×1 (unlocked after clearing Season 4)'] },
+    { key:'gyulyulseok', icon:'gyulyulseok', name:'규율석', nameEn:'Rule Stone',
+      sources: ['던전 드랍 없음 — 상점 "동료 파편 교환"에서 중복으로 쌓인 동료 파편을 규율석으로 교환하는 방식으로만 획득'],
+      sourcesEn: ['No dungeon drop — obtained only by exchanging duplicate companion fragments for Rule Stones in the Shop'] },
+    { key:'universalFragments', icon:'✨', name:'만능파편', nameEn:'Universal Fragment',
+      sources: ['동료 뽑기에서 이미 보유한 동료가 중복으로 나오면 파편 ×10으로 전환', '상점 재화교환: 다이아 1개 → 만능파편 5개'],
+      sourcesEn: ['Pulling a companion you already own converts it to ×10 Fragments', 'Shop exchange: 1 Diamond → 5 Universal Fragments'] },
+  ];
 
   // [UPDATE 2026-07-14] 260714_MTOPC.md 5번: 해금 도감 10개 항목 — stageId는 4번(무지개 테두리)과 동일한 Unlock.cleared() 기준 재사용
   const CODEX_ITEMS = [
@@ -50,6 +99,13 @@ const PlayerScene = (() => {
   // 오르면 후반부에 의미가 없어짐 — 11단계 비용으로 캡을 걸어 그 이후는 전부 동일 비용 유지.
   const UPGRADE_COST_CAP_LV = 11; // 100 × 2^11 = 204,800
   function upgradeCost(lv) { return CONFIG.UPGRADE_BASE_COST * Math.pow(CONFIG.UPGRADE_COST_MULT, Math.min(lv, UPGRADE_COST_CAP_LV)); }
+  // [UPDATE 2026-08-06] x1씩 누르기 힘들다는 피드백 — x1/x10/x100 일괄강화용 총 비용 미리보기(레벨 오를수록
+  // 비용도 오르므로 단순 곱셈이 아니라 레벨별로 실제 합산). 표시용이며 실제 구매는 upgradeBulk()가 1개씩 처리.
+  function upgradeCostBatch(startLv, count) {
+    let total = 0;
+    for (let i = 0; i < count; i++) total += upgradeCost(startLv + i);
+    return total;
+  }
 
   function render(el) {
     const upgrades = saveData.statUpgrades || {};
@@ -60,7 +116,7 @@ const PlayerScene = (() => {
         <div class="char-header">
           <button class="back-btn" onclick="SceneManager.go('lobby')">${Lang.t('player','back')}</button>
           <h2 class="char-title">${Lang.t('player','title')}</h2>
-          <span class="char-subtitle">${_cimg('gold')} ${gold.toLocaleString()}</span>
+          <span class="char-subtitle">${_cimg('gold')} ${Format.num(gold)}</span>
         </div>
 
         <!-- [UPDATE 2026-07-11] 캐릭터 화면 스크롤 통합 — 주무기/스탯 섹션이 각각 flex:1 독립 스크롤 박스라
@@ -77,6 +133,12 @@ const PlayerScene = (() => {
           <div style="margin-left:16px;flex:1;">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <div style="font-size:16px;color:#f0c040;font-weight:600;">${Lang.t('player','charName')}</div>
+              <!-- [UPDATE 2026-07-26] 재화 획득처 안내 버튼 — 능력치확인 버튼보다 앞쪽(왼쪽)에 배치 -->
+              <button onclick="PlayerScene.openCurrencyPopup()" style="
+                padding:4px 10px;border-radius:8px;font-size:10px;font-family:inherit;cursor:pointer;
+                background:rgba(240,192,64,0.2);border:1px solid rgba(240,192,64,0.5);color:#f0c860;">
+                ${Lang.getCurrent()==='en'?'💰 Currency':'💰 재화'}
+              </button>
               <button onclick="PlayerScene.openStatsPopup()" style="
                 padding:4px 10px;border-radius:8px;font-size:10px;font-family:inherit;cursor:pointer;
                 background:rgba(80,200,120,0.2);border:1px solid rgba(100,220,140,0.5);color:#90e8a0;">
@@ -94,11 +156,17 @@ const PlayerScene = (() => {
                 background:rgba(120,140,220,0.2);border:1px solid rgba(140,160,240,0.5);color:#a8b8f0;">
                 ${Lang.getCurrent()==='en'?'🗂️ Loadouts':'🗂️ 무기셋'}
               </button>
+              <!-- [UPDATE 2026-07-22] 선술 스킬트리(시즌5) 전용 버튼 — 시즌4 클리어 전에도 버튼은 노출하되 팝업 안에서 잠금 안내 -->
+              <button onclick="PlayerScene.openSeonsulPopup()" style="
+                padding:4px 10px;border-radius:8px;font-size:10px;font-family:inherit;cursor:pointer;
+                background:rgba(88,152,168,0.2);border:1px solid rgba(120,200,208,0.5);color:#a0d8e0;">
+                ${Lang.getCurrent()==='en'?'☁️ Celestial Arts':'☁️ 선술'}
+              </button>
             </div>
             <div style="font-size:11px;color:#8a7a6a;margin-top:2px;">${Lang.t('player','charSubtitle')}</div>
             <!-- [UPDATE 2026-07-16] 종합 전투력 노출 — 던전강화 카드에서만 보이던 computeBattlePower()를 캐릭터 창에도 표시 -->
             <div style="font-size:12px;color:#e0c0ff;margin-top:6px;font-weight:600;">
-              🔮 ${Lang.getCurrent()==='en'?'Battle Power':'종합 전투력'} ${computeBattlePower(saveData).toLocaleString()}
+              🔮 ${Lang.getCurrent()==='en'?'Battle Power':'종합 전투력'} ${Format.num(computeBattlePower(saveData))}
             </div>
             <div style="font-size:10px;color:#6a5a4a;margin-top:4px;">
               ${Lang.t('player','upgradeHint')}
@@ -106,12 +174,16 @@ const PlayerScene = (() => {
           </div>
         </div>
 
+        <!-- [UPDATE 2026-07-26] 재화 획득처 팝업 -->
+        ${_currencyOpen ? _currencyPopupHTML() : ''}
         <!-- [UPDATE 2026-07-12] 종합 능력치 확인 팝업 -->
         ${_statsOpen ? _statsPopupHTML() : ''}
         <!-- [UPDATE 2026-07-14] 260714_MTOPC.md 5번: 해금 도감 팝업 -->
         ${_codexOpen ? _codexPopupHTML() : ''}
         <!-- [UPDATE 2026-07-16] 260716_MTOPC.md 2번⑥: 덱(무기셋) 팝업 -->
         ${_deckOpen ? _deckPopupHTML() : ''}
+        <!-- [UPDATE 2026-07-22] 선술 스킬트리(시즌5) 팝업 -->
+        ${_seonsulOpen ? _seonsulPopupHTML() : ''}
 
         <!-- 주무기 선택 -->
         <div style="padding:12px;">
@@ -191,39 +263,51 @@ const PlayerScene = (() => {
             return `
               <div class="${isGuideTarget?'onboard-pulse':''}" style="
                 position:relative;
-                display:flex;align-items:center;gap:10px;
+                display:flex;flex-direction:column;gap:8px;
                 padding:10px 12px;margin-bottom:8px;
                 background:rgba(255,255,255,0.03);
                 border:1px solid rgba(255,255,255,0.07);
                 border-radius:10px;">
                 ${isGuideTarget ? `<span class="onboard-hint">${Lang.t('onboarding','atkUpgradeHint')}</span>` : ''}
 
-                <!-- 아이콘 + 이름 -->
-                <div style="font-size:20px;flex-shrink:0;">${s.icon}</div>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:13px;color:#e8dcc8;font-weight:600;">${s.label}</div>
-                  <div style="font-size:9px;color:#6a5a4a;">${s.desc}</div>
-                </div>
-
-                <!-- 수치 -->
-                <div style="text-align:right;flex-shrink:0;">
-                  <div style="font-size:16px;color:#f0c040;font-weight:700;">
-                    ${total.toFixed(s.key==='eva'?1:0)}${s.unit}
+                <!-- [UPDATE 2026-08-06] 버튼이 x1/x10/x100 3개로 늘면서 한 줄에 다 안 들어가 화면 밖으로
+                     밀려나던 문제 — 위(아이콘+이름+수치) / 아래(버튼 3개, 카드 폭 꽉 채움) 두 줄로 분리. -->
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <!-- 아이콘 + 이름 -->
+                  <div style="font-size:20px;flex-shrink:0;">${s.icon}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;color:#e8dcc8;font-weight:600;">${s.label}</div>
+                    <div style="font-size:9px;color:#6a5a4a;">${s.desc}</div>
                   </div>
-                  ${upLv > 0 ? `<div style="font-size:9px;color:#60d060;">+${upAmt.toFixed(s.key==='eva'?1:0)} ${Lang.t('player','upgraded')}</div>` : ''}
+
+                  <!-- 수치 -->
+                  <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:16px;color:#f0c040;font-weight:700;">
+                      ${total.toFixed(s.key==='eva'?1:0)}${s.unit}
+                    </div>
+                    ${upLv > 0 ? `<div style="font-size:9px;color:#60d060;">+${upAmt.toFixed(s.key==='eva'?1:0)} ${Lang.t('player','upgraded')}</div>` : ''}
+                  </div>
                 </div>
 
-                <!-- 강화 버튼 -->
-                <button onclick="PlayerScene.upgrade('${s.key}')" style="
-                  flex-shrink:0;padding:6px 10px;
-                  background:${canAfford?'rgba(112,64,192,0.4)':'rgba(255,255,255,0.04)'};
-                  border:1px solid ${canAfford?'#7040c0':'rgba(255,255,255,0.1)'};
-                  border-radius:8px;cursor:${canAfford?'pointer':'default'};
-                  color:${canAfford?'#e8dcc8':'#444'};font-family:inherit;font-size:10px;
-                  display:flex;flex-direction:column;align-items:center;gap:1px;">
-                  <span>${Lang.t('player','upgradeBtn')}</span>
-                  <span style="color:${canAfford?'#f0c040':'#444'};">${_cimg('gold')}${cost.toLocaleString()}</span>
-                </button>
+                <!-- 강화 버튼 x1/x10/x100 — 카드 폭을 3등분해서 채움(flex:1 each) -->
+                <!-- [UPDATE 2026-08-06] "하나씩 누르기 힘들다" 피드백 — 일괄강화 버튼 추가. 표시 비용은 그 개수를
+                     전부 살 때의 총액(레벨 오를수록 개당 비용도 오르므로 실합산)이고, 활성화는 최소 1개라도
+                     살 수 있으면 켜둠 — 실제 구매는 upgradeBulk()가 돈 떨어지면 중간에 멈추는 부분구매 방식. -->
+                <div style="display:flex;gap:6px;">
+                  ${[1,10,100].map(n => {
+                    const batchCost = upgradeCostBatch(upLv, n);
+                    return `<button onclick="PlayerScene.${n===1?`upgrade('${s.key}')`:`upgradeBulk('${s.key}',${n})`}" style="
+                      flex:1;padding:5px 4px;min-width:0;
+                      background:${canAfford?'rgba(112,64,192,0.4)':'rgba(255,255,255,0.04)'};
+                      border:1px solid ${canAfford?'#7040c0':'rgba(255,255,255,0.1)'};
+                      border-radius:7px;cursor:${canAfford?'pointer':'default'};
+                      color:${canAfford?'#e8dcc8':'#444'};font-family:inherit;font-size:9px;
+                      display:flex;flex-direction:column;align-items:center;gap:1px;">
+                      <span>×${n}</span>
+                      <span style="color:${canAfford?'#f0c040':'#444'};font-size:8px;">${_cimg('gold')}${Format.num(batchCost)}</span>
+                    </button>`;
+                  }).join('')}
+                </div>
               </div>`;
           }).join('')}
         </div>
@@ -247,7 +331,7 @@ const PlayerScene = (() => {
                 const curVal = s.key === 'critMult'
                   ? (CONFIG.SINMOK.CRIT_BASE_MULT + lv * CONFIG.SINMOK.PER_LV.critMult).toFixed(1)
                   : (lv * CONFIG.SINMOK.PER_LV[s.key]);
-                const btnLabel = maxed ? 'MAX' : _smUnlocked ? `${_cimg('gold')}${cost.toLocaleString()} ${_cimg('taegeukseok')}${tCost}` : '🔒';
+                const btnLabel = maxed ? 'MAX' : _smUnlocked ? `${_cimg('gold')}${Format.num(cost)} ${_cimg('taegeukseok')}${tCost}` : '🔒';
                 return `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,0.04);">
                   <span style="font-size:18px;">${s.icon}</span>
                   <div style="flex:1;">
@@ -285,7 +369,7 @@ const PlayerScene = (() => {
             + `<div style="text-align:center;font-size:13px;color:#c090ff;letter-spacing:.1em;margin-bottom:4px;">${isEn?'📖 Soul Registry':'📖 명부 강화'} `
             + (_unlocked ? '' : `<span style="font-size:10px;color:#555;">${isEn?'🔒 Clear Season 1':'🔒 시즌1 클리어 후 해금'}</span>`)
             + '</div>'
-            + `<div style="text-align:center;font-size:10px;color:#8060a0;margin-bottom:10px;">${isEn?'Permanent upgrades using Soul Stones':'영혼석으로 영구 강화'} · 💜 ${_stones.toLocaleString()}</div>`
+            + `<div style="text-align:center;font-size:10px;color:#8060a0;margin-bottom:10px;">${isEn?'Permanent upgrades using Soul Stones':'영혼석으로 영구 강화'} · 💜 ${Format.num(_stones)}</div>`
             + _items.map(s => {
                 const lv = _s2[s.key] || 0;
                 const max = _cfg.MAX_LV[s.key];
@@ -314,6 +398,50 @@ const PlayerScene = (() => {
             + '</div>';
         })()}
 
+        <!-- [UPDATE 2026-07-17] 명(命) 강화 섹션 (시즌4 특화, 순리석 소모, 단일 트랙 0~10) -->
+        ${(() => {
+          const isEn = Lang.getCurrent() === 'en';
+          const _unlocked = !!saveData.season3Clear && isSeasonReleased(4);
+          const _lv = saveData.myeongLv || 0;
+          const _cfg = CONFIG.MYEONG;
+          const _maxed = _lv >= _cfg.MAX_LV;
+          const _stones = saveData.sullriseok || 0;
+          const _cost = Math.floor(_cfg.BASE_COST * Math.pow(_cfg.COST_MULT, _lv));
+          const _canBuy = _unlocked && !_maxed && _stones >= _cost;
+          const _critHeal = Math.min(_lv, 3) * _cfg.CRIT_HEAL_PER_TIER;
+          const _reviveChance = Math.max(0, Math.min(_lv, 6) - 3) * _cfg.REVIVE_CHANCE_PER_TIER;
+          const _bossEvade = Math.max(0, Math.min(_lv, 9) - 6) * _cfg.BOSS_EVADE_PER_TIER;
+          const _bossBonus = _lv >= _cfg.MAX_LV;
+          const _rows = [
+            { active: _critHeal > 0,    text: isEn ? `Crit heal +${_critHeal} HP`        : `크리티컬 시 HP +${_critHeal} 회복` },
+            { active: _reviveChance > 0,text: isEn ? `Auto-revive ${_reviveChance}%`      : `사망 시 ${_reviveChance}% 확률 자동 생존` },
+            { active: _bossEvade > 0,   text: isEn ? `+${_bossEvade}% evade vs bosses`    : `보스 앞 회피율 +${_bossEvade}%` },
+            { active: _bossBonus,       text: isEn ? `Bonus reward on boss kill`          : `보스 처치 시 추가 보상` },
+          ];
+          const btnLabel = _maxed ? 'MAX' : _unlocked ? `🌊${_cost}` : '🔒';
+          return `<div style="margin-top:8px;border-top:2px solid rgba(120,160,220,0.3);padding-top:12px;">
+            <div style="text-align:center;font-size:13px;color:#90c0f0;letter-spacing:.1em;margin-bottom:4px;">${isEn?'☯️ Fate (Myeong)':'☯️ 명(命) 강화'} `
+            + (_unlocked ? '' : `<span style="font-size:10px;color:#555;">${isEn?'🔒 Clear Season 3':'🔒 시즌3 클리어 후 해금'}</span>`)
+            + `</div>
+            <div style="text-align:center;font-size:10px;color:#6090b0;margin-bottom:10px;">${isEn?'Permanent upgrades using Sunri Stones':'순리석으로 영구 강화'} · 🌊 ${Format.num(_stones)}</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <span style="font-size:18px;">☯️</span>
+              <div style="flex:1;">
+                <div style="font-size:12px;color:#c0d8f8;">${isEn?'Fate':'명'} <span style="color:#90c0f0;font-size:11px;">Lv${_lv}/${_cfg.MAX_LV}</span></div>
+                ${_rows.map(r => `<div style="font-size:10px;color:${r.active?'#90c0f0':'#555'};">${r.active?'✓':'—'} ${r.text}</div>`).join('')}
+              </div>
+              <button onclick="PlayerScene.myeongUpgrade()" style="
+                padding:5px 10px;border-radius:8px;font-size:11px;font-family:inherit;
+                cursor:${(_unlocked&&!_maxed)?'pointer':'default'};
+                background:${_maxed?'rgba(60,60,60,0.2)':_canBuy?'rgba(60,120,200,0.35)':'rgba(40,40,40,0.3)'};
+                border:1px solid ${_maxed?'#333':_canBuy?'rgba(120,180,255,0.6)':'#333'};
+                color:${_maxed?'#444':_canBuy?'#a0d0ff':'#555'};">
+                ${btnLabel}
+              </button>
+            </div>
+          </div>`;
+        })()}
+
         <!-- 설명 -->
         <div style="padding:10px 16px;font-size:10px;color:#555;
           border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
@@ -334,9 +462,16 @@ const PlayerScene = (() => {
     const el = document.getElementById('app');
     const scrollEl = el && el.querySelector('.companion-list');
     const scrollTop = scrollEl ? scrollEl.scrollTop : 0;
+    // [UPDATE 2026-07-23] 선술/덱/도감/스탯 팝업들이 전부 .scroll-pan-y 하나를 공유하는데
+    // 재렌더 시 스크롤 위치가 안 지켜지던 고질적 버그 — 팝업 쪽도 같은 패턴으로 저장/복원
+    const popupScrollEl = el && el.querySelector('.scroll-pan-y');
+    const popupScrollTop = popupScrollEl ? popupScrollEl.scrollTop : 0;
     render(el);
-    const newScrollEl = document.getElementById('app').querySelector('.companion-list');
+    const app = document.getElementById('app');
+    const newScrollEl = app.querySelector('.companion-list');
     if (newScrollEl) newScrollEl.scrollTop = scrollTop;
+    const newPopupScrollEl = app.querySelector('.scroll-pan-y');
+    if (newPopupScrollEl) newPopupScrollEl.scrollTop = popupScrollTop;
   }
 
   function upgrade(key) {
@@ -351,6 +486,25 @@ const PlayerScene = (() => {
     saveData.gold -= cost;
     if (!saveData.statUpgrades) saveData.statUpgrades = {};
     saveData.statUpgrades[key] = upLv + 1;
+    Save.save(saveData);
+    _rerender();
+  }
+
+  // [UPDATE 2026-08-06] x10/x100 일괄강화 — 1개씩 순서대로 사되, 골드가 떨어지면 그 시점에서 멈춤(부분구매 허용).
+  // "count개 전부 살 수 있어야만 활성화"로 하면 애매하게 모자랄 때 아예 못 누르게 되어 더 답답해지므로,
+  // 살 수 있는 만큼만이라도 사지도록 설계.
+  function upgradeBulk(key, count) {
+    if (key === 'atk' && !saveData._atkGuideDismissed) {
+      saveData._atkGuideDismissed = true;
+    }
+    if (!saveData.statUpgrades) saveData.statUpgrades = {};
+    for (let i = 0; i < count; i++) {
+      const upLv = saveData.statUpgrades[key] || 0;
+      const cost = upgradeCost(upLv);
+      if ((saveData.gold || 0) < cost) break;
+      saveData.gold -= cost;
+      saveData.statUpgrades[key] = upLv + 1;
+    }
     Save.save(saveData);
     _rerender();
   }
@@ -401,6 +555,497 @@ const PlayerScene = (() => {
     saveData.sinmokS2[key] = lv + 1;
     Save.save(saveData);
     _rerender();
+  }
+
+  // [UPDATE 2026-07-17] 명(命) 강화 (시즌4, 순리석) — 단일 트랙 0~10
+  function myeongUpgrade() {
+    if (!saveData.season3Clear || !isSeasonReleased(4)) return;
+    const cfg = CONFIG.MYEONG;
+    const lv = saveData.myeongLv || 0;
+    if (lv >= cfg.MAX_LV) return;
+    const cost = Math.floor(cfg.BASE_COST * Math.pow(cfg.COST_MULT, lv));
+    if ((saveData.sullriseok || 0) < cost) return;
+    saveData.sullriseok -= cost;
+    saveData.myeongLv = lv + 1;
+    Save.save(saveData);
+    _rerender();
+  }
+
+  // [UPDATE 2026-07-22] 선술 스킬트리 전면 재설계 — 뿌리(1층/2층)→줄기(음/양)→가지(하위분기)→준필살기→필살기
+  // [UPDATE 2026-07-23] 3강은 "다음 층이 열리는 기준"일 뿐 실제 상한(10강)은 아님 — 게이트 체크 전용 함수로 분리
+  // [UPDATE 2026-07-23] 사용자 확인: "아무 노드 하나만 3강이면 다음 층 열림" (전부 다 X, 1개만 O)
+  function _seonsulRootGateReady(layerObj, layerCfg) {
+    return Object.keys(layerCfg).some(k => ((layerObj||{})[k] || 0) >= CONFIG.SEONSUL.ROOT_GATE_LV);
+  }
+
+  // [UPDATE 2026-07-23] 나무 여러 그루(trees[]) 지원 — 세이브 구조 헬퍼
+  function _seonsulS5() {
+    if (!saveData.sinmokS5) saveData.sinmokS5 = {};
+    const s5 = saveData.sinmokS5;
+    if (!s5.root1) s5.root1 = {};
+    if (!s5.root2) s5.root2 = {};
+    if (!Array.isArray(s5.trees)) {
+      // 구버전 단일 path/branch 세이브 마이그레이션. subUnlocked/finalUnlocked(구 바이너리)는 subLv/finalLv(신 레벨제) 만렙으로 변환.
+      s5.trees = (s5.path && s5.branch)
+        ? [{ path:s5.path, branch:s5.branch, passiveLv:s5.passiveLv||0,
+             subLv: s5.subUnlocked ? CONFIG.SEONSUL.ABILITY_MAX_LV : 0,
+             finalLv: s5.finalUnlocked ? CONFIG.SEONSUL.ABILITY_MAX_LV : 0 }]
+        : [];
+    }
+    return s5;
+  }
+  // 현재 조작 대상 나무의 인덱스 — 마지막 나무가 필살기까지 만렙 찍었고 자리가 남아있으면 다음 슬롯(새 나무)을 가리킴
+  function _seonsulActiveIdx(s5) {
+    const trees = s5.trees;
+    if (!trees.length) return 0;
+    const last = trees[trees.length - 1];
+    const lastComplete = (last.finalLv || 0) >= CONFIG.SEONSUL.ABILITY_MAX_LV;
+    return (lastComplete && trees.length < CONFIG.SEONSUL.MAX_TREES) ? trees.length : trees.length - 1;
+  }
+  function _seonsulHasProgress(s5) {
+    const anyLv = (obj) => obj && Object.values(obj).some(v => (v||0) > 0);
+    return anyLv(s5.root1) || anyLv(s5.root2) || (s5.trees && s5.trees.length > 0);
+  }
+
+  // ── 확인(Y/N) 팝업 공용 로직 ──
+  function _seonsulRequest(kind, label, desc, cost, args) {
+    _seonsulPending = { kind, label, desc, cost: cost||0, args: args||{} };
+    _rerender();
+  }
+  function seonsulConfirmNo() { _seonsulPending = null; _rerender(); }
+  function seonsulConfirmYes() {
+    const p = _seonsulPending;
+    if (!p) return;
+    _seonsulPending = null;
+    if (p.cost > 0 && (saveData.sullgiseok || 0) < p.cost) { _rerender(); return; }
+    switch (p.kind) {
+      case 'path':   _seonsulDoChoosePath(p.args.path); break;
+      case 'newTreePath': _seonsulDoChooseNewTreePath(p.args.path, p.args.synergy); break;
+    }
+    _rerender();
+  }
+
+  // [UPDATE 2026-07-24] 음/양(첫 나무)·세컨 트리 선택 외에는 Y/N 확인 없이 클릭 즉시 반영
+  function seonsulRequestRoot(layer, key) {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    const cfg = CONFIG.SEONSUL;
+    if (layer === 2 && !_seonsulRootGateReady(_seonsulS5().root1, cfg.ROOT1)) return;
+    _seonsulDoUpgradeRoot(layer, key);
+    _rerender();
+  }
+  function seonsulRequestPath(path) {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    if (path !== 'yang' && path !== 'yin') return;
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const idx = _seonsulActiveIdx(s5);
+    if (s5.trees[idx]) return;
+    const isEn = Lang.getCurrent() === 'en';
+    const p = cfg.PATHS[path];
+    if (idx === 0) {
+      if (!_seonsulRootGateReady(s5.root2, cfg.ROOT2)) return;
+      _seonsulRequest('path', isEn?p.labelEn:p.labelKo, isEn?p.descEn:p.descKo, 0, { path });
+    } else {
+      if (idx >= cfg.MAX_TREES) return;
+      const firstPath = s5.trees[0].path;
+      const synergy = (path === firstPath) ? 'extreme' : 'harmony';
+      const syn = cfg.SYNERGY[synergy];
+      _seonsulRequest('newTreePath', isEn?syn.labelEn:syn.labelKo,
+        `${isEn?p.labelEn:p.labelKo} — ${isEn?syn.descEn:syn.descKo}`, 0, { path, synergy });
+    }
+  }
+  function seonsulRequestBranch(branch) {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    _seonsulDoChooseBranch(branch);
+    _rerender();
+  }
+  function seonsulRequestPassive() {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    _seonsulDoUpgradePassive();
+    _rerender();
+  }
+  // [UPDATE 2026-07-23] 준필살기/필살기 레벨제 재설계 — 패시브가 ABILITY_GATE_PASSIVE_LV(5) 이상이면
+  // 준필살기를 1~ABILITY_MAX_LV(5)강까지 올릴 수 있고, 준필살기가 만렙이면 필살기도 1~5강까지 올릴 수 있음.
+  // 레벨마다 쿨타임 감소·범위/데미지 증가(CONFIG.seonsulAbilityAtLv로 계산).
+  function seonsulRequestSub() {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    _seonsulDoUnlockSub();
+    _rerender();
+  }
+  function seonsulRequestFinal() {
+    if (!saveData.season4Clear || !isSeasonReleased(5)) return;
+    _seonsulDoUnlockFinal();
+    _rerender();
+  }
+
+  // ── 실제 반영 함수 (Y 눌렀을 때만 호출) ──
+  function _seonsulDoUpgradeRoot(layer, key) {
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const target = layer === 1 ? s5.root1 : s5.root2;
+    const lv = target[key] || 0;
+    if (lv >= cfg.ROOT_MAX_LV) return;
+    const cost = cfg.ROOT_BASE_COST + lv * cfg.ROOT_COST_STEP;
+    if ((saveData.sullgiseok || 0) < cost) return;
+    saveData.sullgiseok -= cost;
+    target[key] = lv + 1;
+    Save.save(saveData);
+  }
+  function _seonsulDoChoosePath(path) {
+    const s5 = _seonsulS5();
+    const idx = _seonsulActiveIdx(s5);
+    if (idx !== 0 || s5.trees[idx]) return;
+    s5.trees[idx] = { path, branch:null, passiveLv:0, subLv:0, finalLv:0 };
+    Save.save(saveData);
+  }
+  function _seonsulDoChooseNewTreePath(path, synergy) {
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const idx = _seonsulActiveIdx(s5);
+    if (idx === 0 || s5.trees[idx] || idx >= cfg.MAX_TREES) return;
+    s5.trees[idx] = { path, branch:null, passiveLv:0, subLv:0, finalLv:0 };
+    if (idx === 1) s5.synergy = synergy; // 시너지는 두 번째 나무 확정 시 1회만 저장
+    Save.save(saveData);
+  }
+  function _seonsulDoChooseBranch(branch) {
+    const s5 = _seonsulS5();
+    const t = s5.trees[_seonsulActiveIdx(s5)];
+    if (!t || t.branch) return;
+    if (s5.trees.some(tt => tt.branch === branch)) return;
+    t.branch = branch;
+    Save.save(saveData);
+  }
+  function _seonsulDoUpgradePassive() {
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const t = s5.trees[_seonsulActiveIdx(s5)];
+    if (!t || !t.branch) return;
+    const lv = t.passiveLv || 0;
+    if (lv >= cfg.MAX_LV) return;
+    const cost = cfg.BASE_COST + Math.floor(lv / cfg.COST_STEP);
+    if ((saveData.sullgiseok || 0) < cost) return;
+    saveData.sullgiseok -= cost;
+    t.passiveLv = lv + 1;
+    Save.save(saveData);
+  }
+  function _seonsulDoUnlockSub() {
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const t = s5.trees[_seonsulActiveIdx(s5)];
+    if (!t || !t.branch) return;
+    if ((t.passiveLv || 0) < cfg.ABILITY_GATE_PASSIVE_LV) return;
+    const lv = t.subLv || 0;
+    if (lv >= cfg.ABILITY_MAX_LV) return;
+    const cost = cfg.SUB_BASE_COST + lv * cfg.SUB_COST_STEP;
+    if ((saveData.sullgiseok || 0) < cost) return;
+    saveData.sullgiseok -= cost;
+    t.subLv = lv + 1;
+    Save.save(saveData);
+  }
+  function _seonsulDoUnlockFinal() {
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const t = s5.trees[_seonsulActiveIdx(s5)];
+    if (!t || (t.subLv || 0) < cfg.ABILITY_MAX_LV) return;
+    const lv = t.finalLv || 0;
+    if (lv >= cfg.ABILITY_MAX_LV) return;
+    const cost = cfg.FINAL_BASE_COST + lv * cfg.FINAL_COST_STEP;
+    if ((saveData.sullgiseok || 0) < cost) return;
+    saveData.sullgiseok -= cost;
+    t.finalLv = lv + 1;
+    Save.save(saveData);
+  }
+
+  // [UPDATE 2026-07-24] 선술 초기화 시 투자한 선기석 전액 환불. 2단계 확인.
+  function _seonsulTotalRefund(s5) {
+    const cfg = CONFIG.SEONSUL;
+    let total = 0;
+    for (const key in (s5.root1 || {})) {
+      const lv = s5.root1[key] || 0;
+      for (let i = 0; i < lv; i++) total += cfg.ROOT_BASE_COST + i * cfg.ROOT_COST_STEP;
+    }
+    for (const key in (s5.root2 || {})) {
+      const lv = s5.root2[key] || 0;
+      for (let i = 0; i < lv; i++) total += cfg.ROOT_BASE_COST + i * cfg.ROOT_COST_STEP;
+    }
+    for (const t of (s5.trees || [])) {
+      const pLv = t.passiveLv || 0;
+      for (let i = 0; i < pLv; i++) total += cfg.BASE_COST + Math.floor(i / cfg.COST_STEP);
+      const sLv = t.subLv || 0;
+      for (let i = 0; i < sLv; i++) total += cfg.SUB_BASE_COST + i * cfg.SUB_COST_STEP;
+      const fLv = t.finalLv || 0;
+      for (let i = 0; i < fLv; i++) total += cfg.FINAL_BASE_COST + i * cfg.FINAL_COST_STEP;
+    }
+    return total;
+  }
+  function seonsulResetRequest() { _seonsulResetConfirm = true; _rerender(); }
+  function seonsulResetCancel()  { _seonsulResetConfirm = false; _rerender(); }
+  function seonsulReset() {
+    if (!_seonsulResetConfirm) return;
+    const s5 = _seonsulS5();
+    const refund = _seonsulTotalRefund(s5);
+    saveData.sullgiseok = (saveData.sullgiseok || 0) + refund;
+    saveData.sinmokS5 = {};
+    _seonsulResetConfirm = false;
+    Save.save(saveData);
+    _rerender();
+  }
+
+  function openSeonsulPopup()  { _seonsulOpen = true; _seonsulResetConfirm = false; _seonsulPending = null; _rerender(); }
+  function closeSeonsulPopup() { _seonsulOpen = false; _seonsulResetConfirm = false; _seonsulPending = null; _rerender(); }
+
+  function _seonsulPopupHTML() {
+    const isEn = Lang.getCurrent() === 'en';
+    const _unlocked = !!saveData.season4Clear && isSeasonReleased(5);
+    const cfg = CONFIG.SEONSUL;
+    const s5 = _seonsulS5();
+    const gi = saveData.sullgiseok || 0;
+    const root1 = s5.root1 || {}, root2 = s5.root2 || {};
+    const root1Done = _seonsulRootGateReady(root1, cfg.ROOT1);
+    const root2Done = _seonsulRootGateReady(root2, cfg.ROOT2);
+    const trees = s5.trees;
+    const activeIdx = _seonsulActiveIdx(s5);
+    const activeTree = trees[activeIdx] || null;
+    const canStartNewTree = trees.length > 0 && (trees[trees.length-1].finalLv||0) >= cfg.ABILITY_MAX_LV && trees.length < cfg.MAX_TREES;
+
+    // [UPDATE 2026-07-22] 나무 그림 위에 직접 배치하는 알약형 버튼 — 이름만 표시, 상태별 색상(잠김/가능/선택·완료)
+    const _pill = (x, y, label, color, state, onclick, w) => {
+      const clickable = state === 'available' || state === 'selectable';
+      const bg = state === 'locked' ? 'rgba(30,30,35,0.55)'
+        : state === 'selected' || state === 'maxed' ? color
+        : state === 'available' ? 'rgba(20,20,25,0.72)'
+        : 'rgba(30,30,35,0.4)';
+      const border = state === 'locked' ? 'rgba(255,255,255,0.08)'
+        : state === 'selected' || state === 'maxed' ? color
+        : color;
+      const textColor = state === 'selected' || state === 'maxed' ? '#0a0a0a' : state === 'locked' ? '#666' : '#f0f0f0';
+      return `<div onclick="${clickable ? onclick : ''}" style="
+        position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);
+        width:${w||58}px;padding:4px 3px;border-radius:14px;text-align:center;
+        cursor:${clickable?'pointer':'default'};z-index:2;
+        background:${bg};border:1.5px solid ${border};
+        box-shadow:${state==='selected'||state==='maxed'?`0 0 8px ${color}`:'0 1px 3px rgba(0,0,0,0.6)'};
+        font-size:9px;line-height:1.2;color:${textColor};font-weight:${state==='selected'||state==='maxed'?700:500};
+        opacity:${state==='locked'?0.55:1};">${label}</div>`;
+    };
+
+    // ── 뿌리 8노드 좌표 (1층 하단, 2층 그 위) ──
+    const rootPillsHTML = () => {
+      const R1 = [['root_atk',22,90],['root_def',40,86],['root_hp',60,86],['root_mov',78,90]];
+      const R2 = [['root_crit',22,74],['root_eva',40,70],['root_cd',60,70],['root_magnet',78,74]];
+      const renderNode = (layer, key, x, y) => {
+        const node = cfg[layer===1?'ROOT1':'ROOT2'][key];
+        const target = layer === 1 ? root1 : root2;
+        const locked = layer === 2 && !root1Done;
+        const lv = Math.min(target[key] || 0, cfg.ROOT_MAX_LV);
+        const maxed = lv >= cfg.ROOT_MAX_LV;
+        const state = locked ? 'locked' : maxed ? 'maxed' : 'available';
+        const label = `${isEn?node.nameEn:node.nameKo}<br>${lv}/${cfg.ROOT_MAX_LV}`;
+        return _pill(x, y, label, '#78c8d0', state, `PlayerScene.seonsulRequestRoot(${layer},'${key}')`, 62);
+      };
+      return R1.map(([k,x,y]) => renderNode(1,k,x,y)).join('') + R2.map(([k,x,y]) => renderNode(2,k,x,y)).join('');
+    };
+
+    // ── 줄기(음/양) — 현재 조작 대상 나무 슬롯 기준 ──
+    const trunkPillsHTML = () => {
+      return ['yang','yin'].map(pKey => {
+        const p = cfg.PATHS[pKey];
+        let state;
+        if (activeTree) state = activeTree.path === pKey ? 'selected' : 'locked';
+        else if (!root2Done) state = 'locked';
+        else if (activeIdx === 0 || canStartNewTree) state = 'available';
+        else state = 'locked';
+        const x = pKey === 'yang' ? 32 : 68;
+        return _pill(x, 55, `${pKey==='yang'?'☀️':'🌙'} ${isEn?p.labelEn:p.labelKo}`, p.color, state, `PlayerScene.seonsulRequestPath('${pKey}')`, 66);
+      }).join('');
+    };
+
+    // ── 가지(하위분기) 4개 — 이미 다른 나무가 쓴 가지는 잠금(이름은 계속 보임) ──
+    const branchPillsHTML = () => {
+      const positions = { quick:[16,38], fire:[38,33], bind:[62,33], ward:[84,38] };
+      const usedBranches = new Set(trees.map(t => t.branch).filter(Boolean));
+      const out = [];
+      for (const pKey of ['yang','yin']) {
+        for (const bKey of Object.keys(cfg.PATHS[pKey].BRANCHES)) {
+          const b = cfg.PATHS[pKey].BRANCHES[bKey];
+          const isActiveChosen = activeTree && activeTree.branch === bKey;
+          const usedElsewhere = usedBranches.has(bKey) && !isActiveChosen;
+          const selectable = activeTree && activeTree.path === pKey && !activeTree.branch && !usedElsewhere;
+          const state = isActiveChosen ? 'selected' : usedElsewhere ? 'locked' : selectable ? 'available' : 'locked';
+          const [x,y] = positions[bKey];
+          out.push(_pill(x, y, isEn?b.labelEn:b.labelKo, b.color, state, `PlayerScene.seonsulRequestBranch('${bKey}')`, 60));
+        }
+      }
+      return out.join('');
+    };
+
+    // ── 가지 안 패시브/준필살기/필살기 — 존재하는 모든 나무(진행중+완료)를 각자 위치에 렌더 ──
+    const abilityPillsHTML = () => {
+      const positions = { quick:16, fire:38, bind:62, ward:84 };
+      let out = '';
+      for (const t of trees) {
+        if (!t.branch) continue;
+        const isActiveSlot = (t === activeTree);
+        const b = cfg.PATHS[t.path].BRANCHES[t.branch];
+        const x = positions[t.branch];
+        // [UPDATE 2026-07-23] 준필살기/필살기도 레벨제(1~ABILITY_MAX_LV) — 패시브는 10강까지, 게이트는 5강
+        const pLv = Math.min(t.passiveLv || 0, cfg.MAX_LV);
+        const pMaxed = pLv >= cfg.MAX_LV;
+        const pGateReady = pLv >= cfg.ABILITY_GATE_PASSIVE_LV;
+        const subLv = Math.min(t.subLv || 0, cfg.ABILITY_MAX_LV);
+        const subMaxed = subLv >= cfg.ABILITY_MAX_LV;
+        const finalLv = Math.min(t.finalLv || 0, cfg.ABILITY_MAX_LV);
+        const finalMaxed = finalLv >= cfg.ABILITY_MAX_LV;
+        const passiveState = pMaxed ? 'maxed' : isActiveSlot ? 'available' : 'locked';
+        // [UPDATE 2026-07-24] lv>0이면 무조건 'selected'(클릭 불가)로 빠져서 1강 찍고 더 못 올리던 버그 수정 —
+        // 활성 슬롯이고 게이트 조건 충족이면 만렙 전까지는 계속 'available' 유지
+        const subState = subMaxed ? 'maxed' : (isActiveSlot && pGateReady) ? 'available' : subLv > 0 ? 'selected' : 'locked';
+        const finalState = finalMaxed ? 'maxed' : (isActiveSlot && subMaxed) ? 'available' : finalLv > 0 ? 'selected' : 'locked';
+        out += _pill(x, 22, `${b.passive.icon} ${isEn?b.passive.nameEn:b.passive.nameKo}<br>${pLv}/${cfg.MAX_LV}`, b.color, passiveState, isActiveSlot?`PlayerScene.seonsulRequestPassive()`:'', 66);
+        out += _pill(x, 13, `${b.sub.icon} ${isEn?b.sub.nameEn:b.sub.nameKo}<br>${subLv}/${cfg.ABILITY_MAX_LV}`, b.color, subState, isActiveSlot?`PlayerScene.seonsulRequestSub()`:'', 66);
+        out += _pill(x, 5, `⭐${b.final.icon} ${isEn?b.final.nameEn:b.final.nameKo}<br>${finalLv}/${cfg.ABILITY_MAX_LV}`, '#ffd090', finalState, isActiveSlot?`PlayerScene.seonsulRequestFinal()`:'', 66);
+      }
+      return out;
+    };
+
+    // ── 선택된 노드 상세설명 (그림 아래 고정 안내창) ──
+    const _detailHTML = () => {
+      if (!activeTree) {
+        if (canStartNewTree || activeIdx === 0) return `<div style="text-align:center;font-size:10px;color:#a0c8d0;padding:6px 0;">
+          ${trees.length ? (isEn?'⭐ A new tree is ready — choose Yin or Yang above!':'⭐ 새로운 나무를 시작할 수 있습니다 — 위에서 음/양을 선택하세요!') : (isEn?'Tap a pill to invest Seongi Stones.':'알약 버튼을 눌러 선기석을 투자하세요.')}
+        </div>`;
+        return `<div style="text-align:center;font-size:10px;color:#665;padding:6px 0;">${isEn?'All tree slots are complete.':'모든 나무를 다 완성했습니다.'}</div>`;
+      }
+      if (!activeTree.branch) return `<div style="text-align:center;font-size:10px;color:#a0c8d0;padding:6px 0;">${isEn?'Choose a branch to continue.':'가지를 선택해 계속하세요.'}</div>`;
+      const b = cfg.PATHS[activeTree.path].BRANCHES[activeTree.branch];
+      // [UPDATE 2026-07-24] 아직 투자 안 한(레벨 0) 단계는 자물쇠+(비활성) 표시로 구분 — 이미 활성화된 것처럼 보이던 혼란 해소
+      const _tier = (unlocked, color, icon, name, desc) => unlocked
+        ? `<b style="color:${color};">${icon}${name}</b>: ${desc}`
+        : `<span style="opacity:0.45;">🔒 <b style="color:${color};">${icon}${name}</b> (${isEn?'inactive':'비활성'}): ${desc}</span>`;
+      return `<div style="font-size:10px;color:#c8e8e0;text-align:center;padding:6px 4px;line-height:1.6;">
+        ${_tier((activeTree.passiveLv||0)>0, b.color, '', isEn?b.passive.nameEn:b.passive.nameKo, isEn?b.passive.descEn:b.passive.descKo)}<br>
+        ${_tier((activeTree.subLv||0)>0, b.color, '', isEn?b.sub.nameEn:b.sub.nameKo, isEn?b.sub.descEn:b.sub.descKo)}<br>
+        ${_tier((activeTree.finalLv||0)>0, '#ffd090', '⭐', isEn?b.final.nameEn:b.final.nameKo, isEn?b.final.descEn:b.final.descKo)}
+      </div>`;
+    };
+
+    // ── 확인(Y/N) 팝업 ──
+    const _confirmHTML = () => {
+      if (!_seonsulPending) return '';
+      const p = _seonsulPending;
+      const affordable = p.cost === 0 || gi >= p.cost;
+      return `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.78);z-index:20;
+        display:flex;align-items:center;justify-content:center;padding:16px;">
+        <div style="background:rgba(10,16,20,0.98);border:1.5px solid rgba(120,200,208,0.5);border-radius:12px;padding:16px;max-width:260px;text-align:center;">
+          <div style="font-size:13px;color:#a0d8e0;font-weight:700;margin-bottom:8px;">${p.label}</div>
+          <div style="font-size:11px;color:#c8e8e0;line-height:1.5;margin-bottom:10px;">${p.desc}</div>
+          ${p.cost>0 ? `<div style="font-size:11px;color:${affordable?'#f0d060':'#e89090'};margin-bottom:10px;">🔷 ${p.cost}${!affordable?(isEn?' (Not enough)':' (선기석 부족)'):''}</div>` : ''}
+          <div style="display:flex;gap:8px;">
+            <button onclick="PlayerScene.seonsulConfirmYes()" ${!affordable?'disabled':''} style="
+              flex:1;padding:8px;border-radius:8px;font-size:12px;font-family:inherit;cursor:${affordable?'pointer':'not-allowed'};
+              background:${affordable?'rgba(88,152,168,0.35)':'rgba(60,60,60,0.2)'};border:1px solid ${affordable?'rgba(120,200,208,0.6)':'#333'};
+              color:${affordable?'#fff':'#555'};">${isEn?'Yes':'예'}</button>
+            <button onclick="PlayerScene.seonsulConfirmNo()" style="
+              flex:1;padding:8px;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;
+              background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#aaa;">${isEn?'No':'아니오'}</button>
+          </div>
+        </div>
+      </div>`;
+    };
+
+    // [UPDATE 2026-07-22] 음양 나무 아트 위에 알약형 버튼을 실제 좌표로 배치 — aspect-ratio 고정 박스라야
+    // 화면 폭이 달라져도 %좌표가 그림이랑 어긋나지 않음(625:1302 원본 비율 그대로 유지)
+    const _treeBgSrc = SPRITES?.ui?.seonsulTreeBg?.src || '';
+    return `<div style="position:absolute;inset:0;background:rgba(0,0,10,0.82);z-index:50;
+      display:flex;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)PlayerScene.closeSeonsulPopup()">
+      <div style="position:relative;width:100%;max-height:90%;overflow-y:auto;background:rgba(6,14,18,0.98);
+        border:1.5px solid rgba(88,152,168,0.5);border-radius:16px;padding:12px;
+        box-shadow:0 0 30px rgba(88,152,168,0.2);" class="scroll-pan-y">
+        ${_confirmHTML()}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:14px;color:#78c8d0;font-weight:700;">${isEn?'☁️ Celestial Arts':'☁️ 선술 스킬트리'}</div>
+          <button onclick="PlayerScene.closeSeonsulPopup()" style="background:none;border:none;color:#8a7a6a;font-size:18px;cursor:pointer;">✕</button>
+        </div>
+        ${!_unlocked ? `<div style="text-align:center;font-size:11px;color:#555;padding:20px 0;">
+            🔒 ${isEn?'Unlock after clearing Season 4':'시즌4 클리어 후 해금'}
+          </div>` : `
+          <div style="font-size:10px;color:#5898a8;text-align:center;margin-bottom:8px;">
+            🔷 ${Format.num(gi)} ${s5.synergy ? `· ✨ ${isEn?cfg.SYNERGY[s5.synergy].labelEn:cfg.SYNERGY[s5.synergy].labelKo}` : ''}
+          </div>
+          <div style="position:relative;width:100%;aspect-ratio:625/1302;border-radius:10px;overflow:hidden;
+            ${_treeBgSrc ? `background-image:url('${_treeBgSrc}');background-size:100% 100%;` : `background:#0a1418;`}">
+            ${rootPillsHTML()}
+            ${trunkPillsHTML()}
+            ${branchPillsHTML()}
+            ${abilityPillsHTML()}
+          </div>
+          ${_detailHTML()}
+          ${_seonsulHasProgress(s5) ? `<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;text-align:center;">
+            ${!_seonsulResetConfirm ? `
+              <button onclick="PlayerScene.seonsulResetRequest()" style="
+                padding:6px 14px;border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;
+                background:rgba(200,80,80,0.1);border:1px solid rgba(220,100,100,0.35);color:#e89090;">
+                ${isEn?'↺ Reset Everything':'↺ 선술 전체 초기화'}
+              </button>` : `
+              <div style="font-size:10px;color:#e89090;margin-bottom:6px;">
+                ${isEn?`This clears roots, all trees, and synergy. Seongi Stones spent will be refunded: +${Format.num(_seonsulTotalRefund(s5))}. Are you sure?`:`뿌리·모든 나무·시너지가 전부 초기화됩니다. 투자한 선기석 +${Format.num(_seonsulTotalRefund(s5))} 환불됩니다. 정말 초기화할까요?`}
+              </div>
+              <button onclick="PlayerScene.seonsulReset()" style="
+                padding:6px 14px;border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;margin-right:6px;
+                background:rgba(200,80,80,0.25);border:1px solid rgba(220,100,100,0.6);color:#ffb0b0;">
+                ${isEn?'Yes, reset':'예, 초기화'}
+              </button>
+              <button onclick="PlayerScene.seonsulResetCancel()" style="
+                padding:6px 14px;border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;
+                background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#aaa;">
+                ${isEn?'Cancel':'취소'}
+              </button>`}
+          </div>` : ''}
+        `}
+      </div>
+    </div>`;
+  }
+
+  // [UPDATE 2026-07-26] 재화 팝업 — 탭하면 획득처가 펼쳐짐 (기존 종합능력치 상세 탭의 클릭-확장 UI 재사용)
+  function openCurrencyPopup()  { _currencyOpen = true; _currencyExpandedKey = null; _rerender(); }
+  function closeCurrencyPopup() { _currencyOpen = false; _rerender(); }
+  function toggleCurrencyDetail(key) { _currencyExpandedKey = (_currencyExpandedKey===key) ? null : key; _rerender(); }
+  function _currencyRow(info) {
+    const isEn = Lang.getCurrent() === 'en';
+    const amount = saveData[info.key] || 0;
+    const expanded = _currencyExpandedKey === info.key;
+    const iconHTML = info.icon.length > 2 ? _cimg(info.icon, 18) : `<span style="font-size:16px;">${info.icon}</span>`;
+    const sources = isEn ? info.sourcesEn : info.sources;
+    return `<div style="padding:7px 10px;margin-bottom:5px;
+      background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;cursor:pointer;"
+      onclick="PlayerScene.toggleCurrencyDetail('${info.key}')">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex-shrink:0;">${iconHTML}</div>
+        <div style="flex:1;font-size:11px;color:#e8dcc8;">${isEn?info.nameEn:info.name} <span style="font-size:9px;color:#6a5a4a;">${expanded?'▲':'▼'}</span></div>
+        <div style="font-size:13px;color:#f0c040;font-weight:700;">${Format.num(amount)}</div>
+      </div>
+      ${expanded ? `<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:10px;color:#a090a0;margin-bottom:4px;">${isEn?'How to obtain:':'획득처:'}</div>
+        ${sources.map(s => `<div style="font-size:11px;color:#d8c8b8;padding:2px 0 2px 10px;position:relative;">
+          <span style="position:absolute;left:0;">·</span>${s}
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }
+  function _currencyPopupHTML() {
+    const isEn = Lang.getCurrent() === 'en';
+    return `<div style="position:absolute;inset:0;background:rgba(0,0,10,0.82);z-index:50;
+      display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)PlayerScene.closeCurrencyPopup()">
+      <div style="width:100%;max-height:80%;overflow-y:auto;background:rgba(10,8,20,0.98);
+        border:1.5px solid rgba(240,192,64,0.5);border-radius:16px;padding:16px;
+        box-shadow:0 0 30px rgba(240,192,64,0.2);" class="scroll-pan-y">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:14px;color:#f0c860;font-weight:700;">${isEn?'💰 Currency':'💰 재화'}</div>
+          <button onclick="PlayerScene.closeCurrencyPopup()" style="background:none;border:none;color:#8a7a6a;font-size:18px;cursor:pointer;">✕</button>
+        </div>
+        ${CURRENCY_INFO.map(_currencyRow).join('')}
+      </div>
+    </div>`;
   }
 
   // [UPDATE 2026-07-12] 종합 능력치 확인 팝업 — 종합/상세/시너지 3개 탭
@@ -568,7 +1213,7 @@ const PlayerScene = (() => {
 
   // Player 클래스를 그대로 생성해서 실제 전투 계산식과 100% 동일한 값을 뽑아씀 (공식 중복 방지)
   function _buildPreviewPlayer() {
-    return new Player(0, 0, saveData.statUpgrades || {}, saveData.sinmokUpgrades || {}, saveData.sinmokS2 || {});
+    return new Player(0, 0, saveData.statUpgrades || {}, saveData.sinmokUpgrades || {}, saveData.sinmokS2 || {}, saveData.myeongLv || 0, saveData.sinmokS5 || {});
   }
 
   // [UPDATE 2026-07-13] rowKey+breakdownLines(배열)를 넘기면 탭해서 브레이크다운을 큰 글씨로 펼쳐볼 수 있음 (Detail 탭용).
@@ -615,28 +1260,54 @@ const PlayerScene = (() => {
     const upg = saveData.statUpgrades || {};
     const sm  = saveData.sinmokUpgrades || {};
     const sm2 = saveData.sinmokS2 || {};
+    const s5  = saveData.sinmokS5 || {}; // [UPDATE 2026-07-22] 선술 스킬트리(시즌5) 브레이크다운 반영
     const upPerLv = CONFIG.STAT_UPGRADE_PER_LEVEL, smPerLv = CONFIG.SINMOK.PER_LV, sm2PerLv = CONFIG.SINMOK_S2.PER_LV;
+    // [UPDATE 2026-07-22] 선술 뿌리+가지 재설계 반영 — 스탯별 총합(뿌리1층+뿌리2층+가지패시브)을 합산하는 헬퍼
+    const _s5v = (stat) => {
+      let total = 0;
+      const r1 = s5.root1 || {}, r2 = s5.root2 || {};
+      const R1 = CONFIG.SEONSUL.ROOT1, R2 = CONFIG.SEONSUL.ROOT2;
+      const rootMap = { atk:'root_atk', def:'root_def', hp:'root_hp', mov:'root_mov' };
+      const root2Map = { crit:'root_crit', eva:'root_eva', cd:'root_cd', magnet:'root_magnet' };
+      if (rootMap[stat]) total += (r1[rootMap[stat]]||0) * R1[rootMap[stat]].perLv;
+      if (root2Map[stat]) total += (r2[root2Map[stat]]||0) * R2[root2Map[stat]].perLv;
+      // [UPDATE 2026-07-23] 나무 여러 그루 지원 — trees[] 전부 순회해서 합산 (구버전 단일 path/branch 세이브도 호환)
+      const _trees = Array.isArray(s5.trees) ? s5.trees : ((s5.path && s5.branch) ? [{ path:s5.path, branch:s5.branch, passiveLv:s5.passiveLv||0 }] : []);
+      for (const t of _trees) {
+        if (!t.path || !t.branch) continue;
+        const br = CONFIG.SEONSUL.PATHS[t.path].BRANCHES[t.branch];
+        const lv = Math.min(t.passiveLv||0, CONFIG.SEONSUL.MAX_LV);
+        if (br.passive.perLv[stat]) total += lv * br.passive.perLv[stat];
+      }
+      if (stat === 'atk' && (s5.synergy === 'harmony' || s5.synergy === 'extreme')) {
+        total += CONFIG.SEONSUL.SYNERGY[s5.synergy].atkAdd;
+      }
+      return total;
+    };
     // [UPDATE 2026-07-13] 탭 클릭 시 크게 펼쳐 보여주는 브레이크다운 — 한 줄 문장 대신 소스별 배열로 반환
     const bd = (base, ...parts) => [`${isEn?'Base':'기본'} ${base}`, ...parts.filter(Boolean)];
     // [UPDATE 2026-07-13] 공격력 최종값이 Player.totalAtk(명부 최종데미지% 배율 포함)와 불일치하던 버그 수정 —
     // 브레이크다운에 명부 배율 항목 추가 + 최종값에도 곱해서 종합(Overview) 탭 수치와 일치시킴
-    const _atkBase = BASE.atk + (upg.atk||0)*upPerLv.atk;
+    const _atkBase = BASE.atk + (upg.atk||0)*upPerLv.atk + _s5v('atk');
     const _atkExtraDmgPct = (sm2.extraDmg||0)*sm2PerLv.extraDmg;
     const _atkFinal = Math.floor(_atkBase * (1 + _atkExtraDmgPct/100));
     const rows = [
       ['⚔️', isEn?'ATK':'공격력', _atkFinal, 'atk',
         bd(BASE.atk, upg.atk ? `${isEn?'Upgrade':'강화'}+${(upg.atk*upPerLv.atk)}` : '',
+          _s5v('atk') ? `${isEn?'Celestial Arts':'선술'}+${_s5v('atk')}` : '',
           sm2.extraDmg ? `${isEn?'Soul Registry':'명부'} ×${(1+_atkExtraDmgPct/100).toFixed(2)}` : '')],
-      ['🛡️', isEn?'DEF':'방어력', BASE.def + (upg.def||0)*upPerLv.def, 'def',
-        bd(BASE.def, upg.def ? `${isEn?'Upgrade':'강화'}+${(upg.def*upPerLv.def)}` : '')],
-      ['💨', isEn?'Move Speed':'이동속도', BASE.mov + (upg.mov||0)*upPerLv.mov + (sm.movSpd||0)*smPerLv.movSpd, 'mov',
-        bd(BASE.mov, upg.mov?`${isEn?'Upgrade':'강화'}+${upg.mov*upPerLv.mov}`:'', sm.movSpd?`${isEn?'Sacred Tree':'신목'}+${sm.movSpd*smPerLv.movSpd}`:'')],
-      ['⚡', isEn?'Atk Speed':'공격속도', BASE.spd + (upg.spd||0)*upPerLv.spd + (sm.atkSpd||0)*smPerLv.atkSpd, 'spd',
-        bd(BASE.spd, upg.spd?`${isEn?'Upgrade':'강화'}+${upg.spd*upPerLv.spd}`:'', sm.atkSpd?`${isEn?'Sacred Tree':'신목'}+${sm.atkSpd*smPerLv.atkSpd}`:'')],
-      ['🌀', isEn?'Evasion':'회피율', (BASE.eva + (upg.eva||0)*upPerLv.eva + (sm.evasion||0)*smPerLv.evasion).toFixed(1)+'%', 'eva',
-        bd(BASE.eva, upg.eva?`${isEn?'Upgrade':'강화'}+${(upg.eva*upPerLv.eva).toFixed(1)}`:'', sm.evasion?`${isEn?'Sacred Tree':'신목'}+${sm.evasion*smPerLv.evasion}`:'')],
-      ['🎯', isEn?'Crit Chance':'크리티컬 확률', ((sm.critChance||0)*smPerLv.critChance).toFixed(1)+'%', 'critChance',
-        [sm.critChance ? `${isEn?'Sacred Tree':'신목'} ${sm.critChance*smPerLv.critChance}%` : (isEn?'None':'없음')]],
+      ['🛡️', isEn?'DEF':'방어력', BASE.def + (upg.def||0)*upPerLv.def + _s5v('def'), 'def',
+        bd(BASE.def, upg.def ? `${isEn?'Upgrade':'강화'}+${(upg.def*upPerLv.def)}` : '', _s5v('def')?`${isEn?'Celestial Arts':'선술'}+${_s5v('def')}`:'')],
+      ['💨', isEn?'Move Speed':'이동속도', BASE.mov + (upg.mov||0)*upPerLv.mov + (sm.movSpd||0)*smPerLv.movSpd + _s5v('mov'), 'mov',
+        bd(BASE.mov, upg.mov?`${isEn?'Upgrade':'강화'}+${upg.mov*upPerLv.mov}`:'', sm.movSpd?`${isEn?'Sacred Tree':'신목'}+${sm.movSpd*smPerLv.movSpd}`:'', _s5v('mov')?`${isEn?'Celestial Arts':'선술'}+${_s5v('mov')}`:'')],
+      ['⚡', isEn?'Atk Speed':'공격속도', BASE.spd + (upg.spd||0)*upPerLv.spd + (sm.atkSpd||0)*smPerLv.atkSpd + _s5v('spd'), 'spd',
+        bd(BASE.spd, upg.spd?`${isEn?'Upgrade':'강화'}+${upg.spd*upPerLv.spd}`:'', sm.atkSpd?`${isEn?'Sacred Tree':'신목'}+${sm.atkSpd*smPerLv.atkSpd}`:'', _s5v('spd')?`${isEn?'Celestial Arts':'선술'}+${_s5v('spd')}`:'')],
+      ['🌀', isEn?'Evasion':'회피율', (BASE.eva + (upg.eva||0)*upPerLv.eva + (sm.evasion||0)*smPerLv.evasion + _s5v('eva')).toFixed(1)+'%', 'eva',
+        bd(BASE.eva, upg.eva?`${isEn?'Upgrade':'강화'}+${(upg.eva*upPerLv.eva).toFixed(1)}`:'', sm.evasion?`${isEn?'Sacred Tree':'신목'}+${sm.evasion*smPerLv.evasion}`:'', _s5v('eva')?`${isEn?'Celestial Arts':'선술'}+${_s5v('eva')}`:'')],
+      ['🎯', isEn?'Crit Chance':'크리티컬 확률', ((sm.critChance||0)*smPerLv.critChance + _s5v('crit')).toFixed(1)+'%', 'critChance',
+        [sm.critChance ? `${isEn?'Sacred Tree':'신목'} ${sm.critChance*smPerLv.critChance}%` : '', _s5v('crit')?`${isEn?'Celestial Arts':'선술'} ${_s5v('crit')}%`:''].filter(Boolean).length
+          ? [sm.critChance ? `${isEn?'Sacred Tree':'신목'} ${sm.critChance*smPerLv.critChance}%` : '', _s5v('crit')?`${isEn?'Celestial Arts':'선술'} ${_s5v('crit')}%`:''].filter(Boolean)
+          : [isEn?'None':'없음']],
       ['💥', isEn?'Crit Mult':'크리티컬 배율', (CONFIG.SINMOK.CRIT_BASE_MULT + (sm.critMult||0)*smPerLv.critMult).toFixed(2)+'x', 'critMult',
         bd(CONFIG.SINMOK.CRIT_BASE_MULT+'x', sm.critMult?`${isEn?'Sacred Tree':'신목'}+${(sm.critMult*smPerLv.critMult).toFixed(1)}`:'')],
       ['☠️', isEn?'Extra DMG':'추가 데미지', '+'+((sm2.extraDmg||0)*sm2PerLv.extraDmg).toFixed(0)+'%', 'extraDmg',
@@ -770,8 +1441,13 @@ const PlayerScene = (() => {
   function enter(el) { saveData = Save.load(); render(el); }
   function exit() {}
 
-  return { enter, exit, upgrade, sinmokUpgrade, sinmokS2Upgrade, selectMainWeapon,
+  return { enter, exit, upgrade, upgradeBulk, sinmokUpgrade, sinmokS2Upgrade, myeongUpgrade, selectMainWeapon,
+    openCurrencyPopup, closeCurrencyPopup, toggleCurrencyDetail,
     openStatsPopup, closeStatsPopup, setStatsTab, toggleStatDetail,
     openCodexPopup, closeCodexPopup,
-    openDeckPopup, closeDeckPopup, saveDeck, loadDeck, deleteDeck };
+    openDeckPopup, closeDeckPopup, saveDeck, loadDeck, deleteDeck,
+    openSeonsulPopup, closeSeonsulPopup,
+    seonsulRequestRoot, seonsulRequestPath, seonsulRequestBranch, seonsulRequestPassive, seonsulRequestSub, seonsulRequestFinal,
+    seonsulConfirmYes, seonsulConfirmNo,
+    seonsulResetRequest, seonsulResetCancel, seonsulReset };
 })();

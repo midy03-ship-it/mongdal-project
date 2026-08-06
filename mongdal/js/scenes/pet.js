@@ -53,7 +53,7 @@ const PetScene = (() => {
           <button class="back-btn" onclick="SceneManager.go('lobby')">${Lang.t('pet','back')}</button>
           <h2 class="char-title">${Lang.t('pet','title')}</h2>
           <span class="char-subtitle" style="font-size:11px;">
-            ${_cimg('cheonryeonggwa')}${cheon} &nbsp; ${_cimg('gold')}${gold.toLocaleString()}
+            ${_cimg('cheonryeonggwa')}${Format.num(cheon)} &nbsp; ${_cimg('gold')}${Format.num(gold)}
           </span>
         </div>
 
@@ -123,7 +123,19 @@ const PetScene = (() => {
               const unlockCost = UNLOCK_COST[pd.rarity] || 5;
               const upgCost    = UPGRADE_COST[pd.rarity] || UPGRADE_COST.common;
               // [UPDATE 2026-07-06] 시즌2 펫 게이트: season2=시즌1클리어 필요, storyUnlock=해당 스테이지 클리어로만 획득
-              const _s2Locked    = pd.season2 && !saveData.season1Clear;
+              // [UPDATE 2026-07-18] WORLDBUILDING.md 설계대로 저승나비는 "챕터11 클리어(시즌2 시작)"가 해금 시점 —
+              // season1Clear(스테이지100)로 되어 있던 걸 실제 챕터11 보스(스테이지110) 클리어 기준으로 수정
+              // [UPDATE 2026-07-19] 버그 수정: 싸리/공이(시즌3)·수정정령/영혼불씨(시즌4)에 시즌 게이트 필드 자체가
+              // 없어서 게임 시작부터 천령과만 있으면 바로 구매 가능했음 — season3/season4 필드 추가 후 게이트 일반화
+              const _seasonLockNum =
+                (pd.season2 && !Unlock.cleared(saveData, 110)) ? 2 :
+                (pd.season3 && !saveData.season2Clear) ? 3 :
+                (pd.season4 && !(saveData.season3Clear && isSeasonReleased(4))) ? 4 :
+                (pd.season5 && !(saveData.season4Clear && isSeasonReleased(5))) ? 5 :
+                // [UPDATE 2026-07-31] 시즌7(어계) 펫 — 시즌6(원계) 클리어 + 시즌7 공개가 조건.
+                // 시즌6은 신규 펫 없이 법칙 시스템이 그 자리를 대신했으므로 이 체인에 season6 항목은 없다.
+                (pd.season7 && !(saveData.season6Clear && isSeasonReleased(7))) ? 7 : 0;
+              const _s2Locked = _seasonLockNum > 0;
               const _storyLocked = pd.storyUnlock && !isOwned;
               const canUnlock  = !isOwned && !_s2Locked && !_storyLocked && cheon >= unlockCost;
               const canUpgrade = isOwned && !isMax && gold >= upgCost.gold && cheon >= upgCost.cheonryeonggwa;
@@ -168,7 +180,7 @@ const PetScene = (() => {
                         </div>` : _s2Locked ? `
                         <div style="text-align:center;font-size:9px;color:#607090;padding:4px 0;
                           border:1px solid #444;border-radius:5px;background:rgba(40,50,70,0.3);">
-                          🔒 ${isEn?'Unlock Season 2':'시즌2 해금 필요'}
+                          🔒 ${isEn?`Unlock Season ${_seasonLockNum}`:`시즌${_seasonLockNum} 해금 필요`}
                         </div>` : `
                         <button onclick="PetScene.unlockPet('${pd.id}')" style="
                           width:100%;padding:4px 0;border-radius:5px;font-size:10px;font-weight:bold;
@@ -176,7 +188,7 @@ const PetScene = (() => {
                           border:1px solid ${canUnlock?'#50c878':'#444'};
                           color:${canUnlock?'#80e8a0':'#666'};
                           cursor:${canUnlock?'pointer':'default'};">
-                          ${_cimg('cheonryeonggwa')}${unlockCost} ${isEn?'Unlock':'해금'}
+                          ${_cimg('cheonryeonggwa')}${Format.num(unlockCost)} ${isEn?'Unlock':'해금'}
                         </button>`) : ''}
                       ${isOwned && !isActive ? `
                         <button onclick="event.stopPropagation();PetScene.addPet('${pd.id}')" style="
@@ -192,7 +204,7 @@ const PetScene = (() => {
                           border:1px solid ${canUpgrade?'rgba(240,200,64,0.5)':'#444'};
                           color:${canUpgrade?'#f0d060':'#666'};
                           cursor:${canUpgrade?'pointer':'default'};">
-                          ${_cimg('gold')}${upgCost.gold.toLocaleString()} ${_cimg('cheonryeonggwa')}${upgCost.cheonryeonggwa} ${isEn?'Upgrade':'강화'}
+                          ${_cimg('gold')}${Format.num(upgCost.gold)} ${_cimg('cheonryeonggwa')}${Format.num(upgCost.cheonryeonggwa)} ${isEn?'Upgrade':'강화'}
                         </button>` : ''}
                       ${isOwned && isMax ? `
                         <div style="text-align:center;font-size:10px;color:#c060d0;padding:3px 0;">✨MAX</div>
@@ -211,7 +223,13 @@ const PetScene = (() => {
     const pd = GAME_DATA.pets.find(p => p.id === id);
     if (!pd) return;
     // [UPDATE 2026-07-06] 시즌2 게이트 / 스토리 해금 전용 펫은 구매 불가
-    if (pd.season2 && !saveData.season1Clear) return;
+    // [UPDATE 2026-07-18] 저승나비 해금 시점을 스테이지110(챕터11 보스) 클리어 기준으로 수정 (WORLDBUILDING.md 로드맵)
+    // [UPDATE 2026-07-19] 버그 수정: 싸리/공이(시즌3)·수정정령/영혼불씨(시즌4) 시즌 게이트 누락 — season3/season4 필드 추가
+    if (pd.season2 && !Unlock.cleared(saveData, 110)) return;
+    if (pd.season3 && !saveData.season2Clear) return;
+    if (pd.season4 && !(saveData.season3Clear && isSeasonReleased(4))) return;
+    if (pd.season5 && !(saveData.season4Clear && isSeasonReleased(5))) return;
+    if (pd.season7 && !(saveData.season6Clear && isSeasonReleased(7))) return; // [UPDATE 2026-07-31] 시즌7(어계) 펫
     if (pd.storyUnlock) return;
     const cost = UNLOCK_COST[pd.rarity] || 5;
     if ((saveData.cheonryeonggwa || 0) < cost) return;

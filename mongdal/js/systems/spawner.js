@@ -80,10 +80,16 @@ const Spawner = (() => {
       spawnTimer = 0;
       const count = 1 + Math.floor(elapsed / 30);
       const pool  = getTypePool(elapsed);
+      // [UPDATE 2026-08-03] 파트2 침공형 — 챕터당 2종 중 "두 번째 종"은 부적을 노림(monsters.js
+      // getInvasionMonsterId 참고). 파트1은 이 프로필 체크 자체가 항상 false라 완전히 그대로.
+      const _invasionId = (typeof Save !== 'undefined' && Save.getActiveProfile() === 'part2' && !_isDungeon)
+        ? MONSTERS.getInvasionMonsterId(currentChapter) : null;
       for (let i = 0; i < count; i++) {
         const typeName = pool[Math.floor(Math.random() * pool.length)];
         const pos = spawnPos(player.x, player.y, vw, vh);
-        enemies.push(new Enemy(pos.x, pos.y, typeName, wave, _isDungeon, dungeonMult, _rollGlitchMods(), rewardMult));
+        const e = new Enemy(pos.x, pos.y, typeName, wave, _isDungeon, dungeonMult, _rollGlitchMods(), rewardMult);
+        if (_invasionId && typeName === _invasionId) e._invasionType = true;
+        enemies.push(e);
       }
     }
 
@@ -91,14 +97,48 @@ const Spawner = (() => {
     eliteTimer += dt;
     if (eliteTimer >= 45 && elapsed > 30 && alive < maxEnemies - 3) {
       eliteTimer = 0;
+      // [UPDATE 2026-07-24] 챕터11 이후로는 존재하지 않는 elite_ch11_14/15_17/18_20 키를 참조해
+      // 조용히 기본 몬스터로 폴백되던 버그 수정 — 시즌2~4(챕터11~40) 전용 엘리트로 교체
       const eliteType =
         currentChapter <= 2  ? 'elite_ch1_2'   :
         currentChapter <= 4  ? 'elite_ch3_4'   :
         currentChapter <= 6  ? 'elite_ch5_6'   :
         currentChapter <= 8  ? 'elite_ch7_8'   :
         currentChapter <= 10 ? 'elite_ch9_10'  :
-        currentChapter <= 14 ? 'elite_ch11_14' :
-        currentChapter <= 17 ? 'elite_ch15_17' : 'elite_ch18_20';
+        currentChapter <= 12 ? 'elite_ch11_12' :
+        currentChapter <= 14 ? 'elite_ch13_14' :
+        currentChapter <= 16 ? 'elite_ch15_16' :
+        currentChapter <= 18 ? 'elite_ch17_18' :
+        currentChapter <= 20 ? 'elite_ch19_20' :
+        currentChapter <= 22 ? 'elite_ch21_22' :
+        currentChapter <= 24 ? 'elite_ch23_24' :
+        currentChapter <= 26 ? 'elite_ch25_26' :
+        currentChapter <= 28 ? 'elite_ch27_28' :
+        currentChapter <= 30 ? 'elite_ch29_30' :
+        currentChapter <= 32 ? 'elite_ch31_32' :
+        currentChapter <= 34 ? 'elite_ch33_34' :
+        currentChapter <= 36 ? 'elite_ch35_36' :
+        currentChapter <= 38 ? 'elite_ch37_38' :
+        currentChapter <= 40 ? 'elite_ch39_40' :
+        currentChapter <= 42 ? 'elite_ch41_42' :
+        currentChapter <= 44 ? 'elite_ch43_44' :
+        currentChapter <= 47 ? 'elite_ch45_47' :
+        currentChapter <= 50 ? 'elite_ch48_50' :
+        // [UPDATE 2026-07-29] 챕터51~80(원계/어계/황계) 2챕터 단위로 세분화 — elite_ch51_60/61_70 통짜 폴백 제거
+        currentChapter <= 52 ? 'elite_ch51_52' :
+        currentChapter <= 54 ? 'elite_ch53_54' :
+        currentChapter <= 56 ? 'elite_ch55_56' :
+        currentChapter <= 58 ? 'elite_ch57_58' :
+        currentChapter <= 60 ? 'elite_ch59_60' :
+        currentChapter <= 62 ? 'elite_ch61_62' :
+        currentChapter <= 64 ? 'elite_ch63_64' :
+        currentChapter <= 66 ? 'elite_ch65_66' :
+        currentChapter <= 68 ? 'elite_ch67_68' :
+        currentChapter <= 70 ? 'elite_ch69_70' :
+        currentChapter <= 72 ? 'elite_ch71_72' :
+        currentChapter <= 74 ? 'elite_ch73_74' :
+        currentChapter <= 76 ? 'elite_ch75_76' :
+        currentChapter <= 78 ? 'elite_ch77_78' : 'elite_ch79_80';
       const pos = spawnPos(player.x, player.y, vw, vh);
       enemies.push(new Enemy(pos.x, pos.y, eliteType, wave, _isDungeon, dungeonMult, null, rewardMult));
     }

@@ -265,6 +265,29 @@ class Boss {
     if (this.curPattern === 'glitch_barrage') {
       this._glitchTimer = 0;
     }
+    // [UPDATE 2026-07-26] 전 시즌 공통 신규 패턴 4종 예고 준비
+    if (this.curPattern === 'ring_burst') {
+      this._ringPulseTimer = 0;
+      this._ringPulsesDone = 0;
+    }
+    if (this.curPattern === 'line_barrage') {
+      this._lineAngles = [];
+      const baseA = Math.atan2(player.y - this.y, player.x - this.x);
+      for (let i = -1; i <= 1; i++) this._lineAngles.push(baseA + i * 0.28);
+    }
+    if (this.curPattern === 'chain_lightning') {
+      this._chainTimer = 0;
+      this._chainCount = 0;
+    }
+    // [UPDATE 2026-07-26] 버그 수정: _drawTelegraph(ctx,sx,sy,s)는 player를 인자로 안 받는데
+    // homing_orbs/chain_lightning 예고선이 player.x/y를 직접 참조해서 "player is not defined"로 매 프레임
+    // 렌더 루프가 죽고 있었음(화면이 안 지워지고 잔상이 쌓이며 멈추는 것처럼 보이던 원인) — 셋업 시점에 좌표를 저장해두고 draw에서는 그것만 사용
+    if (this.curPattern === 'homing_orbs') {
+      this._homingAngle0 = Math.atan2(player.y - this.y, player.x - this.x);
+    }
+    if (this.curPattern === 'chain_lightning') {
+      this._chainTelegraphTarget = { x: player.x, y: player.y };
+    }
   }
 
   _getAttackDuration() {
@@ -278,6 +301,10 @@ class Boss {
       clone_split:     0.30,
       confuse_field:   0.40,
       glitch_barrage:  1.40,
+      ring_burst:      0.90,
+      homing_orbs:     0.25,
+      line_barrage:    0.30,
+      chain_lightning: 1.10,
     }[this.curPattern] || 0.5;
   }
 
@@ -309,7 +336,7 @@ class Boss {
       case 'shockwave': {
         // 충격파 발사체 (AOE)
         const p = new Projectile(this.x, this.y, 0, 0, this.dmg * 1.5, {
-          aoe: 160, radius: 160, life: 0.35,
+          aoe: 160, radius: 160, life: 0.35, hostile: true,
           type: 'bell', color: this.color, glow: this.glowColor,
         });
         projs.push(p);
@@ -326,7 +353,7 @@ class Boss {
             this.x, this.y,
             Math.cos(a)*200, Math.sin(a)*200,
             this.dmg * 0.7,
-            { type:'talisman', color:this.color, glow:this.glowColor, radius:8, life:2.0 }
+            { type:'talisman', color:this.color, glow:this.glowColor, radius:8, life:2.0, hostile:true }
           ));
         }
         // 한 번만 발사하도록 상태 변경
@@ -346,7 +373,7 @@ class Boss {
           this._teleportDone = true;
           if (this.teleportTarget) { this.x = this.teleportTarget.x; this.y = this.teleportTarget.y; }
           projs.push(new Projectile(this.x, this.y, 0, 0, this.dmg * 1.3, {
-            aoe: 110, radius: 110, life: 0.3,
+            aoe: 110, radius: 110, life: 0.3, hostile: true,
             type: 'bell', color: this.color, glow: this.glowColor,
           }));
         }
@@ -374,8 +401,68 @@ class Boss {
           const r = Math.random() * 180;
           const gx = player.x + Math.cos(a) * r, gy = player.y + Math.sin(a) * r;
           projs.push(new Projectile(gx, gy, 0, 0, this.dmg * 0.6, {
-            aoe: 50, radius: 50, life: 0.25,
+            aoe: 50, radius: 50, life: 0.25, hostile: true,
             type: 'bell', color: '#40ffe0', glow: 'rgba(64,255,224,0.6)',
+          }));
+        }
+        break;
+      }
+
+      // [UPDATE 2026-07-26] 전 시즌 공통 신규 패턴 4종 — 시즌2(+1)/시즌4(+2누적)/시즌5(+4누적)로 순차 배포
+      case 'ring_burst': {
+        // 고리 폭발: 보스 위치에서 반경이 점점 커지는 AOE 2연타(0.5초 간격) — 밖으로 피해야 하는 역방향 회피
+        this._ringPulseTimer -= dt;
+        if (this._ringPulsesDone === 0 && this._ringPulseTimer <= 0) {
+          this._ringPulsesDone = 1;
+          this._ringPulseTimer = 0.5;
+          projs.push(new Projectile(this.x, this.y, 0, 0, this.dmg * 1.0, {
+            aoe: 130, radius: 130, life: 0.3, hostile: true,
+            type: 'bell', color: this.color, glow: this.glowColor,
+          }));
+        } else if (this._ringPulsesDone === 1 && this._ringPulseTimer <= 0) {
+          this._ringPulsesDone = 2;
+          projs.push(new Projectile(this.x, this.y, 0, 0, this.dmg * 1.2, {
+            aoe: 210, radius: 210, life: 0.3, hostile: true,
+            type: 'bell', color: this.color, glow: this.glowColor,
+          }));
+        }
+        break;
+      }
+
+      case 'homing_orbs': {
+        // 유도 구슬 3개 — 플레이어를 천천히 추적(2.5초 지속), 기존 패턴엔 없던 "추적형" 압박
+        const ang0 = Math.atan2(player.y - this.y, player.x - this.x);
+        for (let i = 0; i < 3; i++) {
+          const a = ang0 + (i - 1) * 0.4;
+          projs.push(new Projectile(this.x, this.y, Math.cos(a) * 90, Math.sin(a) * 90, this.dmg * 0.6, {
+            type: 'talisman', color: this.color, glow: this.glowColor, radius: 10, life: 2.5,
+            hostile: true, _bossHoming: true,
+          }));
+        }
+        this.curPattern = '_homing_done';
+        break;
+      }
+
+      case 'line_barrage': {
+        // 직선 난사 — 플레이어 방향 기준 부채꼴 3방향으로 빠른 투사체 동시 발사(좌우 회피 유도)
+        for (const a of (this._lineAngles || [])) {
+          projs.push(new Projectile(this.x, this.y, Math.cos(a) * 420, Math.sin(a) * 420, this.dmg * 0.9, {
+            type: 'talisman', color: this.color, glow: this.glowColor, radius: 9, life: 1.5, hostile: true,
+          }));
+        }
+        this.curPattern = '_line_done';
+        break;
+      }
+
+      case 'chain_lightning': {
+        // 연쇄 낙뢰 — 플레이어의 현재 위치를 0.35초 간격으로 3연타(예측 이동 필요)
+        this._chainTimer -= dt;
+        if (this._chainTimer <= 0 && this._chainCount < 3) {
+          this._chainTimer = 0.35;
+          this._chainCount++;
+          projs.push(new Projectile(player.x, player.y, 0, 0, this.dmg * 0.85, {
+            aoe: 70, radius: 70, life: 0.25, hostile: true,
+            type: 'bell', color: '#a8d8ff', glow: 'rgba(168,216,255,0.6)',
           }));
         }
         break;
@@ -397,6 +484,9 @@ class Boss {
 
   // ── 렌더 ──
   draw(ctx, camX, camY) {
+    // [UPDATE 2026-08-06] 파트2 "건방진!" 인레이지 패턴(부적 기습) 중 순간이동 연출용 — game.js가
+    // this._invisible을 토글. boss.js 상태머신 자체는 안 건드리고 렌더만 건너뜀.
+    if (this._invisible) return;
     const sx = this.x - camX;
     const sy = this.y - camY;
     const s  = this.size;
@@ -606,6 +696,39 @@ class Boss {
       ctx.setLineDash([10,6]);
       ctx.beginPath(); ctx.arc(sx,sy,s+30*p,0,Math.PI*2); ctx.stroke();
       ctx.setLineDash([]);
+    }
+    // [UPDATE 2026-07-26] 전 시즌 공통 신규 패턴 4종 예고 연출
+    else if (this.curPattern === 'ring_burst') {
+      // 이중 확장 링 예고(1차 130 / 2차 210)
+      ctx.strokeStyle = this.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(sx, sy, 130 * p, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha *= 0.6;
+      ctx.beginPath(); ctx.arc(sx, sy, 210 * p, 0, Math.PI*2); ctx.stroke();
+    }
+    else if (this.curPattern === 'homing_orbs') {
+      // 발사 방향 3갈래 예고선 (좌표는 _setupTelegraph에서 미리 저장해둔 값 사용 — draw()는 player를 안 받음)
+      const ang0 = this._homingAngle0 || 0;
+      ctx.strokeStyle = this.color; ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        const a = ang0 + (i - 1) * 0.4;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a)*90*p, sy + Math.sin(a)*90*p); ctx.stroke();
+      }
+    }
+    else if (this.curPattern === 'line_barrage' && this._lineAngles) {
+      ctx.strokeStyle = '#ff8020'; ctx.lineWidth = 3;
+      ctx.setLineDash([14,8]);
+      for (const a of this._lineAngles) {
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a)*500*p, sy + Math.sin(a)*500*p); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+    else if (this.curPattern === 'chain_lightning' && this._chainTelegraphTarget) {
+      const tx = sx + (this._chainTelegraphTarget.x - this.x), ty = sy + (this._chainTelegraphTarget.y - this.y);
+      ctx.strokeStyle = '#a8d8ff'; ctx.lineWidth = 3;
+      ctx.setLineDash([6,6]);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(tx,ty); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(tx,ty,50*p,0,Math.PI*2); ctx.stroke();
     }
     ctx.restore();
   }

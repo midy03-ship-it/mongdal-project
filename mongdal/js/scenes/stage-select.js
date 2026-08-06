@@ -5,7 +5,8 @@ const StageSelectScene = (() => {
   let selectedSeason = 1;
 
   // [UPDATE 2026-07-14] 260714_MTOPC.md 4번: 건물/캐릭터 해금 트리거 스테이지 — 난이도 무관 미클리어 시 무지개 테두리 표시
-  const UNLOCK_PENDING_STAGE_IDS = [5, 10, 15, 20, 25, 30, 100, 110, 160, 200];
+  // [UPDATE 2026-07-18] 50(이지 2슬롯 해금 easy2, game.js stageId===50) 누락 — 무지개 테두리가 안 뜨던 버그 수정
+  const UNLOCK_PENDING_STAGE_IDS = [5, 10, 15, 20, 25, 30, 50, 100, 110, 160, 200];
 
   const SEASON_DATA = [
     {
@@ -33,6 +34,56 @@ const StageSelectScene = (() => {
       chaptersKo: '챕터 21~30', chaptersEn: 'Ch. 21~30',
       color: '#c06040', icon: '👹',
       lockedFn: (save) => !(save.season2Clear),
+    },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 콘텐츠 등록 완료 — 챕터31~40, 시즌3 클리어 후 해금
+    // (SEASON_DATA에 등록이 안 돼 있어서 스테이지/몬스터/보스 데이터를 다 만들어놔도 차원 지도에서
+    // 실제로 들어갈 방법이 없던 문제 — 시즌3와 동일한 패턴으로 등록)
+    {
+      season: 4,
+      nameKo: '귀허계', nameEn: 'Void Realm',
+      subtitleKo: '소멸과 거듭남의 경계를 넘어라', subtitleEn: 'Cross the Boundary of Annihilation and Rebirth',
+      chaptersKo: '챕터 31~40', chaptersEn: 'Ch. 31~40',
+      color: '#6858a0', icon: '🌌',
+      // [UPDATE 2026-07-17] 콘텐츠 배포 플래그(CONFIG.CONTENT_RELEASE) 추가 — 스토리 조건 충족해도 플래그가 꺼져있으면 잠김
+      lockedFn: (save) => !(save.season3Clear) || !isSeasonReleased(4),
+    },
+    // [UPDATE 2026-07-22] 시즌5(선계) 콘텐츠 등록 — 챕터41~50, 시즌4 클리어 후 해금
+    // (시즌3/4와 동일하게 SEASON_DATA 미등록 시 차원지도/스테이지 이미지·데이터를 다 만들어놔도 진입 불가)
+    {
+      season: 5,
+      nameKo: '선계', nameEn: 'Celestial Realm',
+      subtitleKo: '타락한 하늘의 문을 넘어라', subtitleEn: 'Cross the Gate of the Fallen Heavens',
+      chaptersKo: '챕터 41~50', chaptersEn: 'Ch. 41~50',
+      color: '#5898a8', icon: '☁️',
+      lockedFn: (save) => !(save.season4Clear) || !isSeasonReleased(5),
+    },
+    // [UPDATE 2026-07-24] 시즌6(원계) 콘텐츠 등록 — 챕터51~60, 시즌5 클리어 후 해금.
+    // CONTENT_RELEASE.season6=false라 실제 배포 전까지는 DEV_MODE 외 플레이어에게 잠김 상태 유지.
+    {
+      season: 6,
+      nameKo: '원계', nameEn: 'Primal Realm',
+      subtitleKo: '법칙의 근원과 마주하라', subtitleEn: 'Face the Origin of the Laws',
+      chaptersKo: '챕터 51~60', chaptersEn: 'Ch. 51~60',
+      color: '#8898c8', icon: '⚛️',
+      lockedFn: (save) => !(save.season5Clear) || !isSeasonReleased(6),
+    },
+    // [UPDATE 2026-07-28] 시즌7(어계) 콘텐츠 등록 — 챕터61~70, 시즌6 클리어 후 해금.
+    // CONTENT_RELEASE.season7=false라 실제 배포 전까지는 DEV_MODE 외 플레이어에게 잠김 상태 유지.
+    {
+      season: 7,
+      nameKo: '어계', nameEn: 'Outer Realm',
+      subtitleKo: '인식 밖의 신격들과 마주하라', subtitleEn: 'Face the Gods Beyond Perception',
+      chaptersKo: '챕터 61~70', chaptersEn: 'Ch. 61~70',
+      color: '#601878', icon: '👁️',
+      lockedFn: (save) => !(save.season6Clear) || !isSeasonReleased(7),
+    },
+    {
+      season: 8,
+      nameKo: '황계', nameEn: 'Ruined Realm',
+      subtitleKo: '시간이 거꾸로 흐르는 반물질의 끝', subtitleEn: 'The Antimatter End Where Time Runs Backward',
+      chaptersKo: '챕터 71~80', chaptersEn: 'Ch. 71~80',
+      color: '#8a9aa8', icon: '🪞',
+      lockedFn: (save) => !(save.season7Clear) || !isSeasonReleased(8),
     },
   ];
 
@@ -105,6 +156,67 @@ const StageSelectScene = (() => {
       gridBorder:   'rgba(224,128,64,0.15)',
       stageNumColor:'#f0c8a0',
     },
+    // [UPDATE 2026-07-17] 시즌4 전용 테마 — 귀허계(소멸/거듭남) 컨셉에 맞춘 차가운 인디고/남색 계열
+    // (게임 내 바닥 팔레트 #161228~#3a3550와 동일 톤으로 맞춤)
+    4: {
+      bg:         '#0a0814',
+      headerBorder: 'rgba(104,88,160,0.15)',
+      accent:     '#9080d0',
+      chapterColors: [
+        'rgba(30,25,55,0.5)','rgba(20,18,45,0.5)','rgba(35,20,50,0.5)',
+        'rgba(15,15,40,0.5)','rgba(40,25,55,0.5)',
+      ],
+      diff: {
+        easy:   { color:'#8090c0', icon:'☯️', ko:'이지',  en:'Easy'   },
+        normal: { color:'#8868c8', icon:'💎', ko:'노말',  en:'Normal' },
+        hard:   { color:'#4c3878', icon:'🌀', ko:'하드',  en:'Hard'   },
+      },
+      chapterLabel: 'rgba(160,144,208,0.6)',
+      chNameColor:  '#d0c8e8',
+      gridBg:       'rgba(20,15,40,0.35)',
+      gridBorder:   'rgba(104,88,160,0.15)',
+      stageNumColor:'#c0b0e8',
+    },
+    // [UPDATE 2026-07-22] 시즌5 전용 테마 — 선계(하늘/구름/옥) 컨셉에 맞춘 청록/금 계열
+    5: {
+      bg:         '#081418',
+      headerBorder: 'rgba(88,152,168,0.15)',
+      accent:     '#78c8d0',
+      chapterColors: [
+        'rgba(15,40,45,0.5)','rgba(20,35,50,0.5)','rgba(25,45,40,0.5)',
+        'rgba(15,35,40,0.5)','rgba(30,45,50,0.5)',
+      ],
+      diff: {
+        easy:   { color:'#78c0c0', icon:'☁️', ko:'이지',  en:'Easy'   },
+        normal: { color:'#d0b868', icon:'🎋', ko:'노말',  en:'Normal' },
+        hard:   { color:'#a04858', icon:'👁️', ko:'하드',  en:'Hard'   },
+      },
+      chapterLabel: 'rgba(120,200,208,0.6)',
+      chNameColor:  '#c8e8e0',
+      gridBg:       'rgba(10,30,35,0.35)',
+      gridBorder:   'rgba(88,152,168,0.15)',
+      stageNumColor:'#a0d8e0',
+    },
+    // [UPDATE 2026-07-24] 시즌6 전용 테마 — 원계(법칙/물리/전자기) 컨셉에 맞춘 인디고/골드 계열
+    6: {
+      bg:         '#06081a',
+      headerBorder: 'rgba(136,152,200,0.15)',
+      accent:     '#a8b8e8',
+      chapterColors: [
+        'rgba(20,20,50,0.5)','rgba(15,25,55,0.5)','rgba(25,20,45,0.5)',
+        'rgba(15,20,50,0.5)','rgba(30,25,60,0.5)',
+      ],
+      diff: {
+        easy:   { color:'#8898d0', icon:'⚛️', ko:'이지',  en:'Easy'   },
+        normal: { color:'#d0b868', icon:'🌀', ko:'노말',  en:'Normal' },
+        hard:   { color:'#a83040', icon:'💥', ko:'하드',  en:'Hard'   },
+      },
+      chapterLabel: 'rgba(168,184,232,0.6)',
+      chNameColor:  '#c8d0f0',
+      gridBg:       'rgba(15,15,40,0.35)',
+      gridBorder:   'rgba(136,152,200,0.15)',
+      stageNumColor:'#b0c0f0',
+    },
   };
 
   const DIFF_CONFIG = {
@@ -127,9 +239,15 @@ const StageSelectScene = (() => {
   // 난이도별 실제 슬롯 수 반영된 DIFF_CONFIG 조회 (이지는 동적 계산)
   function getDiffConfig(diff, sd) {
     const base = DIFF_CONFIG[diff];
-    if (diff !== 'easy') return base;
-    const n = getEasySlotCount(sd);
-    return { ...base, slotMain: n, slotComp: n, slotPet: n };
+    if (diff === 'easy') {
+      const n = getEasySlotCount(sd);
+      return { ...base, slotMain: n, slotComp: n, slotPet: n };
+    }
+    // [UPDATE 2026-07-19] 이지 시즌1(스테이지100) 클리어 시 노말도 2→3슬롯으로 상향 — 이지 완주 보상을 노말 난이도 완화로도 이어지게
+    if (diff === 'normal' && sd?.season1Clear) {
+      return { ...base, slotMain: 3, slotComp: 3, slotPet: 3 };
+    }
+    return base;
   }
 
   // 해당 챕터에서 선택된 난이도를 플레이할 수 있는지
@@ -178,6 +296,10 @@ const StageSelectScene = (() => {
 
   function render(el) {
     saveData = Save.load();
+    // [UPDATE 2026-07-22] 시즌 탭을 오른쪽까지 스크롤한 뒤 시즌을 선택하면 setSeason()의 재렌더로
+    // #season-card-row의 스크롤 위치가 매번 맨 왼쪽(현계)으로 초기화되던 버그 수정 — 다른 화면들과
+    // 동일한 "재렌더 전 스크롤 위치 저장 → 재렌더 후 복원" 패턴 적용
+    const _prevSeasonScroll = el.querySelector('#season-card-row')?.scrollLeft || 0;
     const stages = GAME_DATA.stages;
     const isKo   = Lang.getCurrent() === 'ko';
     const dc     = getDiffConfig(selectedDiff, saveData); // [UPDATE 2026-07-11] 이지는 동적 슬롯수 반영
@@ -212,29 +334,44 @@ const StageSelectScene = (() => {
         </div>
 
         <!-- 시즌 카드 -->
-        <div style="
-          display:flex;gap:8px;padding:10px 14px;flex-shrink:0;
-          overflow-x:auto;border-bottom:1px solid ${T.headerBorder};
-          scrollbar-width:none;
-        ">
-          ${seasonList.map(s => {
-            const active = s.season === selectedSeason;
-            const name   = isKo ? s.nameKo : s.nameEn;
-            const chs    = isKo ? s.chaptersKo : s.chaptersEn;
-            return `<button onclick="${s.locked?'':'StageSelectScene.setSeason('+s.season+')'}" style="
-              flex-shrink:0;width:116px;padding:10px 8px;border-radius:10px;cursor:${s.locked?'default':'pointer'};
-              font-family:inherit;text-align:left;
-              background:${active?'rgba('+_hexRgb(s.color)+',0.15)':'rgba(255,255,255,0.03)'};
-              border:1.5px solid ${active?s.color:(s.locked?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.12)')};
-              opacity:${s.locked?0.5:1};
-              transition:all .15s;
-            ">
-              <div style="font-size:14px;margin-bottom:3px;">${s.locked?'🔒':s.icon}</div>
-              <div style="font-size:11px;font-weight:700;color:${s.locked?'#4a4a5a':s.color};line-height:1.3;">${name}</div>
-              ${!s.locked && s.subtitleKo ? `<div style="font-size:9px;color:#7a6a8a;margin-top:2px;">${isKo?s.subtitleKo:s.subtitleEn}</div>` : ''}
-              <div style="font-size:9px;color:#5a5a6a;margin-top:4px;">${chs}</div>
-            </button>`;
-          }).join('')}
+        <!-- [UPDATE 2026-07-17] 시즌4 추가로 카드 4개가 화면 폭(390px)을 넘어서면서, 스크롤바를 일부러 숨겨둔(scrollbar-width:none)
+             가로 스크롤 영역이라 PC(마우스)에서는 넘어간 카드를 볼 방법이 아예 없던 버그. 마우스 휠 세로 입력을 가로 스크롤로
+             변환(onwheel) + 좌우 화살표 버튼을 추가해서 마우스 환경에서도 스크롤 가능하게 함. -->
+        <div style="position:relative;flex-shrink:0;">
+          <div id="season-card-row" onwheel="this.scrollLeft+=event.deltaY;event.preventDefault();" style="
+            display:flex;gap:8px;padding:10px 30px;
+            overflow-x:auto;border-bottom:1px solid ${T.headerBorder};
+            scrollbar-width:none;
+          ">
+            ${seasonList.map(s => {
+              const active = s.season === selectedSeason;
+              const name   = isKo ? s.nameKo : s.nameEn;
+              const chs    = isKo ? s.chaptersKo : s.chaptersEn;
+              return `<button onclick="${s.locked?'':'StageSelectScene.setSeason('+s.season+')'}" style="
+                flex-shrink:0;width:116px;padding:10px 8px;border-radius:10px;cursor:${s.locked?'default':'pointer'};
+                font-family:inherit;text-align:left;
+                background:${active?'rgba('+_hexRgb(s.color)+',0.15)':'rgba(255,255,255,0.03)'};
+                border:1.5px solid ${active?s.color:(s.locked?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.12)')};
+                opacity:${s.locked?0.5:1};
+                transition:all .15s;
+              ">
+                <div style="font-size:14px;margin-bottom:3px;">${s.locked?'🔒':s.icon}</div>
+                <div style="font-size:11px;font-weight:700;color:${s.locked?'#4a4a5a':s.color};line-height:1.3;">${name}</div>
+                ${!s.locked && s.subtitleKo ? `<div style="font-size:9px;color:#7a6a8a;margin-top:2px;">${isKo?s.subtitleKo:s.subtitleEn}</div>` : ''}
+                <div style="font-size:9px;color:#5a5a6a;margin-top:4px;">${chs}</div>
+              </button>`;
+            }).join('')}
+          </div>
+          <button onclick="document.getElementById('season-card-row').scrollBy({left:-130,behavior:'smooth'})" style="
+            position:absolute;left:0;top:0;bottom:1px;width:26px;
+            background:linear-gradient(90deg, ${T.bg} 40%, transparent);
+            border:none;color:${T.accent};font-size:16px;cursor:pointer;
+          ">‹</button>
+          <button onclick="document.getElementById('season-card-row').scrollBy({left:130,behavior:'smooth'})" style="
+            position:absolute;right:0;top:0;bottom:1px;width:26px;
+            background:linear-gradient(270deg, ${T.bg} 40%, transparent);
+            border:none;color:${T.accent};font-size:16px;cursor:pointer;
+          ">›</button>
         </div>
 
         <!-- 난이도 탭 -->
@@ -270,6 +407,64 @@ const StageSelectScene = (() => {
           <span>${isKo?'몹':'Mob'}×${dc.mobMult}</span>
           <span>${isKo?'골드':'Gold'}×${dc.goldMult}${dc.gemReward?(isKo?' · 💎보너스':' · 💎Bonus'):''}</span>
         </div>
+
+        <!-- [UPDATE 2026-08-02] 황계(시즌8) 오염도 경고 — 어계에서 산 슈브니구라스의 축복이 그대로 오염도로
+             뒤집혀 전투계수를 깎는다는 사실을 게임이 여태 숫자로 보여준 적이 없었음(설계는 확정, 표시만 누락).
+             701 스테이지는 승패 무관 도전만으로 오염도가 깎인다는 것도 여기서 같이 알려준다. -->
+        ${(() => {
+          if (selectedSeason !== 8) return '';
+          const _bl = Math.max(0, Math.min(saveData.blessings || 0, CONFIG.BLESSING.MAX));
+          if (_bl <= 0) return '';
+          const _mult = Math.max(CONFIG.BLESSING.MIN_RUINED_MULT, 1 - _bl * CONFIG.BLESSING.RUINED_PENALTY_PER);
+          return `
+          <div style="
+            margin:10px 14px 0;padding:12px 14px;border-radius:10px;
+            background:rgba(90,60,120,0.22);border:1px solid rgba(170,120,220,0.45);
+            box-shadow:0 0 14px rgba(150,90,200,0.15);
+          ">
+            <div style="font-size:12px;color:#d8b0ff;font-weight:700;margin-bottom:6px;letter-spacing:.02em;">
+              ${isKo ? '⚠️ 어계의 축복이 오염도로 뒤집혔습니다' : '⚠️ The Blessing of the Outer Realm has turned into corruption'}
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.66);line-height:1.65;">
+              ${isKo
+                ? `보유 오염도 <b style="color:#e0b8ff;">${_bl}</b> → 전투력 <b style="color:#ff9ab0;">${Math.round(_mult*100)}%</b>만 남습니다.<br>
+                   황계 어느 스테이지든 도전하면 <b style="color:#d8b0ff;">승패와 무관하게</b> 오염도가 깎입니다 — 져도 진행됩니다.`
+                : `Corruption held: <b style="color:#e0b8ff;">${_bl}</b> → only <b style="color:#ff9ab0;">${Math.round(_mult*100)}%</b> combat power remains.<br>
+                   Challenging any Ruined Realm stage reduces it <b style="color:#d8b0ff;">win or lose</b> — even defeat makes progress.`}
+            </div>
+          </div>`;
+        })()}
+
+        <!-- [UPDATE 2026-07-31] 황계(시즌8) 편성 경고 — 반물질계라 동료·펫이 소환되지 않는데,
+             편성만 남아 있으면 전투계수 페널티(1명당 ×0.75)만 그대로 받는다. 들어가기 전에 알려준다. -->
+        ${(() => {
+          if (selectedSeason !== 8) return '';
+          const _nc = (saveData.activeCompanions || []).length;
+          const _np = (saveData.activePets || []).length;
+          if (_nc + _np === 0) return '';
+          const _mult = Math.pow(CONFIG.RUINED_REALM.COMPANION_MULT, _nc)
+                      * Math.pow(CONFIG.RUINED_REALM.PET_MULT, _np);
+          return `
+          <div style="
+            margin:10px 14px 0;padding:12px 14px;border-radius:10px;
+            background:rgba(120,30,40,0.22);border:1px solid rgba(220,90,100,0.45);
+            box-shadow:0 0 14px rgba(200,60,70,0.15);
+          ">
+            <div style="font-size:12px;color:#ff9aa4;font-weight:700;margin-bottom:6px;letter-spacing:.02em;">
+              ${isKo ? '⚠️ 동료와 펫은 황계에서 버틸 수 없습니다' : '⚠️ Companions and pets cannot endure the Ruined Realm'}
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.66);line-height:1.65;">
+              ${isKo
+                ? `편성해도 소환되지 않으며, 편성한 수만큼 전투력만 깎입니다.<br>
+                   현재 편성 <b style="color:#ffb0b8;">동료 ${_nc} · 펫 ${_np}</b> → 전투력 <b style="color:#ff8a94;">${Math.round(_mult*100)}%</b>`
+                : `They will not be summoned, and each one you bring only weakens you.<br>
+                   Currently <b style="color:#ffb0b8;">${_nc} companion(s) · ${_np} pet(s)</b> → combat power <b style="color:#ff8a94;">${Math.round(_mult*100)}%</b>`}
+            </div>
+            <div style="font-size:11px;color:#ffd28a;margin-top:7px;font-weight:700;">
+              ${isKo ? '혼자서 이겨내야 합니다 — 편성을 해제하세요.' : 'You must endure this alone — unequip everything.'}
+            </div>
+          </div>`;
+        })()}
 
         <!-- 스테이지 목록 -->
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:12px 14px;">
@@ -335,10 +530,10 @@ const StageSelectScene = (() => {
                   const canAfford = !isSeason2Stage || ownedCws >= entryCost;
 
                   // 카드 프레임 이미지
+                  // [UPDATE 2026-07-22] 시즌2 전용이던 카드 프레임을 시즌1/3/4/5로 확장 (card_sN_normal 없으면 card_normal로 폴백)
                   const cardSrc = stage.isBoss    ? (SPRITES?.stage?.card_boss?.src    || '')
                                 : stage.isMidBoss ? (SPRITES?.stage?.card_midboss?.src || '')
-                                : selectedSeason===2 ? (SPRITES?.stage?.card_s2_normal?.src || '')
-                                :                   (SPRITES?.stage?.card_normal?.src  || '');
+                                : (SPRITES?.stage?.[`card_s${selectedSeason}_normal`]?.src || SPRITES?.stage?.card_normal?.src || '');
 
                   // 보스/미들보스 초상화
                   const portraitKey = stage.isBoss    ? `ch${ch}_boss`
@@ -399,6 +594,8 @@ const StageSelectScene = (() => {
         </div>
       </div>
     `;
+    const _seasonRow = el.querySelector('#season-card-row');
+    if (_seasonRow) _seasonRow.scrollLeft = _prevSeasonScroll;
   }
 
   function hexToRgb(hex) {

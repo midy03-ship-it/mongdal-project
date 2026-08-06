@@ -36,7 +36,7 @@ class GoldDrop {
   update(dt, px, py, playerMagnetRange) {
     this.t += dt * 2.5;
     const dx = px - this.x, dy = py - this.y;
-    const dist = Math.hypot(dx, dy) || 0.001;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 0.001; // [UPDATE 2026-07-31] 성능: hypot→sqrt (드랍당 매 프레임)
     const range = playerMagnetRange || CONFIG.ITEM.GOLD_ATTRACT_RANGE;
 
     if (this.attractState === 'none' && dist < range) {
@@ -44,9 +44,11 @@ class GoldDrop {
     }
 
     if (this.attractState !== 'none') {
+      // [UPDATE 2026-07-22] 파밍 구간 5배 자석 범위(game.js _farmMagnet)로 dist가 250 기준거리를 넘으면
+      // (1-dist/250)이 음수가 되어 move가 마이너스 → 아이템이 캐릭터 반대로 날아가던 버그. 하한 150으로 고정.
       const spd = this.attractState === 'magnet'
         ? CONFIG.ITEM.MAGNET_PULL_SPEED
-        : Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 150 + (1 - dist / 250) * 180);
+        : Math.max(150, Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 150 + (1 - dist / 250) * 180));
       const move = spd * dt;
       if (dist <= move) { this.x = px; this.y = py; }
       else { this.x += (dx / dist) * move; this.y += (dy / dist) * move; }
@@ -61,12 +63,10 @@ class GoldDrop {
     const sc = SPRITES?.items?.gold;
     const img = sc ? SpriteLoader.get(sc.src) : null;
 
-    // 발광
+    // 발광 (캐시된 스프라이트 — createRadialGradient 매프레임 생성 제거, enemy.js의 _getGlowSprite 재사용)
     ctx.save();
     ctx.globalAlpha = 0.5 + Math.sin(this.t) * 0.15;
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, 12);
-    g.addColorStop(0, 'rgba(255,210,50,.8)'); g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI*2); ctx.fill();
+    ctx.drawImage(_getGlowSprite('rgba(255,210,50,.8)', 12), sx-12, sy-12);
     ctx.restore();
 
     if (img?.complete && img.naturalWidth > 0 && sc) {
@@ -92,12 +92,13 @@ class BigGoldDrop {
   update(dt, px, py, playerMagnetRange) {
     this.t += dt * 2;
     const dx = px-this.x, dy = py-this.y;
-    const dist = Math.hypot(dx,dy)||0.001;
+    const dist = Math.sqrt(dx*dx+dy*dy)||0.001; // [UPDATE 2026-07-31] 성능: hypot→sqrt (드랍당 매 프레임)
     const range = playerMagnetRange || CONFIG.ITEM.GOLD_ATTRACT_RANGE;
     if(this.attractState==='none'&&dist<range) this.attractState='passive';
     if(this.attractState!=='none'){
+      // [UPDATE 2026-07-22] 파밍 구간 자석 범위 확장으로 dist>250일 때 음수 속도(반대 방향 이탈) 발생하던 버그 — 하한 150 고정
       const spd = this.attractState==='magnet'?CONFIG.ITEM.MAGNET_PULL_SPEED
-        :Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX,150+(1-dist/250)*200);
+        :Math.max(150,Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX,150+(1-dist/250)*200));
       const move=spd*dt;
       if(dist<=move){this.x=px;this.y=py;}
       else{this.x+=dx/dist*move;this.y+=dy/dist*move;}
@@ -112,12 +113,14 @@ class BigGoldDrop {
     const glowColors = {
       bigGold:'rgba(255,180,0,0.5)', ganghwaseok:'rgba(192,224,255,0.5)',
       cheonunseok:'rgba(128,200,255,0.5)', cheonryeonggwa:'rgba(255,128,128,0.5)',
-      taegeukseok:'rgba(96,224,192,0.5)', chaewonseok:'rgba(80,160,255,0.6)'
+      taegeukseok:'rgba(96,224,192,0.5)', chaewonseok:'rgba(80,160,255,0.6)',
+      hondonseok:'rgba(200,120,220,0.5)', sullriseok:'rgba(140,120,220,0.6)', // [UPDATE 2026-07-17]
+      // [UPDATE 2026-07-19] 보물 창고 특산품(하드모드 드랍) 공용 발광색
+      s1_soulwill:'rgba(200,220,255,0.6)', s2_reincycle:'rgba(120,200,140,0.6)',
+      s3_fatetrick:'rgba(220,180,80,0.6)', s4_providence:'rgba(180,140,90,0.6)',
     };
     const glowColor = glowColors[this.spriteKey] || 'rgba(255,180,0,0.5)';
-    const g=ctx.createRadialGradient(sx,sy,0,sx,sy,24);
-    g.addColorStop(0,glowColor);g.addColorStop(1,'transparent');
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,24,0,Math.PI*2);ctx.fill();
+    ctx.drawImage(_getGlowSprite(glowColor, 24), sx-24, sy-24);
     if(img?.complete&&img.naturalWidth>0){
       ctx.drawImage(img,sx-14,sy-14,28,28);
     } else {
@@ -145,13 +148,16 @@ class SoulDrop {
   update(dt, px, py, playerMagnetRange) {
     this.t += dt * 3;
     const dx = px - this.x, dy = py - this.y;
-    const dist = Math.hypot(dx, dy) || 0.001;
+    // [UPDATE 2026-07-31] 성능: Math.hypot → Math.sqrt. 드랍 하나당 매 프레임 호출되는 자리라
+    // 수백 개가 깔리는 후반 챕터에선 누적 비용이 컸다(hypot은 오버플로 처리로 sqrt보다 수 배 느림).
+    const dist = Math.sqrt(dx*dx + dy*dy) || 0.001;
     const range = playerMagnetRange || CONFIG.ITEM.XP_ATTRACT_RANGE;
     if (this.attractState === 'none' && dist < range) this.attractState = 'passive';
     if (this.attractState !== 'none') {
+      // [UPDATE 2026-07-22] 파밍 구간 자석 범위 확장으로 dist>200일 때 음수 속도(반대 방향 이탈) 발생하던 버그 — 하한 120 고정
       const spd = this.attractState === 'magnet'
         ? CONFIG.ITEM.MAGNET_PULL_SPEED
-        : Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 120 + (1 - dist / 200) * 160);
+        : Math.max(120, Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 120 + (1 - dist / 200) * 160));
       const move = spd * dt;
       if (dist <= move) { this.x = px; this.y = py; }
       else { this.x += (dx / dist) * move; this.y += (dy / dist) * move; }
@@ -224,7 +230,8 @@ class SpecialItem {
 
   update(dt, px, py) {
     this.t += dt * 2;
-    const dist = Math.hypot(px - this.x, py - this.y);
+    const dx = px - this.x, dy = py - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy); // [UPDATE 2026-07-31] 성능: hypot→sqrt (드랍당 매 프레임)
     const attractRange = 60;
     if (dist < attractRange && dist > 36) {
       const speed = 180;
@@ -289,15 +296,18 @@ class XpOrb {
   update(dt, px, py, playerMagnetRange) {
     this.t += dt * 3;
     const dx = px - this.x, dy = py - this.y;
-    const dist = Math.hypot(dx, dy) || 0.001;
+    // [UPDATE 2026-07-31] 성능: Math.hypot → Math.sqrt. 드랍 하나당 매 프레임 호출되는 자리라
+    // 수백 개가 깔리는 후반 챕터에선 누적 비용이 컸다(hypot은 오버플로 처리로 sqrt보다 수 배 느림).
+    const dist = Math.sqrt(dx*dx + dy*dy) || 0.001;
     const range = playerMagnetRange || CONFIG.ITEM.XP_ATTRACT_RANGE;
 
     if (this.attractState === 'none' && dist < range) this.attractState = 'passive';
 
     if (this.attractState !== 'none') {
+      // [UPDATE 2026-07-22] 파밍 구간 자석 범위 확장으로 dist>250일 때 음수 속도(반대 방향 이탈) 발생하던 버그 — 하한 150 고정
       const spd = this.attractState === 'magnet'
         ? CONFIG.ITEM.MAGNET_PULL_SPEED
-        : Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 150 + (1 - dist / 250) * 200);
+        : Math.max(150, Math.min(CONFIG.ITEM.NORMAL_PULL_SPEED_MAX, 150 + (1 - dist / 250) * 200));
       const move = spd * dt;
       if (dist <= move) { this.x = px; this.y = py; }
       else { this.x += (dx / dist) * move; this.y += (dy / dist) * move; }
@@ -307,11 +317,11 @@ class XpOrb {
 
   draw(ctx, camX, camY) {
     const sx = this.x - camX, sy = this.y - camY + Math.sin(this.t) * 3;
-    const r = Math.max(2, 5 + this.value * 0.5);
-    // 발광
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r*2);
-    g.addColorStop(0,'rgba(120,220,255,0.5)'); g.addColorStop(1,'transparent');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,r*2,0,Math.PI*2); ctx.fill();
+    // [UPDATE 2026-07-31] 폴백 원 반지름에 상한 추가. 예전엔 오브 값이 항상 2로 고정돼 있어 문제가 없었지만
+    // (개수 상한이 생기면서) 값이 커진 지금은 이미지 로드 실패 시 반지름이 수만 px가 되어 화면을 통째로 덮는다.
+    const r = Math.min(14, Math.max(2, 5 + this.value * 0.5));
+    // [UPDATE 2026-07-23] XP오브 발광 제거 — 킬당 여러 개씩 쏟아지는데 발광까지 그리는 건 사치라는
+    // 사용자 지적(+ 대량으로 쌓였을 때 프레임당 draw 비용 절감) 반영
 
     const _xpKey = this.value>=10?'xp_flame':this.value>=4?'xp_crystal':'xp_orb';
     const sc = SPRITES?.items?.[_xpKey];
@@ -384,6 +394,7 @@ function applyItemEffect(item, player, enemies, saveData, xpOrbs, goldDrops) {
       case 'potion':
         if (!player._healBlocked) {
           player.hp = Math.min(player.hp + CONFIG.ITEM.POTION_HEAL, player.maxHp);
+          player._lawHealAccum = (player._lawHealAccum || 0) + CONFIG.ITEM.POTION_HEAL; // [UPDATE 2026-07-24] 흡수의 법칙 트리거용
           showFloatingText(item.x, item.y, `+${CONFIG.ITEM.POTION_HEAL}❤️`, '#40d060');
         } else {
           showFloatingText(item.x, item.y, '💀회복 불가', '#9060d0');

@@ -36,6 +36,49 @@ const SPRITES = {
     { src:'__IMG_player_player_5__', drawW:100, drawH:110, offsetX:-50, offsetY:-110 }, // ch8 클리어
   ],
 
+  // [UPDATE 2026-08-02] 파트2 주인공 박수 전용 스프라이트 (무기 없는 비-동료 버전).
+  // 시즌8 엔딩 이후 로비/인게임에서 주인공 교체 시 player.js가 이 키를 사용 (companions.baksu 재사용 아님).
+  // [UPDATE 2026-08-02] 인게임(캔버스)에선 원래 정상 비율로 잘 나왔음 — "뚱뚱해 보인다"는 실제로는
+  // 로비(lobby.js positionPlayer)가 135:158(애기씨 비율)로 강제 리사이즈해서 생긴 문제였음(아래 lobby.js 수정 참고).
+  // 그래서 여기 drawW는 원래 값(50)으로 되돌림 — 인게임 렌더링은 건드릴 필요 없었음.
+  baksuProtagonist: { src:'__IMG_player_baksu_part2__', drawW:50, drawH:100, offsetX:-25, offsetY:-100 },
+
+  // [UPDATE 2026-08-04] 박수 파츠 분리 애니메이션(몸통+왼팔+오른팔, tools/anim-preview.html 기반)은
+  // 조정이 너무 손이 많이 가서 폐기 — 대신 풀프레임 3장(서있는/공격준비/공격)으로 교체.
+  // 박수는 칼을 휘두르거나 활을 당기는 액션 없이 "마법력을 뻗는" 동작만 있다는 설정(원거리 캐스팅류).
+  // 3프레임 전부 원본에서 동일한 유니온 bbox로 크롭해서 캔버스 크기가 같음 — 프레임 전환 시 캐릭터가
+  // 화면에서 들썩이지 않고 제자리에서 자연스럽게 전환됨.
+  // [UPDATE 2026-08-05] 2번(공격 준비) 프레임에 더 역동적인 후보 에셋을 잠깐 넣었다가, 애기씨 쪽 반응이
+  // 안 좋아서 박수도 같이 "직전"(이 교체 이전) 버전으로 원복 — 1/2/3 유니온 bbox도 원본 기준으로 재크롭(크기 동일).
+  // [UPDATE 2026-08-05] 3프레임(대기/준비/공격) → 5프레임(대기1~4 + 공격)으로 확장 — 준비 동작을 더 부드럽게
+  // 나눈 새 에셋으로 교체. 재생 타이밍은 player.js draw()의 _BAKSU_MOTION_DURS 참고(대기1~4 각 0.3초, 공격 0.8초).
+  baksuMotion: [
+    { src:'__IMG_player_parts_baksu_motion_1__', drawW:67, drawH:100, offsetX:-33, offsetY:-100 }, // 0: 대기1(서있는)
+    { src:'__IMG_player_parts_baksu_motion_2__', drawW:67, drawH:100, offsetX:-33, offsetY:-100 }, // 1: 대기2
+    { src:'__IMG_player_parts_baksu_motion_3__', drawW:67, drawH:100, offsetX:-33, offsetY:-100 }, // 2: 대기3
+    { src:'__IMG_player_parts_baksu_motion_4__', drawW:67, drawH:100, offsetX:-33, offsetY:-100 }, // 3: 대기4
+    { src:'__IMG_player_parts_baksu_motion_5__', drawW:67, drawH:100, offsetX:-33, offsetY:-100 }, // 4: 공격(마법 발출)
+  ],
+
+  // [UPDATE 2026-08-05] 애기씨 3프레임 모션 통일 시도는 "어색하다"는 피드백으로 철회 — 예전 5단계 성장
+  // 정지 이미지(player[0~4])로 완전 원복(player.js의 draw()/getSpriteConfig() 참고). 이 배열은 더 이상
+  // 코드에서 참조되지 않지만, 나중에 다시 시도할 경우를 대비해 정의만 남겨둠(프리로드 목록에선 제외).
+  aegissiMotion: [
+    { src:'__IMG_player_parts_aegissi_motion_1__', drawW:54, drawH:80, offsetX:-27, offsetY:-80 }, // 0: 서있는(대기)
+    { src:'__IMG_player_parts_aegissi_motion_2__', drawW:54, drawH:80, offsetX:-27, offsetY:-80 }, // 1: 공격 준비
+    { src:'__IMG_player_parts_aegissi_motion_3__', drawW:54, drawH:80, offsetX:-27, offsetY:-80 }, // 2: 공격
+  ],
+
+  // [UPDATE 2026-08-03] 파트2 "애기씨의 부적" 지킬 오브젝트 — HP 구간별 열화 4단계.
+  // 인덱스 0=최상(76~100%) ~ 3=최악(0~25%), talismanDefense-scene(가칭)에서 HP% 보고 이 배열 인덱스 선택.
+  // [UPDATE 2026-08-03] 주인공(박수, drawH:100)보다도 커 보인다는 피드백 — 주인공 절반 크기(drawH:50)로 재조정
+  talismanDefense: [
+    { src:'__IMG_talisman_talisman_hp1__', drawW:29, drawH:50, offsetX:-15, offsetY:-50 },
+    { src:'__IMG_talisman_talisman_hp2__', drawW:29, drawH:50, offsetX:-15, offsetY:-50 },
+    { src:'__IMG_talisman_talisman_hp3__', drawW:30, drawH:50, offsetX:-15, offsetY:-50 },
+    { src:'__IMG_talisman_talisman_hp4__', drawW:30, drawH:50, offsetX:-15, offsetY:-50 },
+  ],
+
   // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 — 방향 반전은 기존 player.js facing 로직(좌우 스케일) 재사용,
   // 별도 방향별 애니메이션 불필요(기본 캐릭터 스프라이트와 동일한 단일 정지 포즈 + 좌우 플립 방식)
   transformPlayer: {
@@ -63,6 +106,15 @@ const SPRITES = {
     // [UPDATE 2026-07-17] 도깨비 계열 신규 동료 2종 (박수/장구애비)
     baksu:        { src:'__IMG_companions_baksu__',        drawW:44, drawH:78, offsetX:-22, offsetY:-78 },
     janggu_aebi:  { src:'__IMG_companions_janggu_aebi__',  drawW:44, drawH:78, offsetX:-22, offsetY:-78 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 신규 동료 2종 (환생동자/허무검사)
+    hwansaengdongja: { src:'__IMG_companions_hwansaengdongja__', drawW:44, drawH:80, offsetX:-22, offsetY:-80 },
+    heomugeomsa:     { src:'__IMG_companions_heomugeomsa__',     drawW:51, drawH:82, offsetX:-26, offsetY:-82 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 신규 동료 2종 (백운선인/매화검선) — 이미지 모음/03. 동료 관련/ss5 동료 원본
+    baekunseonin:   { src:'__IMG_companions_baekunseonin__',   drawW:71, drawH:80, offsetX:-36, offsetY:-80 },
+    maehwageomseon: { src:'__IMG_companions_maehwageomseon__', drawW:80, drawH:80, offsetX:-40, offsetY:-80 },
+    // [UPDATE 2026-07-31] 시즌7(어계) 영입 동료 — 미리내(레전더리), 천자(미소스, 첫 미소스 동료)
+    mirinae: { src:'__IMG_companions_mirinae__', drawW:88, drawH:80, offsetX:-44, offsetY:-80 },
+    cheonja: { src:'__IMG_companions_cheonja__', drawW:92, drawH:80, offsetX:-46, offsetY:-80 },
   },
 
   enemies: {
@@ -188,12 +240,134 @@ const SPRITES = {
     // 챕터 40 — 귀허계의 왕좌
     wangjwapapyeonche:    { src:'__MON_ch40_mon1__', drawW:53, drawH:41, offsetX:-27, offsetY:-41 },
     majimakjaa:           { src:'__MON_ch40_mon2__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 몬스터 20종 이미지 — 이미지 모음/01. monsters and bosses/ss5 mon 원본, 배경 이미 제거된 상태로 제공됨
+    gureumwonhon:         { src:'__MON_ch41_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    seoribyeongsa:        { src:'__MON_ch41_mon2__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    bullohwajeong:        { src:'__MON_ch42_mon1__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    jeongwonjigi:         { src:'__MON_ch42_mon2__', drawW:53, drawH:45, offsetX:-27, offsetY:-45 },
+    bujeokgwi:            { src:'__MON_ch43_mon1__', drawW:53, drawH:50, offsetX:-27, offsetY:-50 },
+    dosulsuryeonja:       { src:'__MON_ch43_mon2__', drawW:53, drawH:46, offsetX:-27, offsetY:-46 },
+    gohaengjahon:         { src:'__MON_ch44_mon1__', drawW:53, drawH:43, offsetX:-27, offsetY:-43 },
+    jinripapyeon:         { src:'__MON_ch44_mon2__', drawW:53, drawH:43, offsetX:-27, offsetY:-43 },
+    seongyesumunjang:     { src:'__MON_ch45_mon1__', drawW:53, drawH:45, offsetX:-27, offsetY:-45 },
+    simcheungseonbyeong:  { src:'__MON_ch45_mon2__', drawW:53, drawH:49, offsetX:-27, offsetY:-49 },
+    jamsikdoensinseon:    { src:'__MON_ch46_mon1__', drawW:53, drawH:41, offsetX:-27, offsetY:-41 },
+    oyeomdoenbit:         { src:'__MON_ch46_mon2__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    dwitteullinbujeok:    { src:'__MON_ch47_mon1__', drawW:53, drawH:39, offsetX:-27, offsetY:-39 },
+    jujudosa:             { src:'__MON_ch47_mon2__', drawW:53, drawH:44, offsetX:-27, offsetY:-44 },
+    oyeomdoenjilli:       { src:'__MON_ch48_mon1__', drawW:53, drawH:46, offsetX:-27, offsetY:-46 },
+    tarakhangohaengja:    { src:'__MON_ch48_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    tarakhansinseon:      { src:'__MON_ch49_mon1__', drawW:53, drawH:42, offsetX:-27, offsetY:-42 },
+    jamsikdoennun:        { src:'__MON_ch49_mon2__', drawW:53, drawH:35, offsetX:-27, offsetY:-35 },
+    tarakhancheonin:      { src:'__MON_ch50_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    majimaknunmul:        { src:'__MON_ch50_mon2__', drawW:53, drawH:39, offsetX:-27, offsetY:-39 },
+    // [UPDATE 2026-07-24] 시즌6(원계) 몬스터 20종 — 챕터51~60
+    beopchikpapyeon:       { src:'__MON_ch51_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    wonchoemeari:          { src:'__MON_ch51_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jeonjagijanjae:        { src:'__MON_ch52_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    haekryeokgyeoljeongche:{ src:'__MON_ch52_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    ingwauigeurimja:       { src:'__MON_ch53_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    pagoeuisado:           { src:'__MON_ch53_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jiltueuipapyeon:       { src:'__MON_ch54_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gyeongoeuijanyeong:    { src:'__MON_ch54_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    wongyeuipasubyeong:    { src:'__MON_ch55_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    beopchiksuhosu:        { src:'__MON_ch55_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    oyeomdoenbeopchikche:  { src:'__MON_ch56_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jamsikuichokso:        { src:'__MON_ch56_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    dwijipyinwonin:        { src:'__MON_ch57_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gyeolgwaeobsneungeurimja: { src:'__MON_ch57_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    bunggoehaneunpapyeon:  { src:'__MON_ch58_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    changjoeujanhae:       { src:'__MON_ch58_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    somyeolhaneunnun:      { src:'__MON_ch59_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    geunwoneuipapyeon:     { src:'__MON_ch59_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jungryeokuipapyeon:    { src:'__MON_ch60_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    wangjwaeuigeurimja:    { src:'__MON_ch60_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    // [UPDATE 2026-07-31] 시즌7(어계) 몬스터 20종 — 챕터61~70. 원본: 이미지 모음/01. monsters and bosses/ss7 mon
+    // (사용분은 `쓴것` 하위로 이동). 렌더 크기는 시즌6과 동일 규약(53×40) 유지.
+    kkumpapyeon:           { src:'__MON_ch61_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gyunyeolgwi:           { src:'__MON_ch61_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    muhyeongche:           { src:'__MON_ch62_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    simyeonchoksu:         { src:'__MON_ch62_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    cheongaenunjogak:      { src:'__MON_ch63_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    eungsija:              { src:'__MON_ch63_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    geumgisokssagim:       { src:'__MON_ch64_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    ireumeopsneunja:       { src:'__MON_ch64_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    nagaksindo:            { src:'__MON_ch65_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jamdeunjaujong:        { src:'__MON_ch65_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    ojeomaegissi:          { src:'__MON_ch66_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gangrimgeurimja:       { src:'__MON_ch66_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gwanggipado:           { src:'__MON_ch67_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    joryugwi:              { src:'__MON_ch67_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    nunkkeopulgyunyeol:    { src:'__MON_ch68_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jamkkaeneunja:         { src:'__MON_ch68_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    chimmukgwi:            { src:'__MON_ch69_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    malhaeseonandoelgeot:  { src:'__MON_ch69_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    taechojasik:           { src:'__MON_ch70_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    eomeonipapyeon:        { src:'__MON_ch70_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    // [UPDATE 2026-07-31] 시즌8(황계) 몬스터 20종 — 챕터71~80. 렌더 규약은 시즌6·7과 동일(53×40).
+    jongmalpapyeon:         { src:'__MON_ch71_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    bunggoeja:              { src:'__MON_ch71_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    geoulpapyeon:           { src:'__MON_ch72_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    bansache:               { src:'__MON_ch72_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    yeokhaenggwi:           { src:'__MON_ch73_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gwageoui_janjae:        { src:'__MON_ch73_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    ssangsomyeolche:        { src:'__MON_ch74_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    banmuljilgu:            { src:'__MON_ch74_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    hwanggyebyeongjol:      { src:'__MON_ch75_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    banmuljilseok_sujipga:  { src:'__MON_ch75_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    geouljaa_bunsin:        { src:'__MON_ch76_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gakseong_jeonjo:        { src:'__MON_ch76_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    hapchiui_sado:          { src:'__MON_ch77_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    yeoneonui_jogak:        { src:'__MON_ch77_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    taechoui_janhyang:      { src:'__MON_ch78_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    gwihwanhaneun_geot:     { src:'__MON_ch78_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    jaaui_papyeon:          { src:'__MON_ch79_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    sunsuhan_geurimja:      { src:'__MON_ch79_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    taechoui_bit:           { src:'__MON_ch80_mon1__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
+    eorin_useum:            { src:'__MON_ch80_mon2__', drawW:53, drawH:40, offsetX:-27, offsetY:-40 },
     // 엘리트 몬스터 (챕터쌍별 1종)
     elite_ch1_2:  { src:'__MON_elite_ch1_2__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
     elite_ch3_4:  { src:'__MON_elite_ch3_4__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
     elite_ch5_6:  { src:'__MON_elite_ch5_6__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
     elite_ch7_8:  { src:'__MON_elite_ch7_8__',  drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
     elite_ch9_10: { src:'__MON_elite_ch9_10__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    // [UPDATE 2026-07-24] 시즌2~4(챕터11~40) 엘리트 15종 — 미사용 원화("이미지 모음/00. 종합 안쓴거/몬스터, 보스 안쓴거") 활용
+    elite_ch11_12: { src:'__MON_elite_ch11_12__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch13_14: { src:'__MON_elite_ch13_14__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch15_16: { src:'__MON_elite_ch15_16__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch17_18: { src:'__MON_elite_ch17_18__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch19_20: { src:'__MON_elite_ch19_20__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch21_22: { src:'__MON_elite_ch21_22__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch23_24: { src:'__MON_elite_ch23_24__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch25_26: { src:'__MON_elite_ch25_26__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch27_28: { src:'__MON_elite_ch27_28__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch29_30: { src:'__MON_elite_ch29_30__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch31_32: { src:'__MON_elite_ch31_32__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch33_34: { src:'__MON_elite_ch33_34__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch35_36: { src:'__MON_elite_ch35_36__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch37_38: { src:'__MON_elite_ch37_38__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch39_40: { src:'__MON_elite_ch39_40__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    // [UPDATE 2026-07-24] 시즌5(선계) 엘리트 — 사신(四神) 4종
+    elite_ch41_42: { src:'__MON_elite_ch41_42__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch43_44: { src:'__MON_elite_ch43_44__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch45_47: { src:'__MON_elite_ch45_47__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch48_50: { src:'__MON_elite_ch48_50__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    // [UPDATE 2026-07-29] 시즌6~8(원계/어계/황계) 엘리트 15종 — 그동안 등록이 누락되어 있었음(항상 절차적 폴백)
+    elite_ch51_52: { src:'__MON_elite_ch51_52__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch53_54: { src:'__MON_elite_ch53_54__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch55_56: { src:'__MON_elite_ch55_56__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch57_58: { src:'__MON_elite_ch57_58__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch59_60: { src:'__MON_elite_ch59_60__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch61_62: { src:'__MON_elite_ch61_62__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch63_64: { src:'__MON_elite_ch63_64__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch65_66: { src:'__MON_elite_ch65_66__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch67_68: { src:'__MON_elite_ch67_68__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch69_70: { src:'__MON_elite_ch69_70__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch71_72: { src:'__MON_elite_ch71_72__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch73_74: { src:'__MON_elite_ch73_74__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch75_76: { src:'__MON_elite_ch75_76__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch77_78: { src:'__MON_elite_ch77_78__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
+    elite_ch79_80: { src:'__MON_elite_ch79_80__', drawW:72, drawH:72, offsetX:-36, offsetY:-72 },
   },
 
   lobbyNpcs: {
@@ -201,6 +375,10 @@ const SPRITES = {
     merchant: { src: '__IMG_lobbyNpcs_merchant__', drawW: 72, drawH: 90, offsetX: -36, offsetY: -90 },
     // [UPDATE 2026-07-17] 260713_MTOPC.md 9번③ 혼돈시장 NPC 전용 이미지 반입 — 그동안 이모지(🎪)로 대체하던 것 교체
     chaosMerchant: { src: '__IMG_lobbyNpcs_chaosMerchant__', drawW: 71, drawH: 90, offsetX: -36, offsetY: -90 },
+    // [UPDATE 2026-07-19] 시즌1 클리어 시 삼신할머니/차원상인과 같이 등장하는 보물 창고(Vault)
+    vault: { src: '__IMG_lobbyNpcs_vault__', drawW: 64, drawH: 66, offsetX: -32, offsetY: -66 },
+    // [UPDATE 2026-07-31] 시즌7(어계) NPC "그레이트 이스" — 슈브니구라스의 축복을 1골드에 파는 이계의 상인
+    greatIth: { src: '__IMG_lobbyNpcs_greatIth__', drawW: 95, drawH: 90, offsetX: -47, offsetY: -90 },
   },
 
   worldMap: { src: '__IMG_worldMap_world_map__' },
@@ -227,6 +405,61 @@ const SPRITES = {
     { src: '__IMG_ending_ending_s3_4__' },
   ],
 
+  // [UPDATE 2026-07-17] 시즌4 엔딩 6슬라이드 (마지막 5-2→5-1 두 장으로 점층적 반전 연출)
+  endingS4: [
+    { src: '__IMG_ending_ending_s4_1__' },
+    { src: '__IMG_ending_ending_s4_2__' },
+    { src: '__IMG_ending_ending_s4_3__' },
+    { src: '__IMG_ending_ending_s4_4__' },
+    { src: '__IMG_ending_ending_s4_5_2__' },
+    { src: '__IMG_ending_ending_s4_5_1__' },
+  ],
+
+  // [UPDATE 2026-07-24] 시즌5 엔딩 5슬라이드
+  endingS5: [
+    { src: '__IMG_ending_ending_s5_1__' },
+    { src: '__IMG_ending_ending_s5_2__' },
+    { src: '__IMG_ending_ending_s5_3__' },
+    { src: '__IMG_ending_ending_s5_4__' },
+    { src: '__IMG_ending_ending_s5_5__' },
+  ],
+
+  // [UPDATE 2026-07-25] 시즌6(원계) 엔딩 5슬라이드 — 아트만 미리 반영, CONTENT_RELEASE.season6는 아직 false라 실제 노출은 안 됨
+  // [UPDATE 2026-07-31] 시즌6 정식 공개(v0.5.1) + 엔딩 트리거 연결 완료로 이제 실제로 재생됨
+  endingS6: [
+    { src: '__IMG_ending_ending_s6_1__' },
+    { src: '__IMG_ending_ending_s6_2__' },
+    { src: '__IMG_ending_ending_s6_3__' },
+    { src: '__IMG_ending_ending_s6_4__' },
+    { src: '__IMG_ending_ending_s6_5__' },
+  ],
+
+  // [UPDATE 2026-07-31] 시즌7(어계) 엔딩 5슬라이드 — 오염의 멍에 / 거울 저편의 나 / 짊어진 오염 / 등 뒤의 인연들 / 황계의 문으로
+  // 원본: 이미지 모음/05. 시즌 엔딩 모음/ss7 end (사용분은 `쓴것` 하위로 이동)
+  endingS7: [
+    { src: '__IMG_ending_ending_s7_1__' },
+    { src: '__IMG_ending_ending_s7_2__' },
+    { src: '__IMG_ending_ending_s7_3__' },
+    { src: '__IMG_ending_ending_s7_4__' },
+    { src: '__IMG_ending_ending_s7_5__' },
+  ],
+
+  // [UPDATE 2026-08-02] 시즌8(황계) 최종 엔딩 10슬라이드 — 원본: 이미지 모음/16. 엔딩 모음 r1~r10
+  // (사용분은 `쓴것` 하위로 이동). 클라이맥스(자아 합일/아카식 소거)에 "아카식과 부적" 공식 에필로그가
+  // 곧바로 이어지는 구조 — WORLDBUILDING.md "7. 최종 엔딩 — 아카식과 부적" 참고.
+  endingS8: [
+    { src: '__IMG_ending_ending_s8_1__' },
+    { src: '__IMG_ending_ending_s8_2__' },
+    { src: '__IMG_ending_ending_s8_3__' },
+    { src: '__IMG_ending_ending_s8_4__' },
+    { src: '__IMG_ending_ending_s8_5__' },
+    { src: '__IMG_ending_ending_s8_6__' },
+    { src: '__IMG_ending_ending_s8_7__' },
+    { src: '__IMG_ending_ending_s8_8__' },
+    { src: '__IMG_ending_ending_s8_9__' },
+    { src: '__IMG_ending_ending_s8_10__' },
+  ],
+
   lobbyBuildings: {
     daejanggan: { src:'__IMG_lobbyBuildings_daejanggan__' },
     seonang:  { src:'__IMG_lobbyBuildings_seonang__'  },
@@ -243,6 +476,28 @@ const SPRITES = {
     proj_fire:      { src:'__IMG_effects_proj_fire__',      drawW:44, drawH:30 },
     proj_ice:       { src:'__IMG_effects_proj_ice__',       drawW:44, drawH:30 },
     proj_beam:      { src:'__IMG_effects_proj_beam__',      drawW:52, drawH:28 },
+    // [UPDATE 2026-07-23] 선술 스킬트리 필살기 전용 이펙트 4종 — 이미지 모음/00. 종합 안쓴거/인겜에 적용 했다가 지금은 안쓰이는 이미지 모음
+    seonsul_lightning: { src:'__IMG_effects_seonsul_lightning__', drawW:119, drawH:180 }, // 벼락술
+    seonsul_fire:      { src:'__IMG_effects_seonsul_fire__',      drawW:94,  drawH:130 }, // 화염술
+    seonsul_mark:      { src:'__IMG_effects_seonsul_mark__',      drawW:90,  drawH:71  }, // 명부낙인
+    seonsul_purify:    { src:'__IMG_effects_seonsul_purify__',    drawW:67,  drawH:110 }, // 정화
+    // [UPDATE 2026-07-25] 법칙(원계) 액티브 6종 전용 화면급 이펙트
+    // [UPDATE 2026-07-28] 재활용 텍스처(독안개/도깨비불/토네이도/히트폭발)를 전부 전용 신규 원화로 교체 —
+    // 나머지 8종과 출처를 통일(이미지 모음/18. 법칙 만들기/법칙 이펙트, 쓴거 하위로 이동됨)
+    law_corruption: { src:'__IMG_effects_law_corruption__', drawW:48, drawH:36 }, // 오염의 법칙 (초록/보라 얼룩)
+    law_collapse:   { src:'__IMG_effects_law_collapse__',   drawW:52, drawH:39 }, // 붕괴의 법칙 (방사형 파쇄)
+    law_gravity:    { src:'__IMG_effects_law_gravity__',    drawW:48, drawH:36 }, // 중력의 법칙 (와이어프레임 큐브, 공간 왜곡)
+    law_extinction: { src:'__IMG_effects_law_extinction__', drawW:44, drawH:33 }, // 소멸의 법칙 (텅 빈 중심의 암흑 폭발)
+    // [UPDATE 2026-07-28] 절규/왜곡(주기형) + 조건형 액티브 6종(심판/파멸/인과응보/역행/왕좌/태초) 전용 신규 이펙트 —
+    // 그동안 텍스트 팝업뿐이거나 무연출이던 문제 해결. 사용자 제공 원화(이미지 모음/18. 법칙 만들기/법칙 이펙트) 사용.
+    law_scream:     { src:'__IMG_effects_law_scream__',     drawW:52, drawH:39 }, // 절규의 법칙 (절규하는 얼굴들)
+    law_distortion: { src:'__IMG_effects_law_distortion__', drawW:48, drawH:36 }, // 왜곡의 법칙 (보라/금 소용돌이)
+    law_judgment:   { src:'__IMG_effects_law_judgment__',   drawW:52, drawH:39 }, // 심판의 법칙 (황금 음양 + 율법 두루마리)
+    law_ruin:       { src:'__IMG_effects_law_ruin__',       drawW:48, drawH:36 }, // 파멸의 법칙 (불타는 봉황형 화염)
+    law_karma:      { src:'__IMG_effects_law_karma__',      drawW:52, drawH:39 }, // 인과응보의 법칙 (음양이 감도는 소용돌이)
+    law_reversal:   { src:'__IMG_effects_law_reversal__',   drawW:48, drawH:36 }, // 역행의 법칙 (어두운 웜홀+고리)
+    law_throne:     { src:'__IMG_effects_law_throne__',     drawW:48, drawH:36 }, // 왕좌의 법칙 (옥좌/문 형상)
+    law_origin:     { src:'__IMG_effects_law_origin__',     drawW:56, drawH:42 }, // 태초의 법칙 ⭐시그니처 (가장 화려한 파스텔 크리스탈)
     proj_ghost:     { src:'__IMG_effects_proj_ghost__',     drawW:48, drawH:28 },
     proj_circle:    { src:'__IMG_effects_proj_circle__',    drawW:52, drawH:28 },
     lightning_bolt: { src:'__IMG_effects_lightning_bolt__', drawW:40, drawH:250 },
@@ -270,6 +525,35 @@ const SPRITES = {
     main: { src:'__IMG_slots_main__', w:34, h:34 },
     sub:  { src:'__IMG_slots_sub__',  w:34, h:34 },
     stat: { src:'__IMG_slots_stat__', w:34, h:34 },
+    law:  { src:'__IMG_slots_law__',  w:34, h:34 }, // [UPDATE 2026-07-24] 시즌6 법칙 슬롯
+  },
+
+  // [UPDATE 2026-07-24] 시즌6(원계) 법칙 24종 아이콘 — 이미지 모음/18. 법칙 만들기/법칙 - 중복 제거 원본
+  laws: {
+    law_sentinel:         { src:'__IMG_laws_law_sentinel__',         drawW:32, drawH:32 },
+    law_electromagnetism: { src:'__IMG_laws_law_electromagnetism__', drawW:32, drawH:32 },
+    law_nuclear:          { src:'__IMG_laws_law_nuclear__',          drawW:32, drawH:32 },
+    law_causality:        { src:'__IMG_laws_law_causality__',        drawW:32, drawH:32 },
+    law_relation:         { src:'__IMG_laws_law_relation__',         drawW:32, drawH:32 },
+    law_primal:           { src:'__IMG_laws_law_primal__',           drawW:32, drawH:32 },
+    law_stillness:        { src:'__IMG_laws_law_stillness__',        drawW:32, drawH:32 },
+    law_sprint:           { src:'__IMG_laws_law_sprint__',           drawW:32, drawH:32 },
+    law_reflection:       { src:'__IMG_laws_law_reflection__',       drawW:32, drawH:32 },
+    law_absorption:       { src:'__IMG_laws_law_absorption__',       drawW:32, drawH:32 },
+    law_endurance:        { src:'__IMG_laws_law_endurance__',        drawW:32, drawH:32 },
+    law_excess:           { src:'__IMG_laws_law_excess__',           drawW:32, drawH:32 },
+    law_corruption:       { src:'__IMG_laws_law_corruption__',       drawW:32, drawH:32 },
+    law_collapse:         { src:'__IMG_laws_law_collapse__',         drawW:32, drawH:32 },
+    law_gravity:          { src:'__IMG_laws_law_gravity__',          drawW:32, drawH:32 },
+    law_scream:           { src:'__IMG_laws_law_scream__',           drawW:32, drawH:32 },
+    law_extinction:       { src:'__IMG_laws_law_extinction__',       drawW:32, drawH:32 },
+    law_distortion:       { src:'__IMG_laws_law_distortion__',       drawW:32, drawH:32 },
+    law_judgment:         { src:'__IMG_laws_law_judgment__',         drawW:32, drawH:32 },
+    law_ruin:             { src:'__IMG_laws_law_ruin__',             drawW:32, drawH:32 },
+    law_karma:            { src:'__IMG_laws_law_karma__',            drawW:32, drawH:32 },
+    law_reversal:         { src:'__IMG_laws_law_reversal__',         drawW:32, drawH:32 },
+    law_throne:           { src:'__IMG_laws_law_throne__',           drawW:32, drawH:32 },
+    law_origin:           { src:'__IMG_laws_law_origin__',           drawW:32, drawH:32 },
   },
 
   items: {
@@ -284,6 +568,7 @@ const SPRITES = {
     ganghwaseok:   { src:'__IMG_items_ganghwaseok__',   drawW:28, drawH:28 },
     cheonunseok:   { src:'__IMG_items_cheonunseok__',   drawW:28, drawH:28 },
     cheonryeonggwa:{ src:'__IMG_items_cheonryeonggwa__',drawW:28, drawH:28 },
+    gyulyulseok:   { src:'__IMG_items_gyulyulseok__',   drawW:28, drawH:28 }, // [UPDATE 2026-07-24] 규율석(법칙 시스템 재화)
     taegeukseok:   { src:'__IMG_items_taegeukseok__',   drawW:28, drawH:28 },
     chaewonseok:   { src:'__IMG_items_chaewonseok__',   drawW:28, drawH:28 },
     // [UPDATE 2026-07-17] 혼돈석/순리석 전용 아이콘 반입 — 그동안 이모지(🌪️/🌊)로 대체하던 것 교체
@@ -293,6 +578,15 @@ const SPRITES = {
     soulStones:    { src:'__IMG_items_soulStones__',    drawW:19, drawH:28 },
     // [UPDATE 2026-07-17] 영혼조각(soulFragment) 전용 아이콘 반입 — 그동안 맵 드랍이 순수 도형(발광 원)이었던 것 교체
     soulFragment:  { src:'__IMG_items_soulFragment__',  drawW:15, drawH:22 },
+    // [UPDATE 2026-07-19] 보물 창고(Vault) 특산품 8종 전용 아이콘 — 이모지 플레이스홀더 교체
+    s1_soulwill:      { src:'__IMG_items_s1_soulwill__',      drawW:28, drawH:28 },
+    s2_reincycle:     { src:'__IMG_items_s2_reincycle__',     drawW:28, drawH:28 },
+    s3_fatetrick:     { src:'__IMG_items_s3_fatetrick__',     drawW:28, drawH:28 },
+    s4_providence:    { src:'__IMG_items_s4_providence__',    drawW:28, drawH:28 },
+    s5_immortalbreath:{ src:'__IMG_items_s5_immortalbreath__',drawW:28, drawH:28 },
+    s6_lawproof:      { src:'__IMG_items_s6_lawproof__',      drawW:28, drawH:28 },
+    s7_unknown:       { src:'__IMG_items_s7_unknown__',       drawW:28, drawH:28 },
+    s8_fatechoice:    { src:'__IMG_items_s8_fatechoice__',    drawW:28, drawH:28 },
   },
 
   // [UPDATE 2026-07-11] 오행 상성표 아트(사용자 제공) — 대장간 등 장착화면 시너지 시각화용
@@ -302,6 +596,8 @@ const SPRITES = {
     memoryHallBg: { src:'__IMG_ui_memory_hall_bg__' },
     // [UPDATE 2026-07-17] 260713_MTOPC.md 9번⑤: 변신카드 3종 공용 액자 프레임(3개 후보 중 0001 채택)
     transformCardFrame: { src:'__IMG_ui_transform_card_frame__' },
+    // [UPDATE 2026-07-22] 선술 스킬트리 팝업 배경 — 음양 나무 아트(625×1302, 사용자 제공)
+    seonsulTreeBg: { src:'__IMG_ui_seonsul_tree_bg__' },
   },
 
   weapons: {
@@ -366,6 +662,28 @@ const SPRITES = {
     ch38_midboss: { src:'__MON_ch38_midboss__', drawW:100, drawH:128, offsetX:-50, offsetY:-128 },
     ch39_midboss: { src:'__MON_ch39_midboss__', drawW:106, drawH:128, offsetX:-53, offsetY:-128 },
     ch40_midboss: { src:'__MON_ch40_midboss__', drawW: 95, drawH:128, offsetX:-48, offsetY:-128 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 미들보스 10종 — 이미지 모음/01. monsters and bosses/ss5 boss-여유분 있음 원본
+    ch41_midboss: { src:'__MON_ch41_midboss__', drawW: 91, drawH:120, offsetX:-46, offsetY:-120 },
+    ch42_midboss: { src:'__MON_ch42_midboss__', drawW: 99, drawH:120, offsetX:-50, offsetY:-120 },
+    ch43_midboss: { src:'__MON_ch43_midboss__', drawW:118, drawH:120, offsetX:-59, offsetY:-120 },
+    ch44_midboss: { src:'__MON_ch44_midboss__', drawW:107, drawH:120, offsetX:-54, offsetY:-120 },
+    ch45_midboss: { src:'__MON_ch45_midboss__', drawW:102, drawH:120, offsetX:-51, offsetY:-120 },
+    ch46_midboss: { src:'__MON_ch46_midboss__', drawW:107, drawH:120, offsetX:-54, offsetY:-120 },
+    ch47_midboss: { src:'__MON_ch47_midboss__', drawW:104, drawH:120, offsetX:-52, offsetY:-120 },
+    ch48_midboss: { src:'__MON_ch48_midboss__', drawW:104, drawH:120, offsetX:-52, offsetY:-120 },
+    ch49_midboss: { src:'__MON_ch49_midboss__', drawW:114, drawH:120, offsetX:-57, offsetY:-120 },
+    ch50_midboss: { src:'__MON_ch50_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    // [UPDATE 2026-07-24] 시즌6(원계) 미들보스 10종 — 챕터51~60
+    ch51_midboss: { src:'__MON_ch51_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch52_midboss: { src:'__MON_ch52_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch53_midboss: { src:'__MON_ch53_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch54_midboss: { src:'__MON_ch54_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch55_midboss: { src:'__MON_ch55_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch56_midboss: { src:'__MON_ch56_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch57_midboss: { src:'__MON_ch57_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch58_midboss: { src:'__MON_ch58_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch59_midboss: { src:'__MON_ch59_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
+    ch60_midboss: { src:'__MON_ch60_midboss__', drawW:106, drawH:120, offsetX:-53, offsetY:-120 },
     // 챕터별 최종보스
     ch1_boss:  { src:'__MON_ch1_boss__',  drawW:120, drawH:130, offsetX:-60, offsetY:-130 },
     ch2_boss:  { src:'__MON_ch2_boss__',  drawW:120, drawH:130, offsetX:-60, offsetY:-130 },
@@ -409,6 +727,74 @@ const SPRITES = {
     ch38_boss: { src:'__MON_ch38_boss__', drawW:139, drawH:148, offsetX:-70, offsetY:-148 },
     ch39_boss: { src:'__MON_ch39_boss__', drawW:141, drawH:148, offsetX:-71, offsetY:-148 },
     ch40_boss: { src:'__MON_ch40_boss__', drawW:137, drawH:148, offsetX:-69, offsetY:-148 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 챕터보스 10종 — 이미지 모음/01. monsters and bosses/ss5 boss-여유분 있음 원본
+    ch41_boss: { src:'__MON_ch41_boss__', drawW:106, drawH:145, offsetX:-53, offsetY:-145 },
+    ch42_boss: { src:'__MON_ch42_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch43_boss: { src:'__MON_ch43_boss__', drawW:113, drawH:145, offsetX:-57, offsetY:-145 },
+    ch44_boss: { src:'__MON_ch44_boss__', drawW:122, drawH:145, offsetX:-61, offsetY:-145 },
+    ch45_boss: { src:'__MON_ch45_boss__', drawW:114, drawH:145, offsetX:-57, offsetY:-145 },
+    ch46_boss: { src:'__MON_ch46_boss__', drawW:156, drawH:145, offsetX:-78, offsetY:-145 },
+    ch47_boss: { src:'__MON_ch47_boss__', drawW:120, drawH:145, offsetX:-60, offsetY:-145 },
+    ch48_boss: { src:'__MON_ch48_boss__', drawW:148, drawH:145, offsetX:-74, offsetY:-145 },
+    ch49_boss: { src:'__MON_ch49_boss__', drawW:130, drawH:145, offsetX:-65, offsetY:-145 },
+    ch50_boss: { src:'__MON_ch50_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    // [UPDATE 2026-07-24] 시즌6(원계) 챕터보스 10종 — 챕터51~60
+    ch51_boss: { src:'__MON_ch51_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch52_boss: { src:'__MON_ch52_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch53_boss: { src:'__MON_ch53_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch54_boss: { src:'__MON_ch54_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch55_boss: { src:'__MON_ch55_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch56_boss: { src:'__MON_ch56_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch57_boss: { src:'__MON_ch57_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch58_boss: { src:'__MON_ch58_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch59_boss: { src:'__MON_ch59_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+    ch60_boss: { src:'__MON_ch60_boss__', drawW:133, drawH:145, offsetX:-67, offsetY:-145 },
+
+    // [UPDATE 2026-07-31] 시즌7(어계) 보스/중간보스 20종 — 그동안 이미지가 없어 절차적 렌더링(색+도형)으로만 나왔음.
+    // 원본: 이미지 모음/01. monsters and bosses/ss7 boss (사용분은 `쓴것` 하위로 이동).
+    // 시즌6까지와 달리 원본 종횡비가 제각각이라 균일값 대신 이미지별로 폭을 계산(높이 기준: 챕터보스 145 / 중간보스 120).
+    // [UPDATE 2026-07-31] 시즌8(황계) 보스/중간보스 20종 — 원본: 이미지 모음/01. monsters and bosses/ss8 boss, ss8 mon or boss
+    // 챕터보스는 챕터 테마에 맞춰 개별 배정(챕터80 = 어린 애기씨, 최종보스).
+    ch71_boss:    { src:'__MON_ch71_boss__',    drawW:123, drawH:145, offsetX:-61, offsetY:-145 },
+    ch71_midboss: { src:'__MON_ch71_midboss__', drawW:136, drawH:120, offsetX:-68, offsetY:-120 },
+    ch72_boss:    { src:'__MON_ch72_boss__',    drawW:125, drawH:145, offsetX:-62, offsetY:-145 },
+    ch72_midboss: { src:'__MON_ch72_midboss__', drawW:103, drawH:120, offsetX:-51, offsetY:-120 },
+    ch73_boss:    { src:'__MON_ch73_boss__',    drawW:143, drawH:145, offsetX:-71, offsetY:-145 },
+    ch73_midboss: { src:'__MON_ch73_midboss__', drawW:120, drawH:120, offsetX:-60, offsetY:-120 },
+    ch74_boss:    { src:'__MON_ch74_boss__',    drawW:119, drawH:145, offsetX:-59, offsetY:-145 },
+    ch74_midboss: { src:'__MON_ch74_midboss__', drawW:109, drawH:120, offsetX:-54, offsetY:-120 },
+    ch75_boss:    { src:'__MON_ch75_boss__',    drawW:134, drawH:145, offsetX:-67, offsetY:-145 },
+    ch75_midboss: { src:'__MON_ch75_midboss__', drawW:122, drawH:120, offsetX:-61, offsetY:-120 },
+    ch76_boss:    { src:'__MON_ch76_boss__',    drawW:124, drawH:145, offsetX:-62, offsetY:-145 },
+    ch76_midboss: { src:'__MON_ch76_midboss__', drawW:101, drawH:120, offsetX:-50, offsetY:-120 },
+    ch77_boss:    { src:'__MON_ch77_boss__',    drawW:146, drawH:145, offsetX:-73, offsetY:-145 },
+    ch77_midboss: { src:'__MON_ch77_midboss__', drawW:104, drawH:120, offsetX:-52, offsetY:-120 },
+    ch78_boss:    { src:'__MON_ch78_boss__',    drawW:123, drawH:145, offsetX:-61, offsetY:-145 },
+    ch78_midboss: { src:'__MON_ch78_midboss__', drawW:117, drawH:120, offsetX:-58, offsetY:-120 },
+    ch79_boss:    { src:'__MON_ch79_boss__',    drawW:118, drawH:145, offsetX:-59, offsetY:-145 },
+    ch79_midboss: { src:'__MON_ch79_midboss__', drawW:137, drawH:120, offsetX:-68, offsetY:-120 },
+    ch80_boss:    { src:'__MON_ch80_boss__',    drawW:125, drawH:145, offsetX:-62, offsetY:-145 },
+    ch80_midboss: { src:'__MON_ch80_midboss__', drawW:113, drawH:120, offsetX:-56, offsetY:-120 },
+    ch61_midboss: { src:'__MON_ch61_midboss__', drawW:103, drawH:120, offsetX:-51, offsetY:-120 },
+    ch61_boss:    { src:'__MON_ch61_boss__',    drawW:153, drawH:145, offsetX:-76, offsetY:-145 },
+    ch62_midboss: { src:'__MON_ch62_midboss__', drawW:108, drawH:120, offsetX:-54, offsetY:-120 },
+    ch62_boss:    { src:'__MON_ch62_boss__',    drawW:117, drawH:145, offsetX:-58, offsetY:-145 },
+    ch63_midboss: { src:'__MON_ch63_midboss__', drawW:113, drawH:120, offsetX:-56, offsetY:-120 },
+    ch63_boss:    { src:'__MON_ch63_boss__',    drawW:161, drawH:145, offsetX:-80, offsetY:-145 },
+    ch64_midboss: { src:'__MON_ch64_midboss__', drawW:107, drawH:120, offsetX:-53, offsetY:-120 },
+    ch64_boss:    { src:'__MON_ch64_boss__',    drawW:147, drawH:145, offsetX:-73, offsetY:-145 },
+    ch65_midboss: { src:'__MON_ch65_midboss__', drawW:114, drawH:120, offsetX:-57, offsetY:-120 },
+    ch65_boss:    { src:'__MON_ch65_boss__',    drawW:155, drawH:145, offsetX:-77, offsetY:-145 },
+    ch66_midboss: { src:'__MON_ch66_midboss__', drawW:128, drawH:120, offsetX:-64, offsetY:-120 },
+    ch66_boss:    { src:'__MON_ch66_boss__',    drawW:156, drawH:145, offsetX:-78, offsetY:-145 },
+    ch67_midboss: { src:'__MON_ch67_midboss__', drawW:117, drawH:120, offsetX:-58, offsetY:-120 },
+    ch67_boss:    { src:'__MON_ch67_boss__',    drawW:134, drawH:145, offsetX:-67, offsetY:-145 },
+    ch68_midboss: { src:'__MON_ch68_midboss__', drawW:103, drawH:120, offsetX:-51, offsetY:-120 },
+    ch68_boss:    { src:'__MON_ch68_boss__',    drawW:133, drawH:145, offsetX:-66, offsetY:-145 },
+    ch69_midboss: { src:'__MON_ch69_midboss__', drawW:104, drawH:120, offsetX:-52, offsetY:-120 },
+    ch69_boss:    { src:'__MON_ch69_boss__',    drawW:137, drawH:145, offsetX:-68, offsetY:-145 },
+    ch70_midboss: { src:'__MON_ch70_midboss__', drawW:107, drawH:120, offsetX:-53, offsetY:-120 },
+    ch70_boss:    { src:'__MON_ch70_boss__',    drawW:150, drawH:145, offsetX:-75, offsetY:-145 },
   },
 
   pets: {
@@ -439,6 +825,15 @@ const SPRITES = {
     // [UPDATE 2026-07-17] 도깨비 계열 신규 펫 2종 (싸리/공이)
     ssari: { src:'__IMG_pets_ssari__', drawW:29, drawH:38, offsetX:-15, offsetY:-38 },
     gongi: { src:'__IMG_pets_gongi__', drawW:18, drawH:38, offsetX:-9,  offsetY:-38 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 신규 펫 2종 (수정정령/영혼불씨)
+    sujeong: { src:'__IMG_pets_sujeong__', drawW:38, drawH:42, offsetX:-19, offsetY:-42 },
+    bulssi:  { src:'__IMG_pets_bulssi__',  drawW:40, drawH:40, offsetX:-20, offsetY:-40 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 신규 펫 2종 (성린/금관학) — 이미지 모음/12. 펫/ss5 원본
+    seongnin:    { src:'__IMG_pets_seongnin__',    drawW:35, drawH:40, offsetX:-18, offsetY:-40 },
+    geumgwanhak: { src:'__IMG_pets_geumgwanhak__', drawW:39, drawH:40, offsetX:-20, offsetY:-40 },
+    // [UPDATE 2026-07-31] 시즌7(어계) 신규 펫 2종 — 별똥이(레전더리), 무명(미소스)
+    byeoldong: { src:'__IMG_pets_byeoldong__', drawW:48, drawH:44, offsetX:-24, offsetY:-44 },
+    mumyeong:  { src:'__IMG_pets_mumyeong__',  drawW:65, drawH:44, offsetX:-32, offsetY:-44 },
   },
 
   lobbyIcons: {
@@ -470,6 +865,17 @@ const SPRITES = {
     // [UPDATE 2026-07-08] 시즌2(유명계) 전용 흙질감 — 시즌1 갈색과 색 충돌 해결용 (원본: 이미지 모음/시즌 2 관련/바닥)
     s2_dirt_tex_light:    { src: '__IMG_tiles_s2_dirt_tex_light__' },
     s2_dirt_tex_dark:     { src: '__IMG_tiles_s2_dirt_tex_dark__' },
+    // [UPDATE 2026-07-17] 무채색 더티 질감 9종 — 이미지 모음/tiles_crop2/dirt 원본. 색이 없어 어느 시즌 팔레트에도
+    // 그대로 얹어 쓸 수 있는 공용 텍스처(현재는 시즌3에 사용, 추후 다른 시즌에도 재사용 가능)
+    dirt_common_1: { src: '__IMG_tiles_dirt_common_1__' },
+    dirt_common_2: { src: '__IMG_tiles_dirt_common_2__' },
+    dirt_common_3: { src: '__IMG_tiles_dirt_common_3__' },
+    dirt_common_4: { src: '__IMG_tiles_dirt_common_4__' },
+    dirt_common_5: { src: '__IMG_tiles_dirt_common_5__' },
+    dirt_common_6: { src: '__IMG_tiles_dirt_common_6__' },
+    dirt_common_7: { src: '__IMG_tiles_dirt_common_7__' },
+    dirt_common_8: { src: '__IMG_tiles_dirt_common_8__' },
+    dirt_common_9: { src: '__IMG_tiles_dirt_common_9__' },
     // 이지 추가
     easy_flower:          { src: '__IMG_tiles_easy_flower__' },
     easy_mushroom:        { src: '__IMG_tiles_easy_mushroom__' },
@@ -539,11 +945,189 @@ const SPRITES = {
     bone_pile2:     { src: '__IMG_stage_bone_pile2__',     w: 53, h: 54 }, // 뼈 무더기 (slice_0033)
     s2_hard_a:      { src: '__IMG_stage_s2_hard_a__',      w: 55, h: 64 }, // 가시덤불 (slice_0042)
     skull_pile:     { src: '__IMG_stage_skull_pile__',     w: 56, h: 42 }, // 해골 더미 (slice_0031)
+    // [UPDATE 2026-07-17] 시즌3(망랑계) 전용 바닥 장식 소품 17종 — 이미지 모음/tiles_crop2/ss3 특화 원본
+    // (시즌1 자연물/시즌2 무덤·유골과 구분되는 뿌리정령·버섯·이끼바위·허수아비 도깨비 테마)
+    s3_root_spirit:         { src: '__IMG_stage_s3_root_spirit__',         w: 65, h: 64 },
+    s3_tangled_root_charm:  { src: '__IMG_stage_s3_tangled_root_charm__',  w: 65, h: 54 },
+    s3_stump_spirit:        { src: '__IMG_stage_s3_stump_spirit__',        w: 42, h: 65 },
+    s3_sprout_stone:        { src: '__IMG_stage_s3_sprout_stone__',        w: 60, h: 60 },
+    s3_vine_stone_a:        { src: '__IMG_stage_s3_vine_stone_a__',        w: 58, h: 60 },
+    s3_vine_stone_b:        { src: '__IMG_stage_s3_vine_stone_b__',        w: 60, h: 49 },
+    s3_mushroom_root_stone: { src: '__IMG_stage_s3_mushroom_root_stone__', w: 60, h: 59 },
+    s3_mushroom_hat_stone:  { src: '__IMG_stage_s3_mushroom_hat_stone__',  w: 58, h: 60 },
+    s3_pebble_small:        { src: '__IMG_stage_s3_pebble_small__',        w: 40, h: 45 },
+    s3_pebble_pair:         { src: '__IMG_stage_s3_pebble_pair__',         w: 45, h: 16 },
+    s3_scarecrow_red:       { src: '__IMG_stage_s3_scarecrow_red__',       w: 44, h: 90 },
+    s3_scarecrow_blue:      { src: '__IMG_stage_s3_scarecrow_blue__',      w: 47, h: 90 },
+    s3_mushroom_char_a:     { src: '__IMG_stage_s3_mushroom_char_a__',     w: 55, h: 54 },
+    s3_mushroom_char_hat:   { src: '__IMG_stage_s3_mushroom_char_hat__',   w: 48, h: 55 },
+    s3_mushroom_cluster:    { src: '__IMG_stage_s3_mushroom_cluster__',    w: 53, h: 55 },
+    s3_moss_rock_large:     { src: '__IMG_stage_s3_moss_rock_large__',     w: 60, h: 59 },
+    s3_moss_rock_small:     { src: '__IMG_stage_s3_moss_rock_small__',     w: 55, h: 53 },
+    // [UPDATE 2026-07-17] 시즌4(귀허계) 전용 바닥 장식 소품 30종 — 이미지 모음/tiles_crop2/ss4 특화 원본
+    // (음양/룬석판/수정군락/환생란/소멸소용돌이/영혼불씨 6개 테마 × 5개 변형)
+    s4_yinyang_1: { src: '__IMG_stage_s4_yinyang_1__', w: 62, h: 61 },
+    s4_yinyang_2: { src: '__IMG_stage_s4_yinyang_2__', w: 62, h: 60 },
+    s4_yinyang_3: { src: '__IMG_stage_s4_yinyang_3__', w: 62, h: 61 },
+    s4_yinyang_4: { src: '__IMG_stage_s4_yinyang_4__', w: 61, h: 62 },
+    s4_yinyang_5: { src: '__IMG_stage_s4_yinyang_5__', w: 62, h: 61 },
+    s4_rune_stone_1: { src: '__IMG_stage_s4_rune_stone_1__', w: 46, h: 62 },
+    s4_rune_stone_2: { src: '__IMG_stage_s4_rune_stone_2__', w: 46, h: 62 },
+    s4_rune_stone_3: { src: '__IMG_stage_s4_rune_stone_3__', w: 44, h: 62 },
+    s4_rune_stone_4: { src: '__IMG_stage_s4_rune_stone_4__', w: 45, h: 62 },
+    s4_rune_stone_5: { src: '__IMG_stage_s4_rune_stone_5__', w: 45, h: 62 },
+    s4_crystal_1: { src: '__IMG_stage_s4_crystal_1__', w: 54, h: 62 },
+    s4_crystal_2: { src: '__IMG_stage_s4_crystal_2__', w: 53, h: 62 },
+    s4_crystal_3: { src: '__IMG_stage_s4_crystal_3__', w: 58, h: 62 },
+    s4_crystal_4: { src: '__IMG_stage_s4_crystal_4__', w: 60, h: 62 },
+    s4_crystal_5: { src: '__IMG_stage_s4_crystal_5__', w: 50, h: 62 },
+    s4_rebirth_egg_1: { src: '__IMG_stage_s4_rebirth_egg_1__', w: 50, h: 62 },
+    s4_rebirth_egg_2: { src: '__IMG_stage_s4_rebirth_egg_2__', w: 50, h: 62 },
+    s4_rebirth_egg_3: { src: '__IMG_stage_s4_rebirth_egg_3__', w: 50, h: 62 },
+    s4_rebirth_egg_4: { src: '__IMG_stage_s4_rebirth_egg_4__', w: 49, h: 62 },
+    s4_rebirth_egg_5: { src: '__IMG_stage_s4_rebirth_egg_5__', w: 49, h: 62 },
+    s4_void_swirl_1: { src: '__IMG_stage_s4_void_swirl_1__', w: 55, h: 54 },
+    s4_void_swirl_2: { src: '__IMG_stage_s4_void_swirl_2__', w: 55, h: 55 },
+    s4_void_swirl_3: { src: '__IMG_stage_s4_void_swirl_3__', w: 55, h: 54 },
+    s4_void_swirl_4: { src: '__IMG_stage_s4_void_swirl_4__', w: 51, h: 55 },
+    s4_void_swirl_5: { src: '__IMG_stage_s4_void_swirl_5__', w: 54, h: 55 },
+    s4_soul_ember_1: { src: '__IMG_stage_s4_soul_ember_1__', w: 29, h: 40 },
+    s4_soul_ember_2: { src: '__IMG_stage_s4_soul_ember_2__', w: 39, h: 40 },
+    s4_soul_ember_3: { src: '__IMG_stage_s4_soul_ember_3__', w: 30, h: 40 },
+    s4_soul_ember_4: { src: '__IMG_stage_s4_soul_ember_4__', w: 40, h: 38 },
+    s4_soul_ember_5: { src: '__IMG_stage_s4_soul_ember_5__', w: 36, h: 40 },
+    // [UPDATE 2026-07-22] 시즌5(선계) 전용 바닥 장식 소품 72종 — 이미지 모음/10. 바닥 모음/ss5 특화 원본
+    // (구름/대나무/연꽃/매화가지/깃털/향로/파고다등롱/산/두루마리/등롱/정자/꽃잎/풍경/연잎/변형 구름·매화·산 테마)
+    s5_cloud_1: { src: '__IMG_stage_s5_cloud_1__', w: 62, h: 35 },
+    s5_cloud_2: { src: '__IMG_stage_s5_cloud_2__', w: 62, h: 31 },
+    s5_cloud_3: { src: '__IMG_stage_s5_cloud_3__', w: 62, h: 33 },
+    s5_cloud_4: { src: '__IMG_stage_s5_cloud_4__', w: 62, h: 42 },
+    s5_cloud_5: { src: '__IMG_stage_s5_cloud_5__', w: 62, h: 48 },
+    s5_cloud_6: { src: '__IMG_stage_s5_cloud_6__', w: 62, h: 48 },
+    s5_bamboo_1: { src: '__IMG_stage_s5_bamboo_1__', w: 62, h: 46 },
+    s5_bamboo_2: { src: '__IMG_stage_s5_bamboo_2__', w: 44, h: 62 },
+    s5_bamboo_3: { src: '__IMG_stage_s5_bamboo_3__', w: 50, h: 62 },
+    s5_bamboo_4: { src: '__IMG_stage_s5_bamboo_4__', w: 49, h: 62 },
+    s5_bamboo_5: { src: '__IMG_stage_s5_bamboo_5__', w: 52, h: 62 },
+    s5_bamboo_6: { src: '__IMG_stage_s5_bamboo_6__', w: 51, h: 62 },
+    s5_lotus_1: { src: '__IMG_stage_s5_lotus_1__', w: 37, h: 62 },
+    s5_lotus_2: { src: '__IMG_stage_s5_lotus_2__', w: 43, h: 62 },
+    s5_lotus_3: { src: '__IMG_stage_s5_lotus_3__', w: 62, h: 59 },
+    s5_lotus_4: { src: '__IMG_stage_s5_lotus_4__', w: 62, h: 53 },
+    s5_lotus_5: { src: '__IMG_stage_s5_lotus_5__', w: 62, h: 50 },
+    s5_lotus_6: { src: '__IMG_stage_s5_lotus_6__', w: 62, h: 56 },
+    s5_blossom_branch_1: { src: '__IMG_stage_s5_blossom_branch_1__', w: 62, h: 55 },
+    s5_blossom_branch_2: { src: '__IMG_stage_s5_blossom_branch_2__', w: 49, h: 62 },
+    s5_blossom_branch_3: { src: '__IMG_stage_s5_blossom_branch_3__', w: 62, h: 46 },
+    s5_blossom_branch_4: { src: '__IMG_stage_s5_blossom_branch_4__', w: 62, h: 40 },
+    s5_blossom_branch_5: { src: '__IMG_stage_s5_blossom_branch_5__', w: 62, h: 59 },
+    s5_blossom_branch_6: { src: '__IMG_stage_s5_blossom_branch_6__', w: 58, h: 62 },
+    s5_feather_1: { src: '__IMG_stage_s5_feather_1__', w: 55, h: 62 },
+    s5_feather_2: { src: '__IMG_stage_s5_feather_2__', w: 54, h: 62 },
+    s5_feather_3: { src: '__IMG_stage_s5_feather_3__', w: 56, h: 62 },
+    s5_feather_4: { src: '__IMG_stage_s5_feather_4__', w: 55, h: 62 },
+    s5_incense_1: { src: '__IMG_stage_s5_incense_1__', w: 53, h: 62 },
+    s5_incense_2: { src: '__IMG_stage_s5_incense_2__', w: 62, h: 57 },
+    s5_incense_3: { src: '__IMG_stage_s5_incense_3__', w: 59, h: 62 },
+    s5_incense_4: { src: '__IMG_stage_s5_incense_4__', w: 62, h: 48 },
+    s5_lantern_pagoda_1: { src: '__IMG_stage_s5_lantern_pagoda_1__', w: 41, h: 62 },
+    s5_mountain_1: { src: '__IMG_stage_s5_mountain_1__', w: 52, h: 62 },
+    s5_mountain_2: { src: '__IMG_stage_s5_mountain_2__', w: 62, h: 47 },
+    s5_mountain_3: { src: '__IMG_stage_s5_mountain_3__', w: 55, h: 62 },
+    s5_scroll_1: { src: '__IMG_stage_s5_scroll_1__', w: 62, h: 52 },
+    s5_scroll_2: { src: '__IMG_stage_s5_scroll_2__', w: 62, h: 57 },
+    s5_scroll_3: { src: '__IMG_stage_s5_scroll_3__', w: 59, h: 62 },
+    s5_scroll_4: { src: '__IMG_stage_s5_scroll_4__', w: 61, h: 62 },
+    s5_scroll_5: { src: '__IMG_stage_s5_scroll_5__', w: 62, h: 61 },
+    s5_lantern_1: { src: '__IMG_stage_s5_lantern_1__', w: 42, h: 62 },
+    s5_lantern_2: { src: '__IMG_stage_s5_lantern_2__', w: 42, h: 62 },
+    s5_lantern_3: { src: '__IMG_stage_s5_lantern_3__', w: 45, h: 62 },
+    s5_lantern_4: { src: '__IMG_stage_s5_lantern_4__', w: 56, h: 62 },
+    s5_pavilion_1: { src: '__IMG_stage_s5_pavilion_1__', w: 57, h: 62 },
+    s5_pavilion_2: { src: '__IMG_stage_s5_pavilion_2__', w: 55, h: 62 },
+    s5_pavilion_3: { src: '__IMG_stage_s5_pavilion_3__', w: 55, h: 62 },
+    s5_petal_1: { src: '__IMG_stage_s5_petal_1__', w: 62, h: 59 },
+    s5_petal_2: { src: '__IMG_stage_s5_petal_2__', w: 62, h: 58 },
+    s5_petal_3: { src: '__IMG_stage_s5_petal_3__', w: 60, h: 62 },
+    s5_petal_4: { src: '__IMG_stage_s5_petal_4__', w: 62, h: 61 },
+    s5_petal_5: { src: '__IMG_stage_s5_petal_5__', w: 58, h: 50 },
+    s5_petal_6: { src: '__IMG_stage_s5_petal_6__', w: 30, h: 27 },
+    s5_windchime_1: { src: '__IMG_stage_s5_windchime_1__', w: 55, h: 62 },
+    s5_windchime_2: { src: '__IMG_stage_s5_windchime_2__', w: 54, h: 62 },
+    s5_lotus_pad_1: { src: '__IMG_stage_s5_lotus_pad_1__', w: 62, h: 52 },
+    s5_lotus_pad_2: { src: '__IMG_stage_s5_lotus_pad_2__', w: 62, h: 50 },
+    s5_lotus_pad_3: { src: '__IMG_stage_s5_lotus_pad_3__', w: 62, h: 60 },
+    s5_lotus_pad_4: { src: '__IMG_stage_s5_lotus_pad_4__', w: 62, h: 55 },
+    s5_bamboo_cluster_1: { src: '__IMG_stage_s5_bamboo_cluster_1__', w: 50, h: 62 },
+    s5_bamboo_cluster_2: { src: '__IMG_stage_s5_bamboo_cluster_2__', w: 50, h: 62 },
+    s5_bamboo_cluster_3: { src: '__IMG_stage_s5_bamboo_cluster_3__', w: 53, h: 62 },
+    s5_cloud_alt_1: { src: '__IMG_stage_s5_cloud_alt_1__', w: 62, h: 46 },
+    s5_cloud_alt_2: { src: '__IMG_stage_s5_cloud_alt_2__', w: 62, h: 47 },
+    s5_cloud_alt_3: { src: '__IMG_stage_s5_cloud_alt_3__', w: 62, h: 46 },
+    s5_cloud_alt_4: { src: '__IMG_stage_s5_cloud_alt_4__', w: 62, h: 52 },
+    s5_blossom_branch_alt_1: { src: '__IMG_stage_s5_blossom_branch_alt_1__', w: 57, h: 62 },
+    s5_blossom_branch_alt_2: { src: '__IMG_stage_s5_blossom_branch_alt_2__', w: 60, h: 62 },
+    s5_blossom_branch_alt_3: { src: '__IMG_stage_s5_blossom_branch_alt_3__', w: 57, h: 62 },
+    s5_mountain_alt_1: { src: '__IMG_stage_s5_mountain_alt_1__', w: 62, h: 49 },
+    s5_mountain_alt_2: { src: '__IMG_stage_s5_mountain_alt_2__', w: 55, h: 62 },
+    // [UPDATE 2026-07-29] 시즌6(원계) 전용 데코셋 — 성운/수정/룬석/제단/매화/깃털/향로/종/대나무/연꽃/꽃잎 테마
+    // (원본: 이미지 모음/10. 바닥 모음/ss6, 72종 중 대표 12종 선별)
+    s6_nebula_1: { src: '__IMG_stage_s6_nebula_1__', w: 57, h: 62 },
+    s6_nebula_2: { src: '__IMG_stage_s6_nebula_2__', w: 57, h: 62 },
+    s6_blossom_1: { src: '__IMG_stage_s6_blossom_1__', w: 57, h: 62 },
+    s6_feather_1: { src: '__IMG_stage_s6_feather_1__', w: 57, h: 62 },
+    s6_incense_1: { src: '__IMG_stage_s6_incense_1__', w: 57, h: 62 },
+    s6_rune_1: { src: '__IMG_stage_s6_rune_1__', w: 57, h: 62 },
+    s6_altar_1: { src: '__IMG_stage_s6_altar_1__', w: 57, h: 62 },
+    s6_bamboo_1: { src: '__IMG_stage_s6_bamboo_1__', w: 57, h: 62 },
+    s6_crystal_1: { src: '__IMG_stage_s6_crystal_1__', w: 57, h: 62 },
+    s6_petal_1: { src: '__IMG_stage_s6_petal_1__', w: 57, h: 62 },
+    s6_lotus_1: { src: '__IMG_stage_s6_lotus_1__', w: 57, h: 62 },
+    s6_bell_1: { src: '__IMG_stage_s6_bell_1__', w: 57, h: 62 },
+    // [UPDATE 2026-07-29] 시즌7(어계) 전용 데코셋 — 수정파편/성운/제단/기형성장/촉수눈 테마
+    // (원본: 이미지 모음/10. 바닥 모음/ss7, 65종 중 대표 12종 선별)
+    s7_crystal_1: { src: '__IMG_stage_s7_crystal_1__', w: 57, h: 62 },
+    s7_crystal_2: { src: '__IMG_stage_s7_crystal_2__', w: 57, h: 62 },
+    s7_crystal_3: { src: '__IMG_stage_s7_crystal_3__', w: 57, h: 62 },
+    s7_nebula_1: { src: '__IMG_stage_s7_nebula_1__', w: 57, h: 62 },
+    s7_rune_1: { src: '__IMG_stage_s7_rune_1__', w: 57, h: 62 },
+    s7_void_1: { src: '__IMG_stage_s7_void_1__', w: 57, h: 62 },
+    s7_altar_1: { src: '__IMG_stage_s7_altar_1__', w: 57, h: 62 },
+    s7_growth_1: { src: '__IMG_stage_s7_growth_1__', w: 57, h: 62 },
+    s7_eye_1: { src: '__IMG_stage_s7_eye_1__', w: 57, h: 62 },
+    s7_eye_2: { src: '__IMG_stage_s7_eye_2__', w: 57, h: 62 },
+    s7_altar_2: { src: '__IMG_stage_s7_altar_2__', w: 57, h: 62 },
+    s7_growth_2: { src: '__IMG_stage_s7_growth_2__', w: 57, h: 62 },
     // 스테이지 선택 카드 프레임
     card_normal:    { src: '__IMG_stage_card_normal__' },
     card_midboss:   { src: '__IMG_stage_card_midboss__' },
     card_boss:      { src: '__IMG_stage_card_boss__' },
     card_s2_normal: { src: '__IMG_stage_card_s2_normal__' },
+    // [UPDATE 2026-07-22] 시즌2만 전용 카드 프레임이 있던 걸 시즌1/3/4/5로 확장 — 이미지 모음/스테이지 선택 아이콘/st_slimages 원본
+    card_s1_normal: { src: '__IMG_stage_card_s1_normal__' },
+    card_s3_normal: { src: '__IMG_stage_card_s3_normal__' },
+    // [UPDATE 2026-07-31] 시즌8(황계) 전용 데코셋 — 반물질 파편/거울/균열/유물/빛 테마
+    // (원본: 이미지 모음/10. 바닥 모음/ss8, 66종 중 대표 12종 선별)
+    s8_shard_1: { src: '__IMG_stage_s8_shard_1__', w: 56, h: 62 },
+    s8_shard_2: { src: '__IMG_stage_s8_shard_2__', w: 55, h: 62 },
+    s8_mirror_1: { src: '__IMG_stage_s8_mirror_1__', w: 52, h: 62 },
+    s8_mirror_2: { src: '__IMG_stage_s8_mirror_2__', w: 45, h: 62 },
+    s8_rift_1: { src: '__IMG_stage_s8_rift_1__', w: 62, h: 36 },
+    s8_rift_2: { src: '__IMG_stage_s8_rift_2__', w: 61, h: 62 },
+    s8_relic_1: { src: '__IMG_stage_s8_relic_1__', w: 62, h: 52 },
+    s8_relic_2: { src: '__IMG_stage_s8_relic_2__', w: 62, h: 35 },
+    s8_light_1: { src: '__IMG_stage_s8_light_1__', w: 56, h: 62 },
+    s8_light_2: { src: '__IMG_stage_s8_light_2__', w: 38, h: 62 },
+    s8_ruin_1: { src: '__IMG_stage_s8_ruin_1__', w: 62, h: 46 },
+    s8_ruin_2: { src: '__IMG_stage_s8_ruin_2__', w: 62, h: 34 },
+    card_s4_normal: { src: '__IMG_stage_card_s4_normal__' },
+    card_s5_normal: { src: '__IMG_stage_card_s5_normal__' },
+    // [UPDATE 2026-07-24] 시즌6(원계, 사신 문양) 카드 프레임 등록. 시즌7(장승 문양)은 스테이지 데이터 자체가
+    // 아직 없어 미리 등록만 해둠(시즌8과 동일 패턴) — 나중에 wiring 필요.
+    card_s6_normal: { src: '__IMG_stage_card_s6_normal__' },
+    card_s7_normal: { src: '__IMG_stage_card_s7_normal__' },
+    // [UPDATE 2026-07-22] 시즌8용으로 미리 등록 (시즌8 스테이지 데이터 자체는 아직 없음 — 나중에 wiring 필요)
+    card_s8_normal: { src: '__IMG_stage_card_s8_normal__' },
   },
 };
 
@@ -559,6 +1143,10 @@ const SpriteLoader = (() => {
   function preloadAll() {
     const all = [
       ...SPRITES.player,
+      SPRITES.baksuProtagonist, // [UPDATE 2026-08-02] 파트2 주인공 스프라이트 프리로드
+      ...SPRITES.baksuMotion, // [UPDATE 2026-08-04] 박수 3프레임 모션(대기/공격준비/공격) 프리로드
+      // [UPDATE 2026-08-05] 애기씨 3프레임 모션 프리로드는 철회(위 aegissiMotion 정의 주석 참고) — 더 이상 로드 안 함
+      ...SPRITES.talismanDefense, // [UPDATE 2026-08-03] 애기씨의 부적 열화 4단계 프리로드
       ...(SPRITES.intro || []),
       ...Object.values(SPRITES.companions),
       ...Object.values(SPRITES.enemies),
@@ -572,6 +1160,11 @@ const SpriteLoader = (() => {
       ...(SPRITES.ending || []),
       ...(SPRITES.endingS2 || []),
       ...(SPRITES.endingS3 || []),
+      ...(SPRITES.endingS4 || []),
+      ...(SPRITES.endingS5 || []),
+      ...(SPRITES.endingS6 || []),
+      ...(SPRITES.endingS7 || []), // [UPDATE 2026-07-31] 시즌7 엔딩 프리로드 누락 방지
+      ...(SPRITES.endingS8 || []), // [UPDATE 2026-08-02] 시즌8(최종) 엔딩 프리로드
       ...Object.values(SPRITES.lobbyNpcs || {}),
     ];
     for (const s of all) if (s?.src) load(s.src);

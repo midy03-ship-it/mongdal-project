@@ -1,0 +1,6258 @@
+# 몽달퇴마록 -- 전체 UI/서사 텍스트 추출 (자동, 정규식 기반)
+
+빌드된 HTML이 아니라 mongdal/js/**/*.js 소스를 직접 스캔한 결과입니다. 정확도 관련 주의사항:
+- 정규식 기반 휴리스틱 추출이라 CSS/코드 조각이 섞여 있을 수 있고, 반대로 일부 텍스트가 누락됐을 수 있습니다.
+- 여러 줄짜리 큰 템플릿 문자열(주로 scenes/*.js의 render() 함수)은 문자열이 시작하는 줄 번호만 표시되어, 같은 줄 번호로 여러 문구가 묶여 나올 수 있습니다.
+- <VAR>는 원래 ${...} 형태의 동적 값(변수/계산식)이 있던 자리입니다.
+- KO/EN은 원문에서 개별 문자열로 추출된 것이라 완벽하게 1:1로 안 맞을 수 있습니다(대체로 바로 아래/위에 나란히 있으면 같은 문구의 번역 쌍).
+
+총 6153건, 32개 파일.
+
+## core/lang.js
+
+- L10 [KO] 언어를 선택하세요
+- L11 [KO] 한국어
+- L17 [KO] 먼 옛날,
+- L17 [KO] 인간과 귀신이 함께 살던 나라가 있었다.
+- L18 [KO] 귀-인-국 (
+- L18 [KO] 신령이 균형을 잡고,
+- L18 [KO] 귀인이 인간과 함께 살아가던 세상.
+- L19 [KO] 그러나...
+- L19 [KO] 하늘 밖에서 정체불명의 존재가 왔다.
+- L20 [KO] 기어오는 혼돈.
+- L20 [KO] 세상의 법칙을 뒤틀어버리는 외신.
+- L20 [KO] 귀-인-국은 무너졌다.
+- L22 [KO] 모든 것이 폐허가 된 지금,
+- L22 [KO] 삼신할머니가 마지막 무당을 깨웠다.
+- L22 [KO] 하나였던 달이 둘로 갈라지더니, 다시 하나로 겹쳐지는 꿈이었다.
+- L23 [KO] 애기씨,"
+- L23 [KO] 흩어진 귀-인을 모아라."
+- L23 [KO] 멸망한 나라를 되살려라."
+- L24 [KO] 기어오는 혼돈을 봉인하고,
+- L24 [KO] 귀-인-국을 다시 세울 자.
+- L24 [KO] 그것이 당신이다.
+- L30 [KO] 터치하여 시작
+- L31 [KO] 설정
+- L32 [KO] 언어
+- L33 [KO] 뒤로
+- L34 [KO] 확인
+- L35 [KO] 취소
+- L36 [KO] 골드
+- L37 [KO] 보석
+- L42 [KO] 스테이지
+- L43 [KO] 대장간
+- L44 [KO] 의원당
+- L45 [KO] 서낭당
+- L46 [KO] 장승당
+- L48 [KO] 용왕연못
+- L49 [KO] 캐릭터
+- L50 [KO] 신목
+- L53 [KO] 여기를 눌러봐!
+- L54 [KO] 스테이지 1을 눌러봐!
+- L55 [KO] 두 손가락으로도 확대/축소할 수 있어요
+- L56 [KO] 공격력 강화가 가능해요!
+- L59 [KO] 골드
+- L60 [KO] 다이아
+- L61 [KO] 강화석
+- L62 [KO] 천운석
+- L63 [KO] 천령과
+- L64 [KO] 태극석
+- L65 [KO] 차원석
+- L66 [KO] 혼돈석
+- L67 [KO] 순리석
+- L70 [KO] 강화석 던전
+- L71 [KO] 무한 던전
+- L72 [KO] 보스러쉬
+- L73 [KO] 천운석 던전
+- L74 [KO] 천령과 던전
+- L75 [KO] 태극석 던전
+- L76 [KO] 혼돈석 던전
+- L77 [KO] 순리석 던전
+- L78 [KO] 던전
+- L79 [KO] 무한 모드
+- L80 [KO] 끝없는 파도를 버텨라
+- L81 [KO] 시간 무제한 ·
+- L81 [KO] 골드 드롭 2배
+- L82 [KO] 파도가 지날수록 적이 강해진다. 얼마나 버틸 수 있을까?
+- L83 [KO] 최고 기록
+- L84 [KO] 없음
+- L85 [KO] 입장
+- L86 [KO] 보스 러쉬
+- L87 [KO] 역대 보스들과 연속 격돌
+- L88 [KO] 보스 처치마다 다이아 획득
+- L89 [KO] 명의 보스가 기다린다. 쓰러지면 그게 끝.
+- L90 [KO] 보스
+- L91 [KO] 총 획득
+- L92 [KO] 던전은 스테이지 클리어와 별개로 언제든 도전 가능
+- L93 [KO] 귀환
+- L100 [KO] 진입
+- L102 [KO] 슬롯 해금!
+- L103 [KO] 개로 늘어났어요!
+- L104 [KO] 주무기 · 동료 · 펫 슬롯이
+- L105 [KO] 확인!
+- L106 [KO] 이지
+- L107 [KO] 노말
+- L108 [KO] 하드
+- L113 [KO] 업적
+- L114 [KO] 일회성 업적
+- L115 [KO] 무한 반복 업적
+- L116 [KO] 수령
+- L117 [KO] 수령완료
+- L118 [KO] 일괄수령
+- L119 [KO] 현재
+- L120 [KO] 단계
+- L121 [KO] 첫 승리
+- L122 [KO] 처음으로 스테이지를 클리어했다
+- L123 [KO] 첫 패배
+- L124 [KO] 처음으로 쓰러졌다
+- L125 [KO] 첫 보스 처치
+- L126 [KO] 처음으로 보스를 물리쳤다
+- L127 [KO] 첫 동료
+- L128 [KO] 처음으로 동료를 편성했다
+- L129 [KO] 첫 펫
+- L130 [KO] 처음으로 펫을 획득했다
+- L131 [KO] 첫 건물 강화
+- L132 [KO] 처음으로 건물을 강화했다
+- L133 [KO] 첫 각성
+- L134 [KO] 처음으로 무기를 각성시켰다
+- L135 [KO] 전 챕터 정복
+- L136 [KO] 모든 챕터를 클리어했다
+- L137 [KO] 총 처치 수
+- L138 [KO] 총 클리어 수
+- L139 [KO] 총 출격 수
+- L140 [KO] 끝없는 사냥
+- L141 [KO] 보스 사냥꾼
+- L142 [KO] 연이은 승전
+- L143 [KO] 멈추지 않는 출격
+- L144 [KO] 현계 완주
+- L145 [KO] 시즌1(현계)을 클리어했다
+- L146 [KO] 유명계 완주
+- L147 [KO] 시즌2(유명계)를 클리어했다
+- L148 [KO] 망랑계 완주
+- L149 [KO] 시즌3(망랑계)을 클리어했다
+- L150 [KO] 귀허계 완주
+- L151 [KO] 시즌4(귀허계)를 클리어했다
+- L152 [KO] 선계 완주
+- L153 [KO] 시즌5(선계)를 클리어했다
+- L154 [KO] 첫 하드 클리어
+- L155 [KO] 하드 난이도로 스테이지를 처음 클리어했다
+- L156 [KO] 동료 수집가
+- L157 [KO] 동료를 5명 보유했다
+- L158 [KO] 동료 수집가
+- L159 [KO] 동료를 10명 보유했다
+- L160 [KO] 동료 수집가
+- L161 [KO] 동료를 15명 보유했다
+- L162 [KO] 펫 수집가
+- L163 [KO] 펫을 5마리 보유했다
+- L164 [KO] 펫 수집가
+- L165 [KO] 펫을 10마리 보유했다
+- L166 [KO] 펫 수집가
+- L167 [KO] 펫을 15마리 보유했다
+- L168 [KO] 별이 빛나는 동료
+- L169 [KO] 동료 한 명을 4성까지 강화했다
+- L170 [KO] 동료 각성
+- L171 [KO] 동료 한 명을 각성시켰다
+- L172 [KO] 선술 입문
+- L173 [KO] 선술 스킬트리를 처음 배웠다
+- L174 [KO] 음양 조화
+- L175 [KO] 선술 두 번째 나무를 개화했다
+- L176 [KO] 번영하는 마을
+- L177 [KO] 건물 하나를 5단계까지 강화했다
+- L178 [KO] 재물 축적
+- L179 [KO] 골드 10,000을 보유했다
+- L180 [KO] 보석함
+- L181 [KO] 보석 50개를 보유했다
+- L182 [KO] 학살자
+- L183 [KO] 누적 처치 수 50,000을 달성했다
+- L188 [KO] 잊혀진 무덤
+- L189 [KO] 안개의 폐촌
+- L190 [KO] 타락한 서낭당
+- L191 [KO] 신령의 숲
+- L192 [KO] 혼돈의 균열
+- L193 [KO] 저승의 문턱
+- L194 [KO] 공허의 탑
+- L195 [KO] 망각의 바다
+- L196 [KO] 외신의 영역
+- L197 [KO] 귀인국의 심장
+- L202 [KO] 설정
+- L203 [KO] 언어 설정
+- L204 [KO] 효과음
+- L205 [KO] 배경음악
+- L206 [KO] 버전
+- L207 [KO] 도움말
+- L208 [KO] 코드 입력
+- L209 [KO] 코드를 입력하세요
+- L210 [KO] 확인
+- L212 [KO] 세이브 코드
+- L213 [KO] 내보내기
+- L214 [KO] 불러오기
+- L215 [KO] 세이브 코드 내보내기
+- L216 [KO] 아래 코드를 복사해서 안전한 곳에 보관하세요. 다른 기기의 "불러오기"에 붙여넣으면 진행 상황을 그대로 옮길 수 있습니다.
+- L217 [KO] 복사하기
+- L218 [KO] 복사되었습니다!
+- L219 [KO] 복사 버튼이 지원되지 않는 환경입니다. 아래 코드를 길게 눌러 직접 선택/복사해주세요.
+- L220 [KO] 세이브 코드 불러오기
+- L221 [KO] 세이브 코드를 붙여넣으세요
+- L222 [KO] 확인
+- L223 [KO] 유효하지 않은 코드입니다.
+- L224 [KO] 코드가 손상되었거나 일부가 잘렸습니다. 전체를 정확히 복사했는지 확인해주세요.
+- L225 [KO] 이 세이브를 적용할까요?
+- L226 [KO] 버전
+- L227 [KO] 최고 스테이지
+- L228 [KO] 업적
+- L229 [KO] 건물
+- L230 [KO] 동료
+- L232 [KO] 재화
+- L233 [KO] 저장 시각
+- L234 [KO] 저장 기기
+- L235 [KO] 적용하기
+- L236 [KO] 되돌릴 수 없습니다
+- L237 [KO] 현재 진행 상황을 덮어씁니다.
+- L237 [KO] 덮어쓰기 전 자동 백업되며, 설정에서 1회 복구할 수 있습니다.
+- L238 [KO] 취소
+- L239 [KO] 적용되었습니다. 잠시 후 로비로 돌아갑니다...
+- L241 [KO] 복구
+- L242 [KO] 직전 세이브로 복구
+- L243 [KO] 세이브 코드를 불러오기 직전에 자동 보관된 세이브로 되돌립니다.
+- L244 [KO] 지금의 진행 상황은 사라집니다.
+- L244 [KO] 백업은 1회용이라 복구 후에는 다시 되돌릴 수 없습니다.
+- L245 [KO] 복구하기
+- L246 [KO] 복구되었습니다. 잠시 후 로비로 돌아갑니다...
+- L247 [KO] 복구할 백업이 없습니다.
+- L249 [KO] 모바일
+- L251 [KO] 리부트
+- L252 [KO] 경고: 어떠한 보상도 없습니다. 처음부터 다시 게임을 하기 위한 버튼일 뿐입니다.
+- L252 [KO] 계속 하시겠습니까?
+- L253 [KO] 경고: 진짜 아무런 보상 없이 처음부터 다시 시작됩니다. 히든 요소도 없습니다.
+- L254 [KO] 경고: 마지막 경고입니다. 처음부터 게임을 하는 용도 외 어떠한 용도도 없습니다.
+- L256 [KO] 아니오
+- L257 [KO] 게임이 처음부터 다시 시작됩니다.
+- L258 [KO] 히든 업적 달성: 초기화의 결단 — 다이아 +5000! (1회성)
+- L259 [KO] 확인
+- L264 [KO] 몽달퇴마록 입문
+- L265 [KO] 건너뛰기
+- L266 [KO] 이전
+- L267 [KO] 다음
+- L268 [KO] 시작하기!
+- L269 [KO] 이동과 전투
+- L270 [KO] 모바일: 화면 왼쪽 조이스틱으로 이동
+- L270 [KO] 방향키 또는
+- L270 [KO] 애기씨는 가장 가까운 적을 자동으로 공격합니다.
+- L270 [KO] 살아남아 귀신들을 모두 퇴마하세요!
+- L271 [KO] 무기
+- L271 [KO] 레벨업
+- L272 [KO] 적을 처치하면 경험치를 얻습니다.
+- L272 [KO] 레벨업 시 무기를 선택하거나 강화할 수 있어요.
+- L272 [KO] 무기를 3번 강화하면 더욱 강력한 형태로 진화합니다!
+- L273 [KO] 동료
+- L274 [KO] 로비에서 동료와 펫을 편성할 수 있어요.
+- L274 [KO] 동료: 함께 싸우며 공격, 방어, 회복 등 역할 담당
+- L274 [KO] 펫: 수동적 능력치 강화 또는 특수 능력 발동
+- L275 [KO] 건물 업그레이드
+- L276 [KO] 로비의 건물을 클릭하면 골드로 업그레이드할 수 있어요.
+- L276 [KO] 업그레이드하면 체력, 공격력, 골드 획득 등
+- L276 [KO] 영구적으로 능력치가 강화됩니다!
+- L281 [KO] 동료
+- L282 [KO] 편성
+- L283 [KO] 빈 슬롯
+- L284 [KO] 보유 동료
+- L285 [KO] 편성됨
+- L286 [KO] 귀환
+- L287 [KO] 편성
+- L288 [KO] 동료 상점 (뽑기)
+- L289 [KO] 다음
+- L290 [KO] 파편
+- L291 [KO] 소환 가능!
+- L292 [KO] 파편 10개로 소환
+- L293 [KO] 만능파편 5개
+- L293 [KO] 별 추가
+- L294 [KO] 각성
+- L295 [KO] 노말 해금
+- L296 [KO] 하드 해금
+- L297 [KO] 커먼
+- L298 [KO] 언커먼
+- L299 [KO] 레어
+- L300 [KO] 유니크
+- L301 [KO] 에픽
+- L302 [KO] 레전더리
+- L303 [KO] 미소스
+- L304 [KO] 스페셜
+- L305 [KO] 탱커
+- L306 [KO] 딜러
+- L307 [KO] 힐러
+- L308 [KO] 서포터
+- L309 [KO] 암살자
+- L314 [KO] 캐릭터
+- L315 [KO] 애기씨
+- L316 [KO] 마지막 무당
+- L317 [KO] 로비에서 골드로 영구 강화 가능
+- L318 [KO] 주무기
+- L319 [KO] 스테이지 10 클리어 시 주무기를 변경할 수 있습니다.
+- L320 [KO] 장착중
+- L321 [KO] 스탯
+- L321 [KO] 강화
+- L322 [KO] 강화
+- L323 [KO] 강화됨
+- L324 [KO] 인게임 레벨업 시 스탯 자동 상승 · 런 종료 후 초기화
+- L325 [KO] 골드 강화는 영구 적용
+- L326 [KO] 귀환
+- L327 [KO] 주무기 슬롯
+- L328 [KO] 클릭해서 해제)
+- L329 [KO] 공격력
+- L329 [KO] 무기 피해량 증가
+- L330 [KO] 공격속도
+- L330 [KO] 무기 쿨타임 단축
+- L331 [KO] 이동속도
+- L331 [KO] 플레이어 이동 속도
+- L332 [KO] 방어력
+- L332 [KO] 받는 피해 감소
+- L333 [KO] 회피율
+- L333 [KO] 피해 회피 확률 (최대 40%)
+- L334 [KO] 체력
+- L334 [KO] 최대 체력 증가
+- L339 [KO] 신목 영구강화
+- L340 [KO] 스테이지 30 클리어 해금)
+- L341 [KO] 현재
+- L342 [KO] 치명타 확률
+- L343 [KO] 치명타 배율
+- L344 [KO] 공격속도
+- L345 [KO] 이동속도
+- L346 [KO] 회피율
+- L352 [KO] 편성
+- L353 [KO] 빈 슬롯
+- L354 [KO] 현재 적용 효과
+- L355 [KO] 보유 펫
+- L356 [KO] 편성됨
+- L357 [KO] 귀환
+- L362 [KO] 보물 창고
+- L363 [KO] 특산품
+- L364 [KO] 법칙-유물
+- L365 [KO] 아직 열리지 않은 칸이다.
+- L366 [KO] 하드 난이도 스테이지 전용 드랍
+- L367 [KO] 보유
+- L368 [KO] 귀환
+- L373 [KO] 건물
+- L374 [KO] 귀-인-국 복원 현황
+- L375 [KO] 현재
+- L376 [KO] 건설
+- L377 [KO] 신령화 완성
+- L378 [KO] 귀환
+- L379 [KO] 폐허
+- L380 [KO] 복구
+- L381 [KO] 활성화
+- L382 [KO] 축복
+- L383 [KO] 신령화
+- L384 [KO] 효과 없음
+- L385 [KO] 특수 효과
+- L386 [KO] 공격력
+- L387 [KO] 최대
+- L388 [KO] 경험치
+- L389 [KO] 런 시작 시 무기
+- L390 [KO] 희귀 포함)
+- L391 [KO] 개 선택
+- L392 [KO] 런 종료 후
+- L393 [KO] 부활권 지급
+- L394 [KO] 자동 부활
+- L395 [KO] 동료 공격력
+- L396 [KO] 동료
+- L397 [KO] 펫 슬롯
+- L398 [KO] 펫 효과
+- L403 [KO] 내가... 모두를... 반드시...!
+- L404 [KO] 좋아! 이렇게 하나씩 하는거야!
+- L405 [KO] 대장간이 열렸어!
+- L406 [KO] 동료를 구했어!
+- L407 [KO] 미궁이 구했어!
+- L408 [KO] 건물 강화가 가능해!
+- L409 [KO] 동물 동료를 구했어!
+- L410 [KO] 마침내... 드디어.. 모두를!!!!
+- L418 [EN] Select Language
+- L419 [KO] 한국어
+- L425 [EN] Long ago,
+- L425 [EN] there was a kingdom where humans and spirits lived together.
+- L426 [EN] Where divine spirits kept the balance,
+- L426 [EN] and the Gwi-In walked alongside the living.
+- L427 [EN] But then...
+- L427 [EN] An unknown force arrived from beyond the sky.
+- L428 [EN] The Creeping Chaos.
+- L428 [EN] A god that twists the very laws of existence.
+- L428 [EN] Gwi-In-Guk fell.
+- L429 [EN] s prophetic dream, one added line
+- L429 [EN] no spoilers
+- L431 [EN] Gather the scattered Gwi-In.
+- L431 [EN] Restore the fallen kingdom.
+- L432 [KO] 공통
+- L445 [KO] 네비
+- L464 [EN] Onboarding right after Stage 1 clear
+- L497 [EN] s over.
+- L500 [EN] Dungeons can be challenged anytime, separate from Stages
+- L510 [EN] Slot Unlocked!
+- L511 [EN] expanded to
+- L512 [EN] Pet slots
+- L523 [EN] Repeating Milestones
+- L526 [EN] Claim All
+- L529 [EN] First Victory
+- L530 [EN] Cleared a stage for the first time
+- L531 [EN] First Defeat
+- L532 [EN] Fell in battle for the first time
+- L533 [EN] First Boss Kill
+- L534 [EN] Defeated a boss for the first time
+- L535 [EN] First Companion
+- L536 [EN] Deployed an ally for the first time
+- L537 [EN] First Pet
+- L538 [EN] Obtained a pet for the first time
+- L539 [EN] First Upgrade
+- L540 [EN] Upgraded a building for the first time
+- L541 [EN] First Awakening
+- L542 [EN] Awakened a weapon for the first time
+- L543 [EN] All Chapters
+- L544 [EN] Cleared all chapters
+- L545 [EN] Total Kills
+- L546 [EN] Total Clears
+- L547 [EN] Total Runs
+- L548 [EN] Endless Hunt
+- L549 [EN] Boss Hunter
+- L550 [EN] Winning Streak
+- L552 [EN] Hyeongye Complete
+- L553 [EN] Cleared Season 1
+- L553 [EN] Mortal Realm
+- L554 [EN] Yumyeonggye Complete
+- L555 [EN] Cleared Season 2
+- L556 [EN] Mangranggye Complete
+- L557 [EN] Cleared Season 3
+- L557 [EN] Realm of Glitches
+- L558 [EN] Gwiheogye Complete
+- L559 [EN] Cleared Season 4
+- L559 [EN] Realm of the Void
+- L560 [EN] Seongye Complete
+- L561 [EN] Cleared Season 5
+- L561 [EN] Celestial Realm
+- L562 [EN] First Hard Clear
+- L563 [EN] Cleared a stage on Hard difficulty for the first time
+- L564 [EN] Companion Collector I
+- L565 [EN] Owned 5 companions
+- L566 [EN] Companion Collector II
+- L567 [EN] Owned 10 companions
+- L568 [EN] Companion Collector III
+- L569 [EN] Owned 15 companions
+- L570 [EN] Pet Collector I
+- L571 [EN] Owned 5 pets
+- L572 [EN] Pet Collector II
+- L573 [EN] Owned 10 pets
+- L574 [EN] Pet Collector III
+- L575 [EN] Owned 15 pets
+- L576 [EN] Rising Star
+- L577 [EN] Upgraded a companion to 4 stars
+- L578 [EN] Companion Awakened
+- L579 [EN] Awakened a companion
+- L580 [EN] Seonsul Initiate
+- L581 [EN] Learned the Seonsul skill tree for the first time
+- L582 [EN] Yin-Yang Harmony
+- L583 [EN] Grew a second Seonsul tree
+- L584 [EN] Thriving Village
+- L585 [EN] Upgraded a building to level 5
+- L586 [EN] Wealth Accumulated
+- L587 [EN] Held 10,000 gold
+- L588 [EN] Gem Stash
+- L589 [EN] Held 50 gems
+- L591 [EN] Reached 50,000 total kills
+- L596 [EN] The Forgotten Grave
+- L597 [EN] Village of Mist
+- L598 [EN] The Corrupted Shrine
+- L599 [EN] Forest of Spirits
+- L600 [EN] The Rift of Chaos
+- L601 [EN] Gates of the Underworld
+- L602 [EN] Tower of the Void
+- L603 [EN] Sea of Oblivion
+- L604 [EN] Realm of the Outer God
+- L605 [EN] Heart of Gwi-In-Guk
+- L612 [EN] Sound FX
+- L616 [EN] Redeem Code
+- L617 [EN] Enter code
+- L619 [EN] t auto-sync saves
+- L627 [EN] t supported here. Long-press the code below to select and copy it manually.
+- L628 [EN] Import Save Code
+- L629 [EN] Paste your save code here
+- L631 [EN] Invalid code.
+- L632 [EN] The code looks corrupted or truncated. Please check you copied the entire thing.
+- L635 [EN] Highest Stage
+- L641 [EN] Saved At
+- L642 [EN] Saved On
+- L644 [EN] cannot be undone
+- L645 [EN] This will overwrite your current progress.
+- L645 [EN] nYour current save is backed up first, and can be restored once from Settings.
+- L647 [EN] Applied! Returning to the lobby...
+- L650 [EN] Restore Previous Save
+- L651 [EN] Rolls back to the save that was automatically kept just before you imported a save code.
+- L652 [EN] Your current progress will be lost.
+- L652 [EN] nThe backup is single-use, so this cannot be undone again.
+- L654 [EN] Restored! Returning to the lobby...
+- L655 [EN] There is no backup to restore.
+- L660 [EN] There is no reward whatsoever. This button only lets you start the game over from scratch.
+- L660 [EN] nDo you want to continue?
+- L661 [EN] Truly no reward for starting over. No hidden content either.
+- L662 [EN] This is your final warning. This serves no purpose other than restarting the game from the beginning.
+- L665 [EN] The game will restart from the beginning.
+- L666 [EN] Hidden Achievement Unlocked
+- L666 [EN] The Resolve to Restart
+- L672 [EN] How to Play
+- L676 [EN] Let's Go!
+- L678 [EN] Use the joystick on the left side
+- L678 [EN] Arrow keys or WASD
+- L678 [EN] nAegissi attacks the nearest enemy automatically.
+- L678 [EN] nSurvive and exorcise all the spirits!
+- L679 [EN] Level Up
+- L680 [EN] Defeating enemies grants experience points.
+- L680 [EN] nOn level up, choose or upgrade a weapon.
+- L680 [EN] nUpgrading a weapon 3 times makes it evolve into a more powerful form!
+- L682 [EN] Form a party with allies and pets from the lobby.
+- L682 [EN] fight alongside you
+- L682 [EN] attacking, defending, healing
+- L682 [EN] grant passive stat boosts or trigger special abilities
+- L683 [EN] Building Upgrades
+- L684 [EN] Click any building in the lobby to upgrade it with gold.
+- L684 [EN] nUpgrades permanently increase stats like
+- L684 [EN] nHP, attack power, and gold earnings!
+- L696 [EN] Companion Shop
+- L699 [EN] Summon ready!
+- L701 [EN] Star Up
+- L703 [EN] Normal Unlock
+- L704 [EN] Hard Unlock
+- L724 [EN] The Last Shaman
+- L725 [EN] Permanently upgradeable with Gold in the Lobby
+- L726 [EN] Main Weapon
+- L727 [EN] Clear Stage 10 to change your main weapon.
+- L732 [EN] Stats auto-increase on level-up
+- L732 [EN] Reset after each run
+- L733 [EN] Gold upgrades are permanent
+- L735 [EN] Increases weapon damage
+- L736 [EN] Reduces weapon cooldown
+- L737 [EN] Player movement speed
+- L738 [EN] Reduces damage taken
+- L739 [EN] Chance to evade damage
+- L740 [EN] Increases max HP
+- L741 [EN] Weapon Slot
+- L742 [EN] click to deselect
+- L747 [EN] Sacred Tree Upgrades
+- L748 [EN] Clear Stage 30
+- L750 [EN] Crit Chance
+- L751 [EN] Crit Mult
+- L752 [EN] Atk Speed
+- L753 [EN] Mov Speed
+- L762 [EN] Active Effects
+- L772 [EN] Law Artifact
+- L773 [EN] This section is not open yet.
+- L774 [EN] Hard difficulty stages only
+- L782 [EN] Gwi-In-Guk Restoration
+- L785 [EN] Fully Restored
+- L792 [EN] No Effect
+- L793 [EN] Special Effect
+- L797 [EN] Start run with
+- L798 [EN] incl. rare
+- L800 [EN] HP after run
+- L801 [EN] Revive token
+- L803 [EN] Ally ATK
+- L804 [EN] Ally HP
+- L805 [EN] Pet slots
+- L806 [EN] Pet effects
+- L811 [EN] I'll protect them... every last one...!
+- L812 [EN] Yes! One down, many to go!
+- L813 [EN] The Forge is open!
+- L814 [EN] A companion joins me!
+- L815 [EN] The Dungeon unlocked!
+- L816 [EN] Village upgrades available!
+- L817 [EN] A creature joins my side!
+- L818 [EN] At last... I saved them all!!!!
+
+## core/save.js
+
+- L8 [KO] 파트1
+- L8 [KO] 파트2
+- L21 [KO] 파트2를 이미
+- L21 [KO] 시작했는가
+- L28 [KO] 일회성 정리
+- L30 [KO] 이 버전 이하만 변환
+- L90 [KO] 오염도
+- L91 [KO] 어계
+- L91 [KO] 황계 전환 시스템
+- L102 [KO] 이미 획득한 것
+- L104 [KO] 영구 삭제
+- L106 [KO] 플래그 버그 1회
+- L106 [KO] 정상 유저의 수집물 영구 소실
+- L173 [KO] 회성
+- L177 [KO] 세이브 불러오기 실패
+- L186 [KO] 세이브 저장 실패
+- L339 [KO] 세이브 백업 실패
+- L361 [KO] 세이브 복구 실패
+
+## core/unlock.js
+
+- L18 [KO] 대장간
+- L21 [KO] 대장간이 열렸습니다.
+- L21 [KO] 무기를 구매하고 주무기를 변경할 수 있습니다.
+- L21 [KO] 강화석 던전이 해금되었습니다.
+- L26 [KO] 의원당
+- L29 [KO] 의원당이 세워졌습니다.
+- L29 [KO] 동료를 모집할 수 있습니다.
+- L34 [KO] 서낭당
+- L37 [KO] 서낭당이 세워졌습니다.
+- L37 [KO] 무한 던전과 보스러쉬가 해금되었습니다.
+- L42 [KO] 장승당
+- L45 [KO] 장승당이 세워졌습니다.
+- L45 [KO] 건물 업그레이드와 천운석 던전이 해금되었습니다.
+- L50 [KO] 용왕 연못
+- L53 [KO] 용왕 연못이 생겼습니다.
+- L53 [KO] 펫을 키울 수 있습니다.
+- L53 [KO] 천령과 던전이 해금되었습니다.
+- L58 [KO] 신목
+- L61 [KO] 신목이 깨어났습니다.
+- L61 [KO] 영구 강화가 가능합니다.
+- L61 [KO] 태극석 던전이 해금되었습니다.
+- L66 [KO] 시즌 1 완료
+- L73 [KO] 그 시즌 전체 클리어
+- L73 [KO] 그 시즌이 열리는 시점
+- L78 [KO] 혼돈석 던전
+- L81 [KO] 혼돈석 던전이 해금되었습니다.
+- L86 [KO] 순리석 던전
+- L89 [KO] 순리석 던전이 해금되었습니다.
+
+## data/config.js
+
+- L60 [KO] 만킬 이후
+- L60 [KO] 배 몬스터
+- L91 [KO] 로그라이크는 시간 투자하면 끝도 없이 강해져야 한다
+- L92 [KO] 열리는
+- L101 [KO] 근본 공격력
+- L101 [EN] Root Attack
+- L102 [KO] 근본 방어력
+- L102 [EN] Root Defense
+- L103 [KO] 근본 체력
+- L103 [EN] Root HP
+- L104 [KO] 근본 속도
+- L104 [EN] Root Speed
+- L107 [KO] 치명타율
+- L107 [EN] Crit Chance
+- L108 [KO] 회피율
+- L109 [KO] 쿨타임 감소
+- L110 [KO] 자석 범위
+- L110 [EN] Magnet Range
+- L120 [KO] 공세의 길 — 빠르고 강하게 몰아친다.
+- L120 [EN] The path of offense
+- L120 [EN] strike fast and hard.
+- L123 [KO] 쾌속의 가지
+- L123 [EN] Path of Swiftness
+- L124 [KO] 전광석화
+- L124 [EN] Lightning Speed
+- L125 [KO] 공격속도·이동속도 강화
+- L125 [EN] Boosts attack and movement speed
+- L127 [KO] 뇌성벽력
+- L127 [EN] Thunder Roar
+- L130 [KO] 화면 곳곳에 연쇄 낙뢰(레벨
+- L130 [KO] 더 자주, 더 세게)
+- L130 [EN] Chain lightning strikes across the screen
+- L130 [EN] higher level
+- L131 [KO] 벼락술
+- L131 [EN] Lightning Art
+- L134 [KO] 화면 전체에 거대한 낙뢰 폭격(레벨
+- L134 [KO] 더 자주, 더 세게)
+- L134 [EN] Massive lightning barrage across the whole screen
+- L134 [EN] higher level
+- L137 [KO] 거화의 가지
+- L137 [EN] Path of Blazing Fire
+- L138 [KO] 도깨비 강화
+- L138 [EN] Dokkaebi Empowerment
+- L139 [KO] 공격력·치명타율 강화
+- L139 [EN] Boosts attack and crit chance
+- L140 [KO] 독안개 전역화
+- L140 [EN] Miasma Spread
+- L143 [KO] 화면 전체에 독안개 확산, 지속 피해(레벨
+- L143 [KO] 더 자주, 더 세게)
+- L143 [EN] Poison mist spreads across the whole screen
+- L143 [EN] higher level
+- L144 [KO] 화염술
+- L144 [EN] Fire Art
+- L147 [KO] 몸에서 시작해 화면 전체를 휩쓰는 화염(레벨
+- L147 [KO] 더 자주, 더 세게)
+- L147 [EN] Fire spreads from you to engulf the whole screen
+- L147 [EN] higher level
+- L153 [KO] 수호의 길 — 굳건히 버티고 오래 살아남는다.
+- L153 [EN] The path of defense
+- L153 [EN] endure and outlast.
+- L156 [KO] 포박의 가지
+- L156 [EN] Path of Binding
+- L157 [KO] 귀신손 강화
+- L157 [EN] Ghost Hand Empowerment
+- L158 [KO] 쿨타임 감소·자석 범위 강화
+- L158 [EN] Boosts cooldown reduction and magnet range
+- L159 [KO] 현혹부적 대혼란
+- L159 [EN] Grand Confusion
+- L159 [KO] 잠김
+- L162 [KO] 화면 전체 적을 잠시 서로 공격하게 함(레벨
+- L162 [KO] 더 자주, 더 길게)
+- L162 [EN] Charms all enemies to attack each other
+- L162 [EN] higher level
+- L163 [KO] 명부낙인
+- L163 [EN] Mark of the Ledger
+- L166 [KO] 화면 전체 적에게 낙인, 3초 뒤 동시 소멸(레벨
+- L166 [KO] 더 자주, 더 세게)
+- L166 [EN] Marks all enemies
+- L166 [EN] they perish together after 3s
+- L166 [EN] higher level
+- L169 [KO] 결계의 가지
+- L169 [EN] Path of Warding
+- L170 [KO] 업구슬 강화
+- L170 [EN] Karma Bead Empowerment
+- L171 [KO] 방어력·회피율 강화
+- L171 [EN] Boosts defense and evasion
+- L172 [KO] 모래 어둠
+- L172 [EN] Sand Darkness
+- L175 [KO] 화면 암전 후 광역 폭딜(레벨
+- L175 [KO] 더 자주, 더 세게)
+- L175 [EN] Screen darkens then bursts with AoE damage
+- L175 [EN] higher level
+- L176 [KO] 정화
+- L179 [KO] 화면 전체에 소금 세례, 광역딜+적 기절(레벨
+- L179 [KO] 더 자주, 더 세게, 더 길게 기절)
+- L179 [EN] Salt showers the whole screen, AoE damage
+- L179 [EN] higher level
+- L179 [EN] faster, stronger
+- L179 [EN] longer stun
+- L187 [KO] 조화의 음양
+- L187 [EN] Harmony of Yin-Yang
+- L188 [KO] 서로 다른 음양을 모두 품어 조화를 이룬다. 공격력 +100%, 최대체력 +100%.
+- L189 [EN] Embraces both opposing forces in harmony. ATK
+- L190 [KO] 극한의 음양
+- L190 [EN] Extreme Yin-Yang
+- L191 [KO] 같은 극을 두 번 파고들어 극한에 이른다. 공격력 +200%.
+- L192 [EN] Delves twice into the same pole, reaching an extreme. ATK
+- L232 [KO] 선계·원계부터 갑자기 버벅인다
+- L302 [KO] 법칙
+- L307 [KO] 축복
+- L317 [KO] 남은 오염도에 비례
+- L328 [KO] 혼자 갈수록 강해지는 계
+- L344 [KO] 파편 1개당 규율석 N개
+- L348 [KO] 법칙의 파수꾼
+- L348 [EN] Law Sentinel
+- L350 [KO] 공격력 증가
+- L350 [EN] Increases attack power
+- L351 [KO] 전자기의 법칙
+- L351 [EN] Law of Electromagnetism
+- L353 [KO] 쿨타임 감소
+- L353 [EN] Reduces weapon cooldown
+- L354 [KO] 핵력의 법칙
+- L354 [EN] Law of Nuclear Force
+- L356 [KO] 방어력 증가
+- L356 [EN] Increases defense
+- L357 [KO] 인과의 법칙
+- L357 [EN] Law of Causality
+- L359 [KO] 치명타율 증가
+- L359 [EN] Increases crit chance
+- L360 [KO] 관계의 법칙
+- L360 [EN] Law of Relations
+- L362 [KO] 동료 공격력 증가
+- L362 [EN] Increases companion attack power
+- L363 [KO] 원계의 법칙
+- L363 [EN] Law of the Primal Realm
+- L365 [KO] 최대 체력 증가
+- L365 [EN] Increases max HP
+- L368 [KO] 정지의 법칙
+- L368 [EN] Law of Stillness
+- L370 [KO] 일정 시간 이상 정지하면 데미지 증가
+- L370 [EN] Deal more damage after standing still
+- L371 [KO] 질주의 법칙
+- L371 [EN] Law of the Sprint
+- L373 [KO] 이동을 지속할수록 데미지가 누적 증가(상한 있음)
+- L373 [EN] Damage builds up the longer you keep moving
+- L374 [KO] 반사의 법칙
+- L374 [EN] Law of Reflection
+- L376 [KO] 일정 횟수 피격 시 반사 데미지
+- L376 [EN] Reflects damage after being hit enough times
+- L377 [KO] 흡수의 법칙
+- L377 [EN] Law of Absorption
+- L379 [KO] 회복량이 누적되면 폭발 데미지
+- L379 [EN] Unleashes a burst once healing accumulates enough
+- L380 [KO] 인내의 법칙
+- L380 [EN] Law of Endurance
+- L382 [KO] 체력이 낮을수록 방어력 증가
+- L382 [EN] Gain more defense at low HP
+- L383 [KO] 과잉의 법칙
+- L383 [EN] Law of Excess
+- L385 [KO] 체력이 가득 차 있으면 공격력 증가
+- L385 [EN] Gain more attack power while at full HP
+- L388 [KO] 오염의 법칙
+- L388 [EN] Law of Corruption
+- L390 [KO] 주기적으로 화면 전체에 독 살포
+- L390 [EN] Periodically spreads poison across the screen
+- L391 [KO] 붕괴의 법칙
+- L391 [EN] Law of Collapse
+- L393 [KO] 주기적으로 광역 붕괴 폭발
+- L393 [EN] Periodically triggers an AoE collapse explosion
+- L394 [KO] 중력의 법칙
+- L394 [EN] Law of Gravity
+- L396 [KO] 주기적으로 적을 끌어당기며 데미지
+- L396 [EN] Periodically pulls enemies in and deals damage
+- L397 [KO] 절규의 법칙
+- L397 [EN] Law of the Scream
+- L399 [KO] 주기적으로 화면 전체 적 기절
+- L399 [EN] Periodically stuns all enemies on screen
+- L400 [KO] 소멸의 법칙
+- L400 [EN] Law of Extinction
+- L402 [KO] 주기적으로 저체력 적을 즉시 소멸
+- L402 [EN] Periodically annihilates low-HP enemies instantly
+- L403 [KO] 왜곡의 법칙
+- L403 [EN] Law of Distortion
+- L405 [KO] 주기적으로 적을 둔화시키며 데미지
+- L405 [EN] Periodically slows enemies and deals damage
+- L408 [KO] 심판의 법칙
+- L408 [EN] Law of Judgment
+- L410 [KO] 처치 수가 누적되면 광역 폭발
+- L410 [EN] Triggers an AoE burst once enough kills accumulate
+- L411 [KO] 파멸의 법칙
+- L411 [EN] Law of Ruin
+- L413 [KO] 체력이 낮아지면 강력한 일격 발동(쿨다운)
+- L413 [EN] Unleashes a powerful strike when HP drops low
+- L413 [EN] on cooldown
+- L414 [KO] 인과응보의 법칙
+- L414 [EN] Law of Karma
+- L416 [KO] 받은 피해가 누적되면 되돌려줌
+- L416 [EN] Returns accumulated damage taken back at enemies
+- L417 [KO] 역행의 법칙
+- L417 [EN] Law of Reversal
+- L419 [KO] 주기적으로 최근 처치 지점에 낙뢰
+- L419 [EN] Periodically strikes lightning at recently defeated enemies
+- L420 [KO] 왕좌의 법칙
+- L420 [EN] Law of the Throne
+- L422 [KO] 보스전에서만 추가 데미지
+- L422 [EN] Deals bonus damage against bosses only
+- L423 [KO] 태초의 법칙
+- L423 [EN] Law of the Origin
+- L425 [KO] 시그니처
+- L425 [KO] 공격력 상시 증가 + 주기적으로 강력한 초신성 폭발
+- L425 [EN] Passive ATK boost plus a periodic supernova burst
+
+## data/game-data.js
+
+- L4 [KO] 도치
+- L4 [EN] Jangseung Guardian
+- L5 [KO] 민첩한 움직임과 견고한 방어로 아군을 수호하는 든든한 호위.
+- L6 [EN] A steadfast guardian who protects allies with swift movements and iron defense.
+- L9 [KO] 공격속도 +15%
+- L9 [EN] Atk Speed
+- L10 [KO] 공격 범위 +30%
+- L10 [EN] Atk Range
+- L11 [KO] 방어막 지속 +1초
+- L11 [EN] Shield Duration
+- L12 [KO] 연속 2타 공격
+- L12 [EN] Double Strike
+- L13 [KO] 처형기: HP 15% 이하 즉사
+- L13 [EN] Instant Kill
+- L15 [KO] 아람
+- L15 [EN] Falconer Aram
+- L16 [KO] 날카로운 눈과 빠른 사격으로 적의 약점을 찌르는 원거리 딜러.
+- L17 [EN] A ranged dealer who pierces enemy weak points with sharp eyes and rapid shots.
+- L20 [KO] 화살 +1발
+- L21 [KO] 관통 +2
+- L22 [KO] 공격속도 +20%
+- L22 [EN] Atk Speed
+- L23 [KO] 유도 화살
+- L23 [EN] Homing Arrow
+- L24 [KO] 연사 폭발 화살
+- L24 [EN] Triple Burst Arrow
+- L26 [KO] 꺽쇠
+- L26 [EN] Goblin Mechanic Ggeoksoe
+- L27 [KO] 기상천외한 발명품으로 아군을 지원하고 전장을 통제하는 괴짜.
+- L28 [EN] A quirky inventor who supports allies and controls the battlefield with outlandish gadgets.
+- L31 [KO] 폭탄 범위 +25%
+- L31 [EN] Bomb Range
+- L32 [KO] 폭탄 수 +1
+- L33 [KO] 둔화 지속 +2초
+- L33 [EN] Slow Duration
+- L34 [KO] 화염 폭탄
+- L34 [EN] Fire Bomb
+- L35 [KO] 광역 대폭발
+- L35 [EN] Mega Explosion
+- L39 [KO] 박수
+- L39 [EN] Baby Dokkaebi Shaman Baksu
+- L40 [KO] 말썽꾸러기 아기 도깨비 박수. 방울과 부적으로 서투른 굿을 흉내내지만 의외로 위력은 진짜다.
+- L41 [EN] A mischievous baby dokkaebi shaman who play-acts rituals with bells and talismans
+- L41 [EN] clumsy, but surprisingly effective.
+- L44 [KO] 마법 투사체 +1발
+- L44 [EN] Magic Projectile
+- L45 [KO] 관통 +3
+- L46 [KO] 공격속도 +28%
+- L46 [EN] Atk Speed
+- L47 [KO] 치명타율 +30%
+- L47 [EN] Crit Rate
+- L48 [KO] 쿨타임 -40%
+- L48 [EN] Cooldown -40
+- L50 [KO] 장구애비
+- L50 [EN] Cheer Captain Janggu-aebi
+- L51 [KO] 장구와 꽹과리로 흥을 돋우는 응원단장. 신명나는 장단이 아군의 사기를 끌어올린다.
+- L52 [EN] A cheer captain who rouses the crowd with drum and gong
+- L52 [EN] the beat lifts allies' morale.
+- L55 [KO] 공격 범위 +45%
+- L55 [EN] Atk Range
+- L56 [KO] 공격력 +35%
+- L57 [KO] 공격속도 +30%
+- L57 [EN] Atk Speed
+- L58 [KO] 쿨타임 -35%
+- L58 [EN] Cooldown -35
+- L59 [KO] 최대 HP +45%
+- L63 [KO] 환생 동자
+- L63 [EN] Rebirth Child
+- L64 [KO] 귀허계에서 거듭남을 상징하는 동자. 조용히 소용돌이치는 음양의 구슬로 아군을 치유한다.
+- L65 [EN] A child spirit symbolizing rebirth in the Void Realm. Heals allies with a quietly swirling yin-yang orb.
+- L68 [KO] 회복량 +40%
+- L68 [EN] Heal Amount
+- L69 [KO] 쿨타임 -25%
+- L69 [EN] Cooldown -25
+- L70 [KO] 사거리 +25%
+- L71 [KO] 최대 HP +25%
+- L72 [KO] 공격속도 +20%
+- L72 [EN] Atk Speed
+- L74 [KO] 허무 검사
+- L74 [EN] Void Swordsman
+- L75 [KO] 귀허계의 소멸을 검에 담아 벤다. 스치기만 해도 존재가 흐려진다.
+- L76 [EN] Wields the annihilation of the Void Realm in his blade. A single graze is enough to unravel existence.
+- L79 [KO] 치명타율 +30%
+- L79 [EN] Crit Rate
+- L80 [KO] 공격력 +25%
+- L81 [KO] 공격속도 +20%
+- L81 [EN] Atk Speed
+- L82 [KO] 관통 +3
+- L83 [KO] 쿨타임 -30%
+- L83 [EN] Cooldown -30
+- L85 [KO] 단비
+- L85 [EN] Shaman Danbi
+- L86 [KO] 신비로운 주술과 치유로 아군을 보호하고 상태 이상을 회복하는 영매.
+- L87 [EN] A spirit medium who protects allies and cures status effects with mystic rituals and healing.
+- L90 [KO] 회복량 +30%
+- L90 [EN] Heal Amount
+- L91 [KO] 쿨타임 -20%
+- L91 [EN] Cooldown -20
+- L92 [KO] 상태 이상 해제
+- L92 [EN] Cleanse Status
+- L93 [KO] 아군 공격력 +15% (15초)
+- L93 [EN] Ally ATK
+- L94 [KO] 광역 힐 + 무적 2초
+- L94 [EN] AoE Heal
+- L94 [EN] Invincible 2s
+- L96 [KO] 가온
+- L96 [EN] Shadow Assassin Gaon
+- L97 [KO] 어둠 속에서 은밀하게 움직이며 치명적인 일격을 가하는 암살자.
+- L98 [EN] An assassin who moves in darkness and delivers lethal strikes.
+- L101 [KO] 치명타율 +20%
+- L101 [EN] Crit Rate
+- L102 [KO] 암습 피해 +50%
+- L102 [EN] Ambush Dmg
+- L103 [KO] 스킬 쿨타임 -30%
+- L103 [EN] Skill Cooldown -30
+- L104 [KO] 연타 암습
+- L104 [EN] Double Ambush
+- L105 [KO] 연속 순간이동 암살
+- L105 [EN] Triple Blink Assassination
+- L108 [KO] 청아
+- L108 [EN] Dragon Princess Cheonga
+- L109 [KO] 용궁 깊은 곳에서 온 물의 마법사. 빙결 주문으로 적을 얼어붙게 한다.
+- L110 [EN] A water mage from the depths of the Dragon Palace who freezes foes with ice spells.
+- L113 [KO] 마법 투사체 +1발
+- L113 [EN] Magic Projectile
+- L114 [KO] 빙결 확률 +25%
+- L114 [EN] Freeze Chance
+- L115 [KO] 관통 +3
+- L116 [KO] 쿨타임 -25% + 범위 +30%
+- L116 [EN] Cooldown -25
+- L117 [KO] 용왕 빔 (전방 관통)
+- L117 [EN] Dragon King Beam
+- L119 [KO] 생령
+- L119 [EN] Saengryeong Warrior
+- L120 [KO] 천계의 역사(
+- L120 [KO] 분노가 쌓일수록 무적에 가까운 힘을 발휘한다.
+- L121 [EN] A heavenly strongman who unleashes near-invincible power as rage builds.
+- L124 [KO] 공격력 +20%
+- L125 [KO] 피격 반격 (반사 50%)
+- L125 [EN] Reflect 50
+- L126 [KO] 분노 상태 (HP 50%이하 공격력 +50%)
+- L126 [EN] below 50
+- L127 [KO] 기파 폭발 (주변 범위)
+- L127 [EN] Ki Burst
+- L128 [KO] 완전 분노 (3초 무적 + 공격력 3배)
+- L128 [EN] Full Rage
+- L128 [EN] s Invincible
+- L130 [KO] 백호
+- L130 [EN] White Tiger Spirit
+- L131 [KO] 서방 수호신 백호. 강력한 돌진으로 적의 대열을 무너뜨린다.
+- L132 [EN] The guardian spirit of the West. Charges through enemy lines with overwhelming force.
+- L135 [KO] 최대 HP +30%
+- L136 [KO] 돌진 쿨타임 -20%
+- L136 [EN] Charge Cooldown -20
+- L137 [KO] 피해 감소 +20%
+- L137 [EN] Damage Reduction
+- L138 [KO] 돌진 기절 (2초)
+- L138 [EN] Charge Stun
+- L139 [KO] 아군 방어막 (3초)
+- L139 [EN] Ally Shield
+- L141 [KO] 봉황
+- L141 [EN] Phoenix Sohee
+- L142 [KO] 불사조의 화염을 다루는 용맹한 여전사. 불꽃이 닿는 모든 것을 태운다.
+- L143 [EN] A valiant warrior who wields phoenix flames, burning everything in her path.
+- L146 [KO] 화염 도트 +30%
+- L146 [EN] Fire DoT
+- L147 [KO] 화살 +1발
+- L148 [KO] 이동속도 감소 +30%
+- L148 [EN] Move Speed Slow
+- L149 [KO] 폭발 범위 +40%
+- L149 [EN] Explosion Range
+- L150 [KO] 봉황 폭발 (광역 대화염)
+- L150 [EN] Phoenix Explosion
+- L150 [EN] massive AoE fire
+- L152 [KO] 무사
+- L152 [EN] Divine Blade Warrior
+- L153 [KO] 하늘이 내린 신검을 휘두르는 검호. 일검에 전장을 가른다.
+- L154 [EN] A master swordsman wielding a heavenly blade, cleaving the battlefield in a single stroke.
+- L157 [KO] 베기 범위 +20%
+- L157 [EN] Slash Range
+- L158 [KO] 공격속도 +15%
+- L158 [EN] Atk Speed
+- L159 [KO] 치명타 피해 2배
+- L159 [EN] Crit Damage
+- L160 [KO] 검기 발사 (원거리)
+- L160 [EN] Sword Beam
+- L161 [KO] 전체 베기 (화면 범위)
+- L161 [EN] Full-Screen Slash
+- L163 [KO] 수호
+- L163 [EN] Guardian Spirit
+- L164 [KO] 철갑으로 온몸을 감싼 불굴의 수호신. 아군의 최후 방어선이 된다.
+- L165 [EN] An indomitable guardian clad in iron armor, becoming the last line of defense for allies.
+- L168 [KO] 방어막 HP +50%
+- L168 [EN] Shield HP
+- L169 [KO] 방어막 쿨타임 -25%
+- L169 [EN] Shield Cooldown -25
+- L170 [KO] 피해 반사 20%
+- L170 [EN] Damage Reflect 20
+- L171 [KO] 아군 피해 감소 15%
+- L171 [EN] Ally Dmg Reduction 15
+- L172 [KO] 철벽 (5초 불사신)
+- L172 [EN] Iron Wall
+- L172 [EN] Invincible 5s
+- L175 [KO] 해원맥
+- L176 [KO] 유명계의 길잡이. 쌍망치로 원귀들을 명부로 돌려보내는 저승의 무관.
+- L177 [EN] Guide of the Underworld. A netherworld officer who sends vengeful spirits back to the registry with twin hammers.
+- L180 [KO] 최대 HP +30%
+- L181 [KO] 공격력 +25%
+- L182 [KO] 피해 감소 +20%
+- L182 [EN] Damage Reduction
+- L183 [KO] 연속 2타 강타
+- L183 [EN] Double Smash
+- L184 [KO] 명부의 철퇴 (아군 방어막 3초)
+- L184 [EN] Mortuary Hammer
+- L184 [EN] Ally Shield 3s
+- L186 [KO] 강림차사
+- L186 [EN] Gangnim Chasa
+- L187 [KO] 오염에서 정화된 저승차사. 생사부에 이름을 적어 혼을 거둔다.
+- L188 [EN] A reaper purified from corruption who claims souls by writing names in the Book of Life and Death.
+- L191 [KO] 치명타율 +25%
+- L191 [EN] Crit Rate
+- L192 [KO] 암습 피해 +60%
+- L192 [EN] Ambush Dmg
+- L193 [KO] 스킬 쿨타임 -30%
+- L193 [EN] Skill Cooldown -30
+- L194 [KO] 연타 암습
+- L194 [EN] Double Ambush
+- L195 [KO] 강림의 심판 (HP 20% 이하 즉사)
+- L195 [EN] Judgment of Gangnim
+- L198 [KO] 백운선인
+- L198 [EN] White Cloud Immortal
+- L199 [KO] 구름 위에 앉아 오랜 세월 도를 닦은 선계의 원로. 손짓 한 번에 구름과 서리가 적을 덮친다.
+- L200 [EN] An elder immortal who has cultivated the Way atop the clouds for ages
+- L200 [EN] a single gesture summons cloud and frost upon foes.
+- L203 [KO] 마법 투사체 +2발
+- L203 [EN] Magic Projectiles
+- L204 [KO] 관통 +4
+- L205 [KO] 공격속도 +30%
+- L205 [EN] Atk Speed
+- L206 [KO] 쿨타임 -35%
+- L206 [EN] Cooldown -35
+- L207 [KO] 최대 HP +40%
+- L209 [KO] 매화검선
+- L209 [EN] Plum Blossom Sword Immortal
+- L210 [KO] 매화 꽃잎이 흩날리는 검로를 그리는 젊은 검선. 스치기만 해도 서릿발처럼 베인다.
+- L211 [EN] A young sword immortal whose blade trails scattering plum blossoms
+- L211 [EN] a single graze cuts like frost.
+- L214 [KO] 치명타율 +25%
+- L214 [EN] Crit Rate
+- L215 [KO] 공격력 +25%
+- L216 [KO] 공격속도 +20%
+- L216 [EN] Atk Speed
+- L217 [KO] 관통 +2
+- L218 [KO] 쿨타임 -25%
+- L218 [EN] Cooldown -25
+- L223 [KO] 미리내
+- L224 [KO] 어계의 별강(
+- L224 [KO] 에서 솟아오른 얼음 봉황. 날갯짓 한 번에 별이 얼어붙은 물살이 쏟아진다.
+- L225 [EN] An ice phoenix risen from the star-river of the Outer Realm
+- L225 [EN] one beat of its wings pours down a current of frozen stars.
+- L228 [KO] 마법 투사체 +2발
+- L228 [EN] Magic Projectiles
+- L229 [KO] 공격력 +30%
+- L230 [KO] 공격 범위 +25%
+- L230 [EN] Attack Range
+- L231 [KO] 공격속도 +25%
+- L231 [EN] Atk Speed
+- L232 [KO] 쿨타임 -30%
+- L232 [EN] Cooldown -30
+- L234 [KO] 천 마리 새끼
+- L237 [KO] 숲의 검은 산양
+- L238 [KO] 천자
+- L239 [KO] 태모의 천 마리 새끼 중 하나. 정해진 형체 없이 흘러내리는 검은 덩어리로, 어미를 등지고 애기씨의 곁에 섰다.
+- L240 [EN] One of the Great Mother's thousand young
+- L240 [EN] a black mass that flows without settling into any fixed shape, which turned from its parent to stand beside Aegissi.
+- L243 [KO] 공격력 +35%
+- L244 [KO] 공격 범위 +30%
+- L244 [EN] Attack Range
+- L245 [KO] 관통 +3
+- L246 [KO] 공격속도 +30%
+- L246 [EN] Atk Speed
+- L247 [KO] 쿨타임 -35%
+- L247 [EN] Cooldown -35
+- L260 [KO] 잊혀진 무덤
+- L260 [EN] Forgotten Tomb
+- L262 [KO] 버려진 공동묘지
+- L262 [EN] Abandoned Cemetery
+- L263 [KO] 망자의 길
+- L263 [EN] Path of the Dead
+- L264 [KO] 원귀의 숲
+- L264 [EN] Forest of Vengeful Spirits
+- L265 [KO] 묘지기의 거처
+- L265 [EN] Gravedigger's Dwelling
+- L266 [KO] 봉인된 무덤
+- L266 [EN] Sealed Tomb
+- L267 [KO] 떠도는 혼의 늪
+- L267 [EN] Swamp of Wandering Souls
+- L268 [KO] 원귀장의 영역
+- L268 [EN] Domain of the Ghost Lord
+- L269 [KO] 해골 병사의 요새
+- L269 [EN] Skeleton Soldier Fortress
+- L270 [KO] 장군의 기억
+- L270 [EN] General's Memory
+- L271 [KO] 타락한 무당의 제단
+- L271 [EN] Corrupted Shaman's Altar
+- L275 [KO] 안개의 폐촌
+- L275 [EN] Misty Ruined Village
+- L277 [KO] 안개 낀 마을 입구
+- L277 [EN] Foggy Village Entrance
+- L278 [KO] 빈 집들의 거리
+- L278 [EN] Street of Empty Houses
+- L279 [KO] 우물가의 속삭임
+- L279 [EN] Whispers by the Well
+- L280 [KO] 굶주린 혼의 들판
+- L280 [EN] Field of Hungry Souls
+- L281 [KO] 우물귀신의 영역
+- L281 [EN] Domain of the Well Ghost
+- L282 [KO] 곡성의 밤
+- L282 [EN] Night of Wailing
+- L283 [KO] 그림자 아이들
+- L283 [EN] Shadow Children
+- L284 [KO] 우물귀신의 깊이
+- L284 [EN] Depths of the Well Ghost
+- L285 [KO] 마을의 기억
+- L285 [EN] Village Memories
+- L286 [KO] 창귀의 안개
+- L286 [EN] Changwi's Fog
+- L290 [KO] 타락한 서낭당
+- L290 [EN] Corrupted Shrine
+- L292 [KO] 오염된 제단 입구
+- L292 [EN] Defiled Altar Entrance
+- L293 [KO] 타락한 신도의 거리
+- L293 [EN] Street of Corrupted Devotees
+- L294 [KO] 저주받은 마을
+- L294 [EN] Cursed Village
+- L295 [KO] 인형들의 숲
+- L295 [EN] Forest of Dolls
+- L296 [KO] 타락한 장승의 영역
+- L296 [EN] Domain of the Corrupted Totem
+- L297 [KO] 불타는 서낭당
+- L297 [EN] Burning Shrine
+- L298 [KO] 저주의 중심
+- L298 [EN] Heart of the Curse
+- L299 [KO] 타락한 제사터
+- L299 [EN] Corrupted Ritual Ground
+- L300 [KO] 마지막 장승
+- L300 [EN] Last Guardian Totem
+- L301 [KO] 두억시니의 제단
+- L301 [EN] Dueoksini's Altar
+- L305 [KO] 신령의 숲
+- L305 [EN] Spirit Forest
+- L307 [KO] 신령의 숲 입구
+- L307 [EN] Spirit Forest Entrance
+- L308 [KO] 정령들의 영역
+- L308 [EN] Domain of Nature Spirits
+- L309 [KO] 나무 정령의 숲
+- L309 [EN] Forest of Tree Spirits
+- L310 [KO] 가면 여우의 길
+- L310 [EN] Path of the Masked Fox
+- L311 [KO] 흑호의 영역
+- L311 [EN] Domain of the Black Tiger
+- L312 [KO] 신목의 깊은 곳
+- L312 [EN] Depths of the Sacred Tree
+- L313 [KO] 잠든 신령의 전당
+- L313 [EN] Hall of Sleeping Spirits
+- L314 [KO] 산신의 꿈속
+- L314 [EN] Inside the Mountain God's Dream
+- L315 [KO] 기억의 숲
+- L315 [EN] Forest of Memories
+- L316 [KO] 장산범의 영지
+- L316 [EN] Jangsan Tiger's Domain
+- L320 [KO] 혼돈의 균열
+- L320 [EN] Rift of Chaos
+- L322 [KO] 균열의 입구
+- L322 [EN] Rift Entrance
+- L323 [KO] 심연의 평원
+- L323 [EN] Abyss Plains
+- L324 [KO] 혼돈의 바다
+- L324 [EN] Sea of Chaos
+- L325 [KO] 눈들의 영역
+- L325 [EN] Domain of the Eyes
+- L326 [KO] 왜곡자의 공간
+- L326 [EN] Distorter's Space
+- L327 [KO] 붕괴된 현실
+- L327 [EN] Collapsed Reality
+- L328 [KO] 외신의 발자국
+- L328 [EN] Outer God's Footsteps
+- L329 [KO] 차원의 경계
+- L329 [EN] Dimensional Boundary
+- L330 [KO] 혼돈의 심장부
+- L330 [EN] Heart of Chaos
+- L331 [KO] 구미호의 왕좌
+- L331 [EN] Nine-Tailed Fox's Throne
+- L335 [KO] 저승의 문
+- L335 [EN] Gate of the Underworld
+- L337 [KO] 황천의 강가
+- L337 [EN] Banks of the Underworld River
+- L338 [KO] 망자들의 행렬
+- L338 [EN] Procession of the Dead
+- L339 [KO] 저승 파수꾼의 길
+- L339 [EN] Path of Underworld Sentinels
+- L340 [KO] 죄인들의 광장
+- L340 [EN] Square of Sinners
+- L341 [KO] 염라의 첫 번째 문
+- L341 [EN] Yeomra's First Gate
+- L342 [KO] 지옥의 회랑
+- L342 [EN] Corridors of Hell
+- L343 [KO] 저승 호위대의 진영
+- L343 [EN] Underworld Escort Camp
+- L344 [KO] 심판의 청
+- L344 [EN] Hall of Judgment
+- L345 [KO] 저승왕의 침전
+- L345 [EN] Underworld King's Chamber
+- L346 [KO] 저승왕의 사자
+- L346 [EN] Underworld King's Emissary
+- L350 [KO] 외신의 제단
+- L350 [EN] Altar of the Outer God
+- L352 [KO] 오염된 성지 입구
+- L352 [EN] Defiled Holy Ground Entrance
+- L353 [KO] 외신 신도의 거리
+- L353 [EN] Outer God Devotees' Street
+- L354 [KO] 공허의 안개 지대
+- L354 [EN] Void Mist Zone
+- L355 [KO] 제물의 제단
+- L355 [EN] Altar of Sacrifice
+- L356 [KO] 외신 사제의 성소
+- L356 [EN] Outer God Priest's Sanctuary
+- L357 [KO] 공허가 스민 탑
+- L357 [EN] Void-Infused Tower
+- L358 [KO] 촉수의 미로
+- L358 [EN] Tentacle Maze
+- L359 [KO] 외신의 숨결
+- L359 [EN] Breath of the Outer God
+- L360 [KO] 제단의 심부
+- L360 [EN] Inner Sanctum of the Altar
+- L361 [KO] 공허의 선구자
+- L361 [EN] Harbinger of the Void
+- L365 [KO] 기억의 폐허
+- L365 [EN] Ruins of Memory
+- L367 [KO] 잊혀진 마을
+- L367 [EN] Forgotten Village
+- L368 [KO] 기억이 지워진 거리
+- L368 [EN] Street of Erased Memories
+- L369 [KO] 흐릿한 꿈의 들판
+- L369 [EN] Field of Hazy Dreams
+- L370 [KO] 약탈당한 신전
+- L370 [EN] Plundered Temple
+- L371 [KO] 기억 파괴자의 소굴
+- L371 [EN] Memory Destroyer's Lair
+- L372 [KO] 공백의 도서관
+- L372 [EN] Library of Blank Pages
+- L373 [KO] 사라진 얼굴들의 숲
+- L373 [EN] Forest of Vanished Faces
+- L374 [KO] 왜곡된 기억의 탑
+- L374 [EN] Tower of Distorted Memories
+- L375 [KO] 마지막 기억
+- L375 [EN] Last Memory
+- L376 [KO] 잊혀진 왕의 궁전
+- L376 [EN] Forgotten King's Palace
+- L380 [KO] 신령의 무덤
+- L380 [EN] Tomb of the Spirits
+- L382 [KO] 신령이 잠든 숲
+- L382 [EN] Forest Where Spirits Sleep
+- L383 [KO] 타락한 신목
+- L383 [EN] Corrupted Sacred Tree
+- L384 [KO] 반신령의 영역
+- L384 [EN] Domain of the Demi-Spirit
+- L385 [KO] 무너진 신당
+- L385 [EN] Collapsed Shrine
+- L386 [KO] 반신령 군주의 전당
+- L386 [EN] Hall of the Demi-Spirit Lord
+- L387 [KO] 신령의 눈물
+- L387 [EN] Tears of the Spirits
+- L388 [KO] 봉인된 성지
+- L388 [EN] Sealed Holy Ground
+- L389 [KO] 신령의 잠꼬대
+- L389 [EN] Spirits' Murmur
+- L390 [KO] 깨어나는 어둠
+- L390 [EN] Awakening Darkness
+- L391 [KO] 잠든 산신의 꿈
+- L391 [EN] Dream of the Sleeping Mountain God
+- L395 [KO] 혼돈의 왕좌
+- L395 [EN] Throne of Chaos
+- L397 [KO] 균열의 심장부
+- L397 [EN] Heart of the Rift
+- L398 [KO] 공허의 평원
+- L398 [EN] Plains of the Void
+- L399 [KO] 혼돈의 군단
+- L399 [EN] Legion of Chaos
+- L400 [KO] 심연 기사의 요새
+- L400 [EN] Abyss Knight Fortress
+- L401 [KO] 혼돈의 선봉장
+- L401 [EN] Chaos Vanguard
+- L402 [KO] 붕괴하는 세계
+- L402 [EN] Crumbling World
+- L403 [KO] 외신의 왕좌 앞길
+- L403 [EN] Road to the Outer God's Throne
+- L404 [KO] 마지막 경계
+- L404 [EN] Last Boundary
+- L405 [KO] 기어오는 혼돈의 전실
+- L405 [EN] Antechamber of Crawling Chaos
+- L406 [KO] 기어오는 혼돈
+- L406 [EN] Crawling Chaos
+- L413 [KO] 황천강 건너편
+- L413 [EN] Banks of the Sanzu River
+- L415 [KO] 황천강 기슭
+- L415 [EN] Banks of the Underworld
+- L416 [KO] 안개 낀 나루터
+- L416 [EN] Foggy Ferry Crossing
+- L417 [KO] 떠도는 망자의 길
+- L417 [EN] Path of Wandering Souls
+- L418 [KO] 강을 건너지 못한 자들
+- L418 [EN] Those Who Cannot Cross
+- L419 [KO] 뱃사공의 심판
+- L419 [EN] Ferryman's Judgment
+- L420 [KO] 황천강 심류
+- L420 [EN] Deep Current of the Sanzu
+- L421 [KO] 물속의 원귀
+- L421 [EN] Vengeful Spirits of the Deep
+- L422 [KO] 강변의 처형장
+- L422 [EN] Riverside Execution Ground
+- L423 [KO] 침몰한 망자선
+- L423 [EN] Sunken Soul Barge
+- L424 [KO] 뱃사공의 왕좌
+- L424 [EN] Ferryman's Throne
+- L428 [KO] 망자의 거리
+- L428 [EN] Street of the Dead
+- L430 [KO] 망자의 거리 입구
+- L430 [EN] Entrance to the Dead Street
+- L431 [KO] 억울한 혼들의 시장
+- L431 [EN] Market of Wronged Souls
+- L432 [KO] 포졸의 순찰로
+- L432 [EN] Underworld Guard Patrol
+- L433 [KO] 지옥문 앞
+- L433 [EN] Before the Hell Gate
+- L434 [KO] 포졸대장의 검문
+- L434 [EN] Captain's Checkpoint
+- L435 [KO] 죄인들의 감옥
+- L435 [EN] Prison of Sinners
+- L436 [KO] 고문의 방
+- L436 [EN] Chamber of Torment
+- L437 [KO] 망자의 법정
+- L437 [EN] Court of the Dead
+- L438 [KO] 붕괴하는 저승 성벽
+- L438 [EN] Crumbling Underworld Walls
+- L439 [KO] 포졸대장의 처형장
+- L439 [EN] Captain's Execution Ground
+- L443 [KO] 기억의 미궁
+- L443 [EN] Labyrinth of Memory
+- L445 [KO] 기억이 흐르는 복도
+- L445 [EN] Corridor of Flowing Memories
+- L446 [KO] 잊혀진 자들의 방
+- L446 [EN] Chamber of the Forgotten
+- L447 [KO] 뒤틀린 기억의 숲
+- L447 [EN] Forest of Twisted Memories
+- L448 [KO] 망각의 늪
+- L448 [EN] Swamp of Oblivion
+- L449 [KO] 기억귀의 먹이터
+- L449 [EN] Memory Devourer's Feeding Ground
+- L450 [KO] 지워진 이름들의 거리
+- L450 [EN] Street of Erased Names
+- L451 [KO] 반복되는 악몽
+- L451 [EN] Recurring Nightmare
+- L452 [KO] 기억의 심연
+- L452 [EN] Abyss of Memory
+- L453 [KO] 붕괴하는 과거
+- L453 [EN] Collapsing Past
+- L454 [KO] 기억귀의 궁전
+- L454 [EN] Memory Devourer's Palace
+- L458 [KO] 환생의 전당
+- L458 [EN] Hall of Reincarnation
+- L460 [KO] 환생을 기다리는 영혼들
+- L460 [EN] Souls Awaiting Reincarnation
+- L461 [KO] 업보의 저울
+- L461 [EN] Scales of Karma
+- L462 [KO] 전생의 회랑
+- L462 [EN] Corridor of Past Lives
+- L463 [KO] 환생 거부된 자들의 구역
+- L463 [EN] Zone of the Reincarnation Denied
+- L464 [KO] 심판관의 첫 번째 시험
+- L464 [EN] Judge's First Trial
+- L465 [KO] 뒤틀린 업보의 방
+- L465 [EN] Chamber of Twisted Karma
+- L466 [KO] 환생이 멈춘 곳
+- L466 [EN] Where Reincarnation Stopped
+- L467 [KO] 저주받은 윤회의 고리
+- L467 [EN] Cursed Cycle of Rebirth
+- L468 [KO] 심판관의 최후 선고 준비실
+- L468 [EN] Antechamber of Final Judgment
+- L469 [KO] 환생 심판관의 왕좌
+- L469 [EN] Reincarnation Judge's Throne
+- L473 [KO] 명부의 심장
+- L473 [EN] Heart of the Underworld
+- L475 [KO] 명부의 중심부
+- L475 [EN] Center of the Underworld
+- L476 [KO] 시왕의 행렬
+- L476 [EN] Procession of the Ten Kings
+- L477 [KO] 지옥도의 갈림길
+- L477 [EN] Crossroads of Hell
+- L478 [KO] 오관대왕의 영역 입구
+- L478 [EN] Entrance to Ogwan's Domain
+- L479 [KO] 오관대왕의 시험
+- L479 [EN] Ogwan's Trial
+- L480 [KO] 불타는 명부
+- L480 [EN] Burning Underworld Records
+- L481 [KO] 시왕의 금지된 전각
+- L481 [EN] Forbidden Hall of the Ten Kings
+- L482 [KO] 명부의 핵심
+- L482 [EN] Core of the Underworld
+- L483 [KO] 오관대왕의 분노
+- L483 [EN] Wrath of Ogwan
+- L484 [KO] 명부의 심장부
+- L484 [EN] Heart of the Underworld Throne
+- L488 [KO] 잠식된 유명계
+- L488 [EN] Corrupted Shadow Realm
+- L490 [KO] 외신의 기운이 스미는 곳
+- L490 [EN] Where the Outer God Seeps In
+- L491 [KO] 오염된 저승길
+- L491 [EN] Corrupted Underworld Path
+- L492 [KO] 차사들의 반란
+- L492 [EN] Revolt of the Soul Reapers
+- L493 [KO] 검은 도포의 행렬
+- L493 [EN] Procession of Black Robes
+- L494 [KO] 강림의 첫 번째 강림
+- L494 [EN] Gangrim's First Descent
+- L495 [KO] 외신의 촉수가 뒤덮은 저승
+- L495 [EN] Underworld Covered in Outer God's Tendrils
+- L496 [KO] 타락한 차사의 사냥터
+- L496 [EN] Corrupted Reaper's Hunting Ground
+- L497 [KO] 강림도령의 오염된 무기고
+- L497 [EN] Gangrim's Defiled Armory
+- L498 [KO] 검은 오라의 폭풍
+- L498 [EN] Storm of Black Aura
+- L499 [KO] 오염된 강림도령
+- L499 [EN] Corrupted Gangrim
+- L503 [KO] 뒤틀린 저승길
+- L503 [EN] Twisted Path of the Dead
+- L505 [KO] 뒤틀린 명부의 기록
+- L505 [EN] Twisted Underworld Records
+- L506 [KO] 죄 없는 자를 죄인으로
+- L506 [EN] Innocent Judged Guilty
+- L507 [KO] 오염된 저울의 방
+- L507 [EN] Chamber of the Corrupted Scales
+- L508 [KO] 괴물이 된 망자들
+- L508 [EN] Souls Turned to Monsters
+- L509 [KO] 판관의 첫 번째 심판
+- L509 [EN] Judge's First Corrupt Ruling
+- L510 [KO] 뒤집힌 지옥법
+- L510 [EN] Inverted Laws of Hell
+- L511 [KO] 적라사자의 오염된 명부
+- L511 [EN] Defiled Records of Jeokna
+- L512 [KO] 심판이 멈춘 법정
+- L512 [EN] Court Where Judgment Stopped
+- L513 [KO] 타락한 판결의 폭풍
+- L513 [EN] Storm of Corrupt Verdicts
+- L514 [KO] 타락한 판관의 법정
+- L514 [EN] Corrupt Judge's Court
+- L518 [KO] 혼돈의 명부
+- L518 [EN] Underworld in Chaos
+- L520 [KO] 저승의 법이 무너지다
+- L520 [EN] Laws of the Underworld Crumble
+- L521 [KO] 생사의 경계가 흐려지다
+- L521 [EN] Boundary of Life and Death Blurs
+- L522 [KO] 대별왕의 흔들리는 왕좌
+- L522 [EN] Daebyelwang's Trembling Throne
+- L523 [KO] 창세의 기억이 오염되다
+- L523 [EN] Corruption of Creation's Memory
+- L524 [KO] 대별왕의 마지막 저항
+- L524 [EN] Daebyelwang's Last Resistance
+- L525 [KO] 이승과 저승이 뒤섞이다
+- L525 [EN] Living and Dead Worlds Merge
+- L526 [KO] 외신에 잠식된 법칙
+- L526 [EN] Laws Devoured by the Outer God
+- L527 [KO] 혼돈의 명부 심연
+- L527 [EN] Abyss of the Chaotic Underworld
+- L528 [KO] 대별왕의 절규
+- L528 [EN] Daebyelwang's Scream
+- L529 [KO] 오염된 대별왕
+- L529 [EN] Corrupted Daebyelwang
+- L533 [KO] 소멸의 경계
+- L533 [EN] Edge of Annihilation
+- L535 [KO] 수명이 깎이는 땅
+- L535 [EN] Land Where Lifespan Is Consumed
+- L536 [KO] 치부책이 불타다
+- L536 [EN] The Book of Life Burns
+- L537 [KO] 태산대왕의 오염된 영역
+- L537 [EN] Taesan's Corrupted Domain
+- L538 [KO] 수명을 난사하는 괴물들
+- L538 [EN] Monsters Draining Lifespans
+- L539 [KO] 태산대왕의 첫 번째 눈
+- L539 [EN] Taesan's First Eye
+- L540 [KO] 소멸 직전의 영혼들
+- L540 [EN] Souls on the Brink of Annihilation
+- L541 [KO] 외신의 눈이 박힌 왕좌
+- L541 [EN] Throne Embedded with Outer God's Eyes
+- L542 [KO] 수명의 폭풍
+- L542 [EN] Storm of Lifespans
+- L543 [KO] 태산대왕의 마지막 변이
+- L543 [EN] Taesan's Final Mutation
+- L544 [KO] 잠식된 태산대왕
+- L544 [EN] Devoured Taesan
+- L548 [KO] 유명계의 왕좌
+- L548 [EN] Throne of the Shadow Realm
+- L550 [KO] 구원자의 발자국
+- L550 [EN] Footsteps of the Savior
+- L551 [KO] 오염된 생명수의 강
+- L551 [EN] River of Corrupted Life Water
+- L552 [KO] 바리공주의 성역이 무너지다
+- L552 [EN] Bari's Sanctuary Crumbles
+- L553 [KO] 망자를 부패시키는 물
+- L553 [EN] Soul-Rotting Waters
+- L554 [KO] 바리공주의 첫 번째 눈물
+- L554 [EN] Bari's First Tear
+- L555 [KO] 성스러운 껍데기
+- L555 [EN] Holy Shell
+- L556 [KO] 외신의 그릇이 된 구원자
+- L556 [EN] Savior Become the Outer God's Vessel
+- L557 [KO] 부패한 생명수의 폭풍
+- L557 [EN] Storm of Corrupted Life Water
+- L558 [KO] 바리공주의 마지막 노래
+- L558 [EN] Bari's Final Song
+- L559 [KO] 타락한 바리공주
+- L559 [EN] Fallen Bari-gongju
+- L567 [KO] 혼돈의 입구
+- L567 [EN] Gate of Chaos
+- L569 [KO] 망랑계의 첫 발걸음
+- L569 [EN] First Step into Chaos
+- L570 [KO] 뒤틀린 하늘
+- L570 [EN] Twisted Sky
+- L571 [KO] 도깨비들의 행진
+- L571 [EN] March of the Dokkaebi
+- L572 [KO] 요술이 넘치는 길
+- L572 [EN] Path Overflowing with Magic
+- L573 [KO] 도깨비 대장의 시험
+- L573 [EN] Dokkaebi Captain's Trial
+- L574 [KO] 혼돈의 안개
+- L574 [EN] Fog of Chaos
+- L575 [KO] 도깨비불의 습격
+- L575 [EN] Dokkaebi Fire Assault
+- L576 [KO] 뒤집힌 세계
+- L576 [EN] Inverted World
+- L577 [KO] 도깨비 왕의 포효
+- L577 [EN] Dokkaebi King's Roar
+- L578 [KO] 도깨비 왕의 왕좌
+- L578 [EN] Dokkaebi King's Throne
+- L582 [KO] 요술의 거리
+- L582 [EN] Street of Illusions
+- L584 [KO] 환상의 거리
+- L584 [EN] Street of Illusions
+- L585 [KO] 구미호의 유혹
+- L585 [EN] Fox's Temptation
+- L586 [KO] 가짜 낙원
+- L586 [EN] False Paradise
+- L587 [KO] 술법에 홀린 망자
+- L587 [EN] Souls Enchanted by Fox Magic
+- L588 [KO] 구미호 술사의 시험
+- L588 [EN] Fox Sorcerer's Trial
+- L589 [KO] 천 개의 가면
+- L589 [EN] Thousand Masks
+- L590 [KO] 뒤틀린 환상
+- L590 [EN] Twisted Illusion
+- L591 [KO] 구미호의 꼬리
+- L591 [EN] Nine Tails
+- L592 [KO] 여왕의 저주
+- L592 [EN] Queen's Curse
+- L593 [KO] 구미호 여왕의 궁전
+- L593 [EN] Fox Queen's Palace
+- L597 [KO] 글리치의 숲
+- L597 [EN] Glitch Forest
+- L599 [KO] 오류가 난 세계
+- L599 [EN] World of Errors
+- L600 [KO] 깨진 현실
+- L600 [EN] Broken Reality
+- L601 [KO] 글리치 생명체의 서식지
+- L601 [EN] Habitat of Glitch Creatures
+- L602 [KO] 반복되는 오류
+- L602 [EN] Repeating Error
+- L603 [KO] 글리치 사냥꾼의 영역
+- L603 [EN] Glitch Hunter's Territory
+- L604 [KO] 픽셀이 무너지는 곳
+- L604 [EN] Where Pixels Collapse
+- L605 [KO] 존재하지 않는 길
+- L605 [EN] Path That Doesn't Exist
+- L606 [KO] 오류의 심연
+- L606 [EN] Abyss of Errors
+- L607 [KO] 글리치 정령의 각성
+- L607 [EN] Glitch Spirit's Awakening
+- L608 [KO] 글리치 정령의 핵
+- L608 [EN] Glitch Spirit's Core
+- L612 [KO] 뒤틀린 시장
+- L612 [EN] Twisted Market
+- L614 [KO] 혼돈 상인의 거리
+- L614 [EN] Chaos Merchant's Street
+- L615 [KO] 저주받은 물건들
+- L615 [EN] Cursed Goods
+- L616 [KO] 거래의 함정
+- L616 [EN] Trap of the Deal
+- L617 [KO] 혼돈의 경매장
+- L617 [EN] Chaos Auction House
+- L618 [KO] 혼돈 경비대장의 검문
+- L618 [EN] Chaos Guard Captain's Checkpoint
+- L619 [KO] 뒤틀린 거래
+- L619 [EN] Twisted Transaction
+- L620 [KO] 저주 아이템의 폭발
+- L620 [EN] Cursed Item Explosion
+- L621 [KO] 혼돈 상인의 비밀 창고
+- L621 [EN] Chaos Merchant's Secret Vault
+- L622 [KO] 최후의 거래
+- L622 [EN] Final Transaction
+- L623 [KO] 혼돈 상인의 본거지
+- L623 [EN] Chaos Merchant's Hideout
+- L627 [KO] 망랑계 심층
+- L627 [EN] Deep Chaos Realm
+- L629 [KO] 망랑계의 심장
+- L629 [EN] Heart of the Chaos Realm
+- L630 [KO] 대군주의 영역
+- L630 [EN] Domain of the Grand Lord
+- L631 [KO] 혼돈의 군대
+- L631 [EN] Army of Chaos
+- L632 [KO] 망랑계의 법칙
+- L632 [EN] Laws of the Chaos Realm
+- L633 [KO] 망랑 전위대장의 돌격
+- L633 [EN] Chaos Vanguard's Charge
+- L634 [KO] 혼돈의 핵
+- L634 [EN] Core of Chaos
+- L635 [KO] 대군주의 시험
+- L635 [EN] Grand Lord's Trial
+- L636 [KO] 망랑계의 근원
+- L636 [EN] Origin of the Chaos Realm
+- L637 [KO] 대군주의 분노
+- L637 [EN] Grand Lord's Wrath
+- L638 [KO] 망랑 대군주의 왕좌
+- L638 [EN] Grand Lord's Throne
+- L642 [KO] 잠식된 망랑계
+- L642 [EN] Corrupted Chaos Realm
+- L644 [KO] 외신의 기운이 혼돈을 삼키다
+- L644 [EN] Outer God Devours Chaos
+- L645 [KO] 타락한 도깨비
+- L645 [EN] Corrupted Dokkaebi
+- L646 [KO] 혼돈과 외신의 충돌
+- L646 [EN] Clash of Chaos and Outer God
+- L647 [KO] 도깨비신의 균열
+- L647 [EN] Crack in the Dokkaebi God
+- L648 [KO] 타락한 도깨비 무사의 습격
+- L648 [EN] Corrupted Dokkaebi Warrior's Assault
+- L649 [KO] 외신에 물든 혼돈
+- L649 [EN] Chaos Tainted by Outer God
+- L650 [KO] 도깨비신의 절규
+- L650 [EN] Dokkaebi God's Scream
+- L651 [KO] 오염된 도깨비불
+- L651 [EN] Corrupted Dokkaebi Fire
+- L652 [KO] 도깨비신의 마지막 변이
+- L652 [EN] Dokkaebi God's Final Mutation
+- L653 [KO] 오염된 도깨비신
+- L653 [EN] Corrupted Dokkaebi God
+- L657 [KO] 요술에 홀린 세계
+- L657 [EN] World Lost in Illusion
+- L659 [KO] 외신의 환상
+- L659 [EN] Outer God's Illusion
+- L660 [KO] 구미호 선녀의 타락
+- L660 [EN] Fox Fairy's Corruption
+- L661 [KO] 홀린 자들의 행렬
+- L661 [EN] Procession of the Enchanted
+- L662 [KO] 뒤틀린 구원
+- L662 [EN] Twisted Salvation
+- L663 [KO] 홀린 술사의 마법진
+- L663 [EN] Enchanted Sorcerer's Magic Circle
+- L664 [KO] 환상이 현실을 삼키다
+- L664 [EN] Illusion Devours Reality
+- L665 [KO] 타락한 선녀의 춤
+- L665 [EN] Corrupted Fairy's Dance
+- L666 [KO] 구미호 선녀의 독
+- L666 [EN] Fox Fairy's Poison
+- L667 [KO] 선녀의 마지막 환상
+- L667 [EN] Fairy's Last Illusion
+- L668 [KO] 타락한 구미호 선녀
+- L668 [EN] Fallen Fox Fairy
+- L672 [KO] 혼돈의 소용돌이
+- L672 [EN] Vortex of Chaos
+- L674 [KO] 혼돈신의 균열
+- L674 [EN] Crack in the Chaos God
+- L675 [KO] 소용돌이치는 외신의 힘
+- L675 [EN] Swirling Power of the Outer God
+- L676 [KO] 혼돈과 질서의 충돌
+- L676 [EN] Clash of Chaos and Order
+- L677 [KO] 혼돈신의 눈물
+- L677 [EN] Chaos God's Tears
+- L678 [KO] 혼돈의 파편의 습격
+- L678 [EN] Chaos Fragment's Assault
+- L679 [KO] 소용돌이의 심연
+- L679 [EN] Abyss of the Vortex
+- L680 [KO] 외신에 잠식된 혼돈
+- L680 [EN] Chaos Devoured by Outer God
+- L681 [KO] 혼돈신의 마지막 저항
+- L681 [EN] Chaos God's Last Resistance
+- L682 [KO] 혼돈신의 절규
+- L682 [EN] Chaos God's Scream
+- L683 [KO] 오염된 혼돈신
+- L683 [EN] Corrupted Chaos God
+- L687 [KO] 글리치 폭풍
+- L687 [EN] Glitch Storm
+- L689 [KO] 현실이 무너지다
+- L689 [EN] Reality Collapses
+- L690 [KO] 글리치 폭풍의 시작
+- L690 [EN] Beginning of the Glitch Storm
+- L691 [KO] 오류가 세계를 삼키다
+- L691 [EN] Errors Devour the World
+- L692 [KO] 잠식된 글리치 생명체
+- L692 [EN] Corrupted Glitch Creatures
+- L693 [KO] 글리치 폭풍의 눈
+- L693 [EN] Eye of the Glitch Storm
+- L694 [KO] 존재의 오류
+- L694 [EN] Error of Existence
+- L695 [KO] 글리치 왕의 변이
+- L695 [EN] Glitch King's Mutation
+- L696 [KO] 폭풍의 심연
+- L696 [EN] Abyss of the Storm
+- L697 [KO] 글리치 왕의 마지막 오류
+- L697 [EN] Glitch King's Final Error
+- L698 [KO] 잠식된 글리치 왕
+- L698 [EN] Corrupted Glitch King
+- L702 [KO] 망랑계의 왕좌
+- L702 [EN] Throne of the Chaos Realm
+- L704 [KO] 망랑대왕의 영역
+- L704 [EN] Domain of the Chaos King
+- L705 [KO] 외신에 잠식된 왕좌
+- L705 [EN] Throne Devoured by Outer God
+- L706 [KO] 망랑대왕의 분신들
+- L706 [EN] Chaos King's Doppelgangers
+- L707 [KO] 혼돈의 정점
+- L707 [EN] Apex of Chaos
+- L708 [KO] 망랑대왕의 분신의 습격
+- L708 [EN] Chaos King's Doppelganger Assault
+- L709 [KO] 타락한 혼돈의 법칙
+- L709 [EN] Corrupted Laws of Chaos
+- L710 [KO] 망랑대왕의 절규
+- L710 [EN] Chaos King's Scream
+- L711 [KO] 외신의 그릇이 된 왕
+- L711 [EN] King Become Outer God's Vessel
+- L712 [KO] 망랑대왕의 마지막 변이
+- L712 [EN] Chaos King's Final Mutation
+- L713 [KO] 타락한 망랑대왕
+- L713 [EN] Fallen Chaos King
+- L720 [KO] 소멸의 해안
+- L720 [EN] Shore of Annihilation
+- L722 [KO] 귀허계의 첫 발걸음
+- L722 [EN] First Step into the Void
+- L723 [KO] 소멸의 파도
+- L723 [EN] Waves of Annihilation
+- L724 [KO] 사라져가는 존재들
+- L724 [EN] Fading Existences
+- L725 [KO] 허무의 해안
+- L725 [EN] Shore of Nothingness
+- L726 [KO] 소멸의 파수꾼의 시험
+- L726 [EN] Void Sentinel
+- L726 [EN] s Trial
+- L727 [KO] 소멸의 안개
+- L727 [EN] Fog of Annihilation
+- L728 [KO] 사라지는 기억들
+- L728 [EN] Vanishing Memories
+- L729 [KO] 소멸의 심류
+- L729 [EN] Deep Current of Annihilation
+- L730 [KO] 수호자의 포효
+- L731 [KO] 소멸의 수호자
+- L731 [EN] Guardian of Annihilation
+- L735 [KO] 잊혀진 존재들의 바다
+- L735 [EN] Sea of Forgotten Existences
+- L737 [KO] 잊혀진 자들의 바다
+- L737 [EN] Sea of the Forgotten
+- L738 [KO] 망각의 파도
+- L738 [EN] Waves of Oblivion
+- L739 [KO] 이름 없는 존재들
+- L739 [EN] Nameless Existences
+- L740 [KO] 기억이 사라지는 곳
+- L740 [EN] Where Memories Disappear
+- L741 [KO] 망각의 사자의 순찰
+- L741 [EN] Oblivion Reaper
+- L741 [EN] s Patrol
+- L742 [KO] 잊혀진 신들의 무덤
+- L742 [EN] Tomb of Forgotten Gods
+- L743 [KO] 망각의 심연
+- L743 [EN] Abyss of Oblivion
+- L744 [KO] 존재의 끝
+- L744 [EN] End of Existence
+- L745 [KO] 망각의 군주의 분노
+- L745 [EN] Lord of Oblivion
+- L745 [EN] s Wrath
+- L746 [KO] 망각의 군주
+- L746 [EN] Lord of Oblivion
+- L750 [KO] 거듭남의 제단
+- L750 [EN] Altar of Rebirth
+- L752 [KO] 거듭남을 기다리는 영혼들
+- L752 [EN] Souls Awaiting Rebirth
+- L753 [KO] 소멸과 탄생의 경계
+- L753 [EN] Boundary of Death and Birth
+- L754 [KO] 거듭남의 불꽃
+- L754 [EN] Flame of Rebirth
+- L755 [KO] 순리의 흐름
+- L755 [EN] Flow of Natural Order
+- L756 [KO] 환생의 수호자의 시험
+- L756 [EN] Rebirth Guardian
+- L756 [EN] s Trial
+- L757 [KO] 거듭남이 멈춘 제단
+- L757 [EN] Altar Where Rebirth Stopped
+- L758 [KO] 뒤틀린 순리
+- L758 [EN] Twisted Natural Order
+- L759 [KO] 거듭남의 심연
+- L759 [EN] Abyss of Rebirth
+- L760 [KO] 환생의 신의 분노
+- L760 [EN] Rebirth God
+- L760 [EN] s Wrath
+- L761 [KO] 환생의 신
+- L761 [EN] God of Rebirth
+- L765 [KO] 허무의 심연
+- L765 [EN] Abyss of Nothingness
+- L767 [KO] 허무의 시작
+- L767 [EN] Beginning of Nothingness
+- L768 [KO] 아무것도 없는 곳
+- L768 [EN] Place of Nothing
+- L769 [KO] 허무에 잠식된 영혼들
+- L769 [EN] Souls Consumed by Nothingness
+- L770 [KO] 존재의 무게
+- L770 [EN] Weight of Existence
+- L771 [KO] 허무의 파편의 습격
+- L771 [EN] Void Fragment
+- L771 [EN] s Assault
+- L772 [KO] 허무의 바다
+- L772 [EN] Sea of Nothingness
+- L773 [KO] 모든 것이 사라지는 곳
+- L773 [EN] Where Everything Disappears
+- L774 [KO] 허무의 심장
+- L774 [EN] Heart of Nothingness
+- L775 [KO] 허무의 왕의 각성
+- L775 [EN] Void King
+- L775 [EN] s Awakening
+- L776 [KO] 허무의 왕
+- L776 [EN] King of Nothingness
+- L780 [KO] 귀허계 심층
+- L780 [EN] Deep Void Realm
+- L782 [KO] 귀허계의 심장
+- L782 [EN] Heart of the Void Realm
+- L783 [KO] 소멸대왕의 영역
+- L783 [EN] Domain of the Annihilation King
+- L784 [KO] 소멸의 군대
+- L784 [EN] Army of Annihilation
+- L785 [KO] 순리석이 흐르는 땅
+- L785 [EN] Land Where Sunri Stones Flow
+- L786 [KO] 소멸대왕의 전위대
+- L786 [EN] Annihilation King
+- L786 [EN] s Vanguard
+- L787 [KO] 소멸의 핵
+- L787 [EN] Core of Annihilation
+- L788 [KO] 소멸대왕의 시험
+- L788 [EN] Annihilation King
+- L788 [EN] s Trial
+- L789 [KO] 귀허계의 근원
+- L789 [EN] Origin of the Void Realm
+- L790 [KO] 소멸대왕의 분노
+- L790 [EN] Annihilation King
+- L790 [EN] s Wrath
+- L791 [KO] 소멸대왕의 왕좌
+- L791 [EN] Annihilation King
+- L791 [EN] s Throne
+- L795 [KO] 잠식된 귀허계
+- L795 [EN] Corrupted Void Realm
+- L797 [KO] 외신의 기운이 허무를 삼키다
+- L797 [EN] Outer God Devours the Void
+- L798 [KO] 소멸이 오염되다
+- L798 [EN] Annihilation Corrupted
+- L799 [KO] 거듭남이 멈추다
+- L799 [EN] Rebirth Stops
+- L800 [KO] 소멸신의 균열
+- L800 [EN] Crack in the Annihilation God
+- L801 [KO] 타락한 소멸의 사자
+- L801 [EN] Corrupted Annihilation Reaper
+- L802 [KO] 오염된 허무의 바다
+- L802 [EN] Corrupted Sea of Nothingness
+- L803 [KO] 소멸신의 절규
+- L803 [EN] Annihilation God
+- L803 [EN] s Scream
+- L804 [KO] 외신에 물든 순리
+- L804 [EN] Natural Order Tainted by Outer God
+- L805 [KO] 소멸신의 마지막 변이
+- L805 [EN] Annihilation God
+- L805 [EN] s Final Mutation
+- L806 [KO] 오염된 소멸신
+- L806 [EN] Corrupted Annihilation God
+- L810 [KO] 뒤틀린 거듭남
+- L810 [EN] Twisted Rebirth
+- L812 [KO] 거듭남이 저주가 되다
+- L812 [EN] Rebirth Becomes a Curse
+- L813 [KO] 뒤틀린 환생의 고리
+- L813 [EN] Twisted Cycle of Rebirth
+- L814 [KO] 죽을 수 없는 자들
+- L814 [EN] Those Who Cannot Die
+- L815 [KO] 환생신의 균열
+- L815 [EN] Crack in the Rebirth God
+- L816 [KO] 오염된 환생의 수호자
+- L816 [EN] Corrupted Rebirth Guardian
+- L817 [KO] 거듭남의 오염
+- L817 [EN] Corruption of Rebirth
+- L818 [KO] 타락한 순리의 흐름
+- L818 [EN] Corrupted Flow of Natural Order
+- L819 [KO] 환생신의 마지막 저항
+- L819 [EN] Rebirth God
+- L819 [EN] s Last Resistance
+- L820 [KO] 환생신의 절규
+- L820 [EN] Rebirth God
+- L820 [EN] s Scream
+- L821 [KO] 타락한 환생신
+- L821 [EN] Corrupted Rebirth God
+- L825 [KO] 혼돈의 허무
+- L825 [EN] Chaotic Void
+- L827 [KO] 허무에 혼돈이 스미다
+- L827 [EN] Chaos Seeps into the Void
+- L828 [KO] 소멸과 혼돈의 충돌
+- L828 [EN] Clash of Annihilation and Chaos
+- L829 [KO] 허무신의 균열
+- L829 [EN] Crack in the Void God
+- L830 [KO] 오염된 허무의 법칙
+- L830 [EN] Corrupted Laws of the Void
+- L831 [KO] 허무의 오염된 파편
+- L831 [EN] Corrupted Void Fragment
+- L832 [KO] 혼돈에 삼켜진 허무
+- L832 [EN] Void Swallowed by Chaos
+- L833 [KO] 허무신의 마지막 저항
+- L833 [EN] Void God
+- L833 [EN] s Last Resistance
+- L834 [KO] 오염된 허무의 심연
+- L834 [EN] Corrupted Abyss of the Void
+- L835 [KO] 허무신의 절규
+- L835 [EN] Void God
+- L835 [EN] s Scream
+- L836 [KO] 오염된 허무신
+- L836 [EN] Corrupted Void God
+- L840 [KO] 소멸의 경계
+- L840 [EN] Edge of Annihilation
+- L842 [KO] 귀허대왕의 오염된 영역
+- L842 [EN] Corrupted Domain of the Void King
+- L843 [KO] 소멸의 끝
+- L843 [EN] End of Annihilation
+- L844 [KO] 귀허대왕의 변이
+- L844 [EN] Void King
+- L844 [EN] s Mutation
+- L845 [KO] 외신의 눈이 박힌 왕좌
+- L845 [EN] Throne Embedded with Outer God
+- L846 [KO] 귀허대왕의 오염된 눈
+- L846 [EN] Void King
+- L846 [EN] s Corrupted Eye
+- L847 [KO] 소멸 직전의 세계
+- L847 [EN] World on the Brink of Annihilation
+- L848 [KO] 귀허대왕의 절규
+- L848 [EN] Void King
+- L848 [EN] s Scream
+- L849 [KO] 외신에 잠식된 순리
+- L849 [EN] Natural Order Devoured by Outer God
+- L850 [KO] 귀허대왕의 마지막 변이
+- L850 [EN] Void King
+- L850 [EN] s Final Mutation
+- L851 [KO] 잠식된 귀허대왕
+- L851 [EN] Devoured Void King
+- L855 [KO] 귀허계의 왕좌
+- L855 [EN] Throne of the Void Realm
+- L857 [KO] 소멸의 여신의 발자국
+- L857 [EN] Annihilation Goddess
+- L857 [EN] s Footsteps
+- L858 [KO] 오염된 순리의 강
+- L858 [EN] River of Corrupted Natural Order
+- L859 [KO] 소멸의 여신의 성역이 무너지다
+- L859 [EN] Annihilation Goddess
+- L859 [EN] s Sanctuary Crumbles
+- L860 [KO] 거듭남을 부패시키는 힘
+- L860 [EN] Power Corrupting Rebirth
+- L861 [KO] 소멸의 여신의 첫 번째 눈물
+- L861 [EN] Annihilation Goddess
+- L861 [EN] s First Tear
+- L862 [KO] 성스러운 소멸의 껍데기
+- L862 [EN] Holy Shell of Annihilation
+- L863 [KO] 외신의 그릇이 된 여신
+- L863 [EN] Goddess Become Outer God
+- L863 [EN] s Vessel
+- L864 [KO] 부패한 소멸의 폭풍
+- L864 [EN] Storm of Corrupted Annihilation
+- L865 [KO] 소멸의 여신의 마지막 노래
+- L865 [EN] Annihilation Goddess
+- L865 [EN] s Final Song
+- L866 [KO] 타락한 소멸의 여신
+- L866 [EN] Fallen Annihilation Goddess
+- L874 [KO] 선계의 관문
+- L874 [EN] Gate of the Celestial Realm
+- L876 [KO] 선계의 첫 발걸음
+- L876 [EN] First Step into the Celestial Realm
+- L877 [KO] 신성한 빛의 길
+- L877 [EN] Path of Sacred Light
+- L878 [KO] 선계의 안개
+- L878 [EN] Celestial Mist
+- L879 [KO] 신선들의 노래
+- L879 [EN] Song of the Immortals
+- L880 [KO] 선계 문지기의 시험
+- L880 [EN] Celestial Gatekeeper
+- L880 [EN] s Trial
+- L881 [KO] 선계의 바람
+- L881 [EN] Celestial Wind
+- L882 [KO] 신성한 수호자들
+- L882 [EN] Sacred Guardians
+- L883 [KO] 선계의 관문 앞
+- L883 [EN] Before the Celestial Gate
+- L884 [KO] 수호신의 포효
+- L884 [EN] Guardian God
+- L885 [KO] 선계의 수호신
+- L885 [EN] Guardian God of the Celestial Realm
+- L889 [KO] 신선들의 정원
+- L889 [EN] Garden of the Immortals
+- L891 [KO] 신선들의 낙원
+- L891 [EN] Paradise of Immortals
+- L892 [KO] 불로초의 정원
+- L892 [EN] Garden of Eternal Herbs
+- L893 [KO] 신선들의 연회
+- L893 [EN] Banquet of Immortals
+- L894 [KO] 대장로의 영역
+- L894 [EN] Domain of the Grand Elder
+- L895 [KO] 신선 원로의 시험
+- L895 [EN] Immortal Elder
+- L895 [EN] s Trial
+- L896 [KO] 신선들의 비밀 수련장
+- L896 [EN] Secret Training Ground of Immortals
+- L897 [KO] 대장로의 금지된 술법
+- L897 [EN] Grand Elder
+- L897 [EN] s Forbidden Arts
+- L898 [KO] 신선들의 심층
+- L898 [EN] Deep Layer of Immortals
+- L899 [KO] 대장로의 분노
+- L899 [EN] Grand Elder
+- L899 [EN] s Wrath
+- L900 [KO] 신선 대장로의 전당
+- L900 [EN] Grand Elder
+- L904 [KO] 도술의 전당
+- L904 [EN] Hall of Celestial Arts
+- L906 [KO] 도술의 시작
+- L906 [EN] Beginning of Celestial Arts
+- L907 [KO] 선술의 흐름
+- L907 [EN] Flow of Celestial Skills
+- L908 [KO] 도술 수련자들의 길
+- L908 [EN] Path of Celestial Art Practitioners
+- L909 [KO] 도술의 신의 영역
+- L909 [EN] Domain of the Art God
+- L910 [KO] 도술 대사제의 시험
+- L910 [EN] High Priest
+- L910 [EN] s Trial
+- L911 [KO] 도술의 심연
+- L911 [EN] Abyss of Celestial Arts
+- L912 [KO] 금지된 선술
+- L912 [EN] Forbidden Celestial Skill
+- L913 [KO] 도술의 핵심
+- L913 [EN] Core of Celestial Arts
+- L914 [KO] 도술의 신의 분노
+- L914 [EN] s Wrath
+- L915 [KO] 도술의 신
+- L915 [EN] God of Celestial Arts
+- L919 [KO] 깨달음의 산
+- L919 [EN] Mountain of Enlightenment
+- L921 [KO] 깨달음을 향한 길
+- L921 [EN] Path Toward Enlightenment
+- L922 [KO] 수련의 고행길
+- L922 [EN] Ascetic Path of Training
+- L923 [KO] 깨달음의 시험
+- L923 [EN] Trial of Enlightenment
+- L924 [KO] 진리의 문 앞
+- L924 [EN] Before the Gate of Truth
+- L925 [KO] 깨달음의 수호자의 시험
+- L925 [EN] Enlightenment Guardian
+- L925 [EN] s Trial
+- L926 [KO] 깨달음의 정상
+- L926 [EN] Summit of Enlightenment
+- L927 [KO] 진리의 빛
+- L927 [EN] Light of Truth
+- L928 [KO] 깨달음의 심연
+- L928 [EN] Abyss of Enlightenment
+- L929 [KO] 깨달음의 신의 각성
+- L929 [EN] Enlightenment God
+- L929 [EN] s Awakening
+- L930 [KO] 깨달음의 신
+- L930 [EN] God of Enlightenment
+- L934 [KO] 선계 심층
+- L934 [EN] Deep Celestial Realm
+- L936 [KO] 선계의 심장
+- L936 [EN] Heart of the Celestial Realm
+- L937 [KO] 선계대왕의 영역
+- L937 [EN] Domain of the Celestial King
+- L938 [KO] 선계의 군대
+- L938 [EN] Celestial Army
+- L939 [KO] 선기석이 흐르는 땅
+- L939 [EN] Land Where Celestial Stones Flow
+- L940 [KO] 선계대왕의 전위대
+- L940 [EN] Celestial King
+- L940 [EN] s Vanguard
+- L941 [KO] 선계의 핵
+- L941 [EN] Core of the Celestial Realm
+- L942 [KO] 선계대왕의 시험
+- L942 [EN] Celestial King
+- L942 [EN] s Trial
+- L943 [KO] 선계의 근원
+- L943 [EN] Origin of the Celestial Realm
+- L944 [KO] 선계대왕의 분노
+- L944 [EN] Celestial King
+- L944 [EN] s Wrath
+- L945 [KO] 선계대왕의 왕좌
+- L945 [EN] Celestial King
+- L945 [EN] s Throne
+- L949 [KO] 잠식된 선계
+- L949 [EN] Corrupted Celestial Realm
+- L951 [KO] 외신의 기운이 선계를 삼키다
+- L951 [EN] Outer God Devours the Celestial Realm
+- L952 [KO] 타락한 신선들
+- L952 [EN] Corrupted Immortals
+- L953 [KO] 선계의 빛이 꺼지다
+- L953 [EN] Celestial Light Extinguished
+- L954 [KO] 선신의 균열
+- L954 [EN] Crack in the Celestial God
+- L955 [KO] 타락한 선계 수호자
+- L955 [EN] Corrupted Celestial Guardian
+- L956 [KO] 외신에 물든 선계
+- L956 [EN] Celestial Realm Tainted by Outer God
+- L957 [KO] 선신의 절규
+- L957 [EN] Celestial God
+- L957 [EN] s Scream
+- L958 [KO] 오염된 선술
+- L958 [EN] Corrupted Celestial Arts
+- L959 [KO] 선신의 마지막 변이
+- L959 [EN] Celestial God
+- L959 [EN] s Final Mutation
+- L960 [KO] 오염된 선신
+- L960 [EN] Corrupted Celestial God
+- L964 [KO] 뒤틀린 도술
+- L964 [EN] Twisted Celestial Arts
+- L966 [KO] 도술이 저주가 되다
+- L966 [EN] Celestial Arts Become a Curse
+- L967 [KO] 뒤틀린 선술의 흐름
+- L967 [EN] Twisted Flow of Celestial Skills
+- L968 [KO] 도술에 홀린 신선들
+- L968 [EN] Immortals Enchanted by Twisted Arts
+- L969 [KO] 도술신의 균열
+- L969 [EN] Crack in the Art God
+- L970 [KO] 오염된 도술 대사제
+- L970 [EN] Corrupted High Priest
+- L971 [KO] 도술의 오염
+- L971 [EN] Corruption of Celestial Arts
+- L972 [KO] 타락한 선술의 폭풍
+- L972 [EN] Storm of Corrupted Celestial Skills
+- L973 [KO] 도술신의 마지막 저항
+- L973 [EN] s Last Resistance
+- L974 [KO] 도술신의 절규
+- L974 [EN] s Scream
+- L975 [KO] 타락한 도술신
+- L975 [EN] Corrupted Art God
+- L979 [KO] 깨달음의 오염
+- L979 [EN] Corruption of Enlightenment
+- L981 [KO] 깨달음이 독이 되다
+- L981 [EN] Enlightenment Becomes Poison
+- L982 [KO] 진리가 뒤틀리다
+- L982 [EN] Truth Becomes Twisted
+- L983 [KO] 깨달음신의 균열
+- L983 [EN] Crack in the Enlightenment God
+- L984 [KO] 오염된 진리의 빛
+- L984 [EN] Corrupted Light of Truth
+- L985 [KO] 깨달음의 오염된 파편
+- L985 [EN] Corrupted Enlightenment Fragment
+- L986 [KO] 오염된 깨달음의 산
+- L986 [EN] Corrupted Mountain of Enlightenment
+- L987 [KO] 깨달음신의 마지막 저항
+- L987 [EN] Enlightenment God
+- L987 [EN] s Last Resistance
+- L988 [KO] 오염된 깨달음의 심연
+- L988 [EN] Corrupted Abyss of Enlightenment
+- L989 [KO] 깨달음신의 절규
+- L989 [EN] Enlightenment God
+- L989 [EN] s Scream
+- L990 [KO] 오염된 깨달음의 신
+- L990 [EN] Corrupted God of Enlightenment
+- L994 [KO] 신선들의 타락
+- L994 [EN] Fall of the Immortals
+- L996 [KO] 선계대왕의 오염된 영역
+- L996 [EN] Corrupted Domain of the Celestial King
+- L997 [KO] 신선들의 타락
+- L997 [EN] Fall of the Immortals
+- L998 [KO] 선계대왕의 변이
+- L998 [EN] Celestial King
+- L998 [EN] s Mutation
+- L999 [KO] 외신의 눈이 박힌 선계
+- L999 [EN] Celestial Realm Embedded with Outer God
+- L1000 [KO] 선계대왕의 오염된 눈
+- L1000 [EN] Celestial King
+- L1000 [EN] s Corrupted Eye
+- L1001 [KO] 선계 붕괴 직전
+- L1001 [EN] Celestial Realm on the Brink of Collapse
+- L1002 [KO] 선계대왕의 절규
+- L1002 [EN] Celestial King
+- L1002 [EN] s Scream
+- L1003 [KO] 외신에 잠식된 선술
+- L1003 [EN] Celestial Arts Devoured by Outer God
+- L1004 [KO] 선계대왕의 마지막 변이
+- L1004 [EN] Celestial King
+- L1004 [EN] s Final Mutation
+- L1005 [KO] 잠식된 선계대왕
+- L1005 [EN] Devoured Celestial King
+- L1009 [KO] 선계의 왕좌
+- L1009 [EN] Throne of the Celestial Realm
+- L1011 [KO] 천존의 발자국
+- L1011 [EN] Heavenly Lord
+- L1011 [EN] s Footsteps
+- L1012 [KO] 오염된 신성한 빛의 강
+- L1012 [EN] River of Corrupted Sacred Light
+- L1013 [KO] 천존의 성역이 무너지다
+- L1013 [EN] Heavenly Lord
+- L1013 [EN] s Sanctuary Crumbles
+- L1014 [KO] 신성을 부패시키는 힘
+- L1014 [EN] Power Corrupting Divinity
+- L1015 [KO] 천존의 첫 번째 눈물
+- L1015 [EN] Heavenly Lord
+- L1015 [EN] s First Tear
+- L1016 [KO] 성스러운 껍데기
+- L1016 [EN] Holy Shell
+- L1017 [KO] 외신의 그릇이 된 천존
+- L1017 [EN] Heavenly Lord Become Outer God
+- L1017 [EN] s Vessel
+- L1018 [KO] 부패한 신성의 폭풍
+- L1018 [EN] Storm of Corrupted Divinity
+- L1019 [KO] 천존의 마지막 노래
+- L1019 [EN] Heavenly Lord
+- L1019 [EN] s Final Song
+- L1020 [KO] 타락한 천존
+- L1020 [EN] Fallen Heavenly Lord
+- L1030 [KO] 법칙의 시작
+- L1030 [EN] Beginning of the Laws
+- L1032 [KO] 원계의 첫 발걸음
+- L1032 [EN] First Step into the Primal Realm
+- L1033 [KO] 법칙이 흐르는 길
+- L1033 [EN] Path Where Laws Flow
+- L1034 [KO] 원초적 힘의 파동
+- L1034 [EN] Wave of Primordial Force
+- L1035 [KO] 법칙의 파수꾼들
+- L1035 [EN] Sentinels of the Laws
+- L1036 [KO] 법칙의 파수꾼의 시험
+- L1036 [EN] Law Sentinel
+- L1036 [EN] s Trial
+- L1037 [KO] 원계의 안개
+- L1037 [EN] Primal Mist
+- L1038 [KO] 법칙의 폭풍
+- L1038 [EN] Storm of Laws
+- L1039 [KO] 원초적 법칙의 흐름
+- L1039 [EN] Flow of Primordial Laws
+- L1040 [KO] 수호자의 포효
+- L1041 [KO] 법칙의 수호자
+- L1041 [EN] Guardian of Laws
+- L1045 [KO] 물리 법칙의 전당
+- L1045 [EN] Hall of Physical Laws
+- L1047 [KO] 전자기력의 흐름
+- L1047 [EN] Flow of Electromagnetic Force
+- L1048 [KO] 핵력의 결속
+- L1048 [EN] Bond of Nuclear Force
+- L1049 [KO] 물리 법칙의 충돌
+- L1049 [EN] Clash of Physical Laws
+- L1050 [KO] 전자기력의 신의 영역
+- L1050 [EN] Domain of the Electromagnetic God
+- L1051 [KO] 핵력의 수호자의 시험
+- L1051 [EN] Nuclear Force Guardian
+- L1051 [EN] s Trial
+- L1052 [KO] 물리 법칙의 심연
+- L1052 [EN] Abyss of Physical Laws
+- L1053 [KO] 전자기력의 폭풍
+- L1053 [EN] Electromagnetic Storm
+- L1054 [KO] 물리 법칙의 핵심
+- L1054 [EN] Core of Physical Laws
+- L1055 [KO] 전자기력의 신의 분노
+- L1055 [EN] Electromagnetic God
+- L1055 [EN] s Wrath
+- L1056 [KO] 전자기력의 신
+- L1056 [EN] God of Electromagnetic Force
+- L1060 [KO] 신적 법칙의 영역
+- L1060 [EN] Domain of Divine Laws
+- L1062 [KO] 인과의 흐름
+- L1062 [EN] Flow of Causality
+- L1063 [KO] 원인과 결과의 미궁
+- L1063 [EN] Labyrinth of Cause and Effect
+- L1064 [KO] 파괴와 창조의 경계
+- L1064 [EN] Boundary of Destruction and Creation
+- L1065 [KO] 인과신의 영역
+- L1065 [EN] Domain of the Causality God
+- L1066 [KO] 파괴신의 사자의 시험
+- L1066 [EN] Destruction God
+- L1066 [EN] s Reaper
+- L1066 [EN] s Trial
+- L1067 [KO] 인과의 심연
+- L1067 [EN] Abyss of Causality
+- L1068 [KO] 인과신의 금지된 법칙
+- L1068 [EN] Causality God
+- L1068 [EN] s Forbidden Law
+- L1069 [KO] 신적 법칙의 핵심
+- L1069 [EN] Core of Divine Laws
+- L1070 [KO] 인과신의 분노
+- L1070 [EN] Causality God
+- L1070 [EN] s Wrath
+- L1071 [KO] 인과신
+- L1071 [EN] God of Causality
+- L1075 [KO] 관계 법칙의 미궁
+- L1075 [EN] Labyrinth of Relational Laws
+- L1077 [KO] 사랑과 질투의 경계
+- L1077 [EN] Boundary of Love and Jealousy
+- L1078 [KO] 우정과 시기의 충돌
+- L1078 [EN] Clash of Friendship and Envy
+- L1079 [KO] 경외의 미궁
+- L1079 [EN] Labyrinth of Reverence
+- L1080 [KO] 관계의 신의 영역
+- L1080 [EN] Domain of the Relation God
+- L1081 [KO] 경외의 수호자의 시험
+- L1081 [EN] Reverence Guardian
+- L1081 [EN] s Trial
+- L1082 [KO] 관계 법칙의 심연
+- L1082 [EN] Abyss of Relational Laws
+- L1083 [KO] 뒤틀린 관계의 법칙
+- L1083 [EN] Twisted Laws of Relation
+- L1084 [KO] 관계의 핵심
+- L1084 [EN] Core of Relations
+- L1085 [KO] 관계의 신의 분노
+- L1085 [EN] Relation God
+- L1085 [EN] s Wrath
+- L1086 [KO] 관계의 신
+- L1086 [EN] God of Relations
+- L1090 [KO] 원계 심층
+- L1090 [EN] Depths of the Primal Realm
+- L1092 [KO] 원계의 심장
+- L1092 [EN] Heart of the Primal Realm
+- L1093 [KO] 원계대왕의 영역
+- L1093 [EN] Domain of the Primal King
+- L1094 [KO] 원계의 군대
+- L1094 [EN] Primal Army
+- L1095 [KO] 법칙이 살아있는 땅
+- L1095 [EN] Land Where Laws Are Alive
+- L1096 [KO] 원계대왕의 전위대
+- L1096 [EN] Primal King
+- L1096 [EN] s Vanguard
+- L1097 [KO] 원계의 핵
+- L1097 [EN] Core of the Primal Realm
+- L1098 [KO] 원계대왕의 시험
+- L1098 [EN] Primal King
+- L1098 [EN] s Trial
+- L1099 [KO] 원계의 근원
+- L1099 [EN] Origin of the Primal Realm
+- L1100 [KO] 원계대왕의 분노
+- L1100 [EN] Primal King
+- L1100 [EN] s Wrath
+- L1101 [KO] 원계대왕의 왕좌
+- L1101 [EN] Primal King
+- L1101 [EN] s Throne
+- L1105 [KO] 잠식된 원계
+- L1105 [EN] Devoured Primal Realm
+- L1107 [KO] 외신의 기운이 법칙을 삼키다
+- L1107 [EN] Outer God Devours the Laws
+- L1108 [KO] 타락한 법칙들
+- L1108 [EN] Corrupted Laws
+- L1109 [KO] 법칙이 무너지다
+- L1109 [EN] Laws Collapse
+- L1110 [KO] 법칙신의 균열
+- L1110 [EN] Crack in the Law God
+- L1111 [KO] 타락한 법칙의 수호자
+- L1111 [EN] Corrupted Law Guardian
+- L1112 [KO] 외신에 물든 원계
+- L1112 [EN] Primal Realm Tainted by Outer God
+- L1113 [KO] 법칙신의 절규
+- L1113 [EN] s Scream
+- L1114 [KO] 오염된 원초적 법칙
+- L1114 [EN] Corrupted Primordial Laws
+- L1115 [KO] 법칙신의 마지막 변이
+- L1115 [EN] s Final Mutation
+- L1116 [KO] 오염된 법칙신
+- L1116 [EN] Corrupted Law God
+- L1120 [KO] 뒤틀린 인과
+- L1120 [EN] Twisted Causality
+- L1122 [KO] 원인 없는 결과
+- L1122 [EN] Effect Without Cause
+- L1123 [KO] 결과 없는 원인
+- L1123 [EN] Cause Without Effect
+- L1124 [KO] 인과가 뒤집히다
+- L1124 [EN] Causality Inverted
+- L1125 [KO] 인과신의 균열
+- L1125 [EN] Crack in the Causality God
+- L1126 [KO] 오염된 인과의 사자
+- L1126 [EN] Corrupted Causality Reaper
+- L1127 [KO] 뒤틀린 인과의 폭풍
+- L1127 [EN] Storm of Twisted Causality
+- L1128 [KO] 인과신의 마지막 저항
+- L1128 [EN] Causality God
+- L1128 [EN] s Last Resistance
+- L1129 [KO] 오염된 인과의 심연
+- L1129 [EN] Corrupted Abyss of Causality
+- L1130 [KO] 인과신의 절규
+- L1130 [EN] Causality God
+- L1130 [EN] s Scream
+- L1131 [KO] 타락한 인과신
+- L1131 [EN] Corrupted God of Causality
+- L1135 [KO] 법칙의 붕괴
+- L1135 [EN] Collapse of Laws
+- L1137 [KO] 창조가 멈추다
+- L1137 [EN] Creation Stops
+- L1138 [KO] 파괴가 넘치다
+- L1138 [EN] Destruction Overflows
+- L1139 [KO] 창조신의 균열
+- L1139 [EN] Crack in the Creation God
+- L1140 [KO] 오염된 창조의 빛
+- L1140 [EN] Corrupted Light of Creation
+- L1141 [KO] 창조신의 오염된 파편
+- L1141 [EN] Corrupted Creation Fragment
+- L1142 [KO] 법칙의 붕괴
+- L1142 [EN] Collapse of Laws
+- L1143 [KO] 창조신의 마지막 저항
+- L1143 [EN] Creation God
+- L1143 [EN] s Last Resistance
+- L1144 [KO] 오염된 창조의 심연
+- L1144 [EN] Corrupted Abyss of Creation
+- L1145 [KO] 창조신의 절규
+- L1145 [EN] Creation God
+- L1145 [EN] s Scream
+- L1146 [KO] 오염된 창조신
+- L1146 [EN] Corrupted God of Creation
+- L1150 [KO] 근원의 소멸
+- L1150 [EN] Extinction of the Origin
+- L1152 [KO] 원계대왕의 오염된 영역
+- L1152 [EN] Corrupted Domain of the Primal King
+- L1153 [KO] 법칙의 끝
+- L1153 [EN] End of Laws
+- L1154 [KO] 원계대왕의 변이
+- L1154 [EN] Primal King
+- L1154 [EN] s Mutation
+- L1155 [KO] 외신의 눈이 박힌 원계
+- L1155 [EN] Primal Realm Embedded with Outer God
+- L1156 [KO] 원계대왕의 오염된 눈
+- L1156 [EN] Primal King
+- L1156 [EN] s Corrupted Eye
+- L1157 [KO] 원계 붕괴 직전
+- L1157 [EN] Primal Realm on the Brink of Collapse
+- L1158 [KO] 원계대왕의 절규
+- L1158 [EN] Primal King
+- L1158 [EN] s Scream
+- L1159 [KO] 외신에 잠식된 법칙
+- L1159 [EN] Laws Devoured by Outer God
+- L1160 [KO] 원계대왕의 마지막 변이
+- L1160 [EN] Primal King
+- L1160 [EN] s Final Mutation
+- L1161 [KO] 잠식된 원계대왕
+- L1161 [EN] Devoured Primal King
+- L1165 [KO] 원계의 왕좌
+- L1165 [EN] Throne of the Primal Realm
+- L1167 [KO] 중력신의 발자국
+- L1167 [EN] Gravity God
+- L1167 [EN] s Footsteps
+- L1168 [KO] 오염된 중력의 강
+- L1168 [EN] River of Corrupted Gravity
+- L1169 [KO] 중력신의 성역이 무너지다
+- L1169 [EN] Gravity God
+- L1169 [EN] s Sanctuary Crumbles
+- L1170 [KO] 중력을 부패시키는 힘
+- L1170 [EN] Power Corrupting Gravity
+- L1171 [KO] 중력신의 첫 번째 눈물
+- L1171 [EN] Gravity God
+- L1171 [EN] s First Tear
+- L1172 [KO] 중력이 사라진 세계
+- L1172 [EN] World Without Gravity
+- L1173 [KO] 외신의 그릇이 된 중력신
+- L1173 [EN] Gravity God Become Outer God
+- L1173 [EN] s Vessel
+- L1174 [KO] 부패한 중력의 폭풍
+- L1174 [EN] Storm of Corrupted Gravity
+- L1175 [KO] 중력신의 마지막 노래
+- L1175 [EN] Gravity God
+- L1175 [EN] s Final Song
+- L1176 [KO] 타락한 중력신
+- L1176 [EN] Fallen Gravity God
+- L1185 [KO] 인식의 균열
+- L1185 [EN] Crack in Perception
+- L1187 [KO] 인식이 무너지는 곳
+- L1187 [EN] Where Perception Crumbles
+- L1188 [KO] 색이 없는 세계
+- L1188 [EN] World Without Color
+- L1189 [KO] 소리가 없는 길
+- L1189 [EN] Path Without Sound
+- L1190 [KO] 꿈인지 현실인지 모르는 곳
+- L1190 [EN] Where Dream and Reality Blur
+- L1191 [KO] 꿈의 파수꾼의 시험
+- L1191 [EN] Dream Sentinel's Trial
+- L1192 [KO] 나각의 숨결이 닿는 곳
+- L1192 [EN] Where Nagak's Breath Reaches
+- L1193 [KO] 잠든 신의 꿈
+- L1193 [EN] Dream of the Sleeping God
+- L1194 [KO] 꿈이 현실을 삼키다
+- L1194 [EN] Dream Devours Reality
+- L1195 [KO] 나각의 꿈이 깨어나다
+- L1195 [EN] Nagak's Dream Awakens
+- L1196 [KO] 문지기 나각의 꿈
+- L1196 [EN] Nagak's Dream Gatekeeper
+- L1200 [KO] 형태 없는 바다
+- L1200 [EN] Formless Sea
+- L1202 [KO] 형태가 사라지는 곳
+- L1202 [EN] Where Form Disappears
+- L1203 [KO] 보이지 않는 것들
+- L1203 [EN] Things That Cannot Be Seen
+- L1204 [KO] 촉수가 아닌 것들
+- L1204 [EN] Things That Are Not Tentacles
+- L1205 [KO] 인식하면 무너진다
+- L1205 [EN] Perceiving Brings Collapse
+- L1206 [KO] 무형의 촉수의 영역
+- L1206 [EN] Domain of the Formless Appendage
+- L1207 [KO] 형태 없는 심연
+- L1207 [EN] Formless Abyss
+- L1208 [KO] 존재하지만 없는 것
+- L1208 [EN] That Which Exists but Doesn't
+- L1209 [KO] 무형의 심장
+- L1209 [EN] Heart of the Formless
+- L1210 [KO] 무형의 분노
+- L1210 [EN] Wrath of the Formless
+- L1211 [KO] 무형의 현현
+- L1211 [EN] Manifestation of the Formless
+- L1215 [KO] 만목의 감시
+- L1215 [EN] Manmok's Watch
+- L1217 [KO] 눈이 하늘을 뒤덮다
+- L1217 [EN] Eyes Cover the Sky
+- L1218 [KO] 모든 것이 보이는 곳
+- L1218 [EN] Where Everything Is Seen
+- L1219 [KO] 눈동자의 미궁
+- L1219 [EN] Labyrinth of Pupils
+- L1220 [KO] 만목의 감시 아래
+- L1220 [EN] Under Manmok's Vigil
+- L1221 [KO] 만목의 눈동자의 시험
+- L1221 [EN] Manmok's Pupil Trial
+- L1222 [KO] 시선의 심연
+- L1222 [EN] Abyss of Gazes
+- L1223 [KO] 이해 없는 관찰
+- L1223 [EN] Observation Without Understanding
+- L1224 [KO] 만목의 핵
+- L1224 [EN] Core of Manmok
+- L1225 [KO] 만목의 분노
+- L1225 [EN] Wrath of Manmok
+- L1226 [KO] 만목(
+- L1226 [EN] Manmok, the Ten Thousand Eyes
+- L1230 [KO] 금기의 이름
+- L1230 [EN] Forbidden Name
+- L1232 [KO] 말해선 안 되는 곳
+- L1232 [EN] Place That Must Not Be Named
+- L1233 [KO] 생각해선 안 되는 것
+- L1233 [EN] That Which Must Not Be Thought
+- L1234 [KO] 이름이 없는 존재
+- L1234 [EN] The Nameless Existence
+- L1235 [KO] 금기의 영역
+- L1235 [EN] Domain of the Forbidden
+- L1236 [KO] 의 파편의 시험
+- L1236 [EN] Fragment's Trial
+- L1237 [KO] 금기의 심연
+- L1237 [EN] Abyss of the Forbidden
+- L1238 [KO] 이름이 현실을 부순다
+- L1238 [EN] The Name Shatters Reality
+- L1239 [KO] 금기의 핵
+- L1239 [EN] Core of the Forbidden
+- L1240 [KO] 의 포효
+- L1241 [KO] 의 현신
+- L1241 [EN] s Manifestation
+- L1245 [KO] 어계 심층
+- L1245 [EN] Core of the Outer Realm
+- L1247 [KO] 잠든 신을 섬기는 자들
+- L1247 [EN] Those Who Serve the Sleeping God
+- L1248 [KO] 나각의 사도들의 기도
+- L1248 [EN] Prayer of Nagak's Apostles
+- L1249 [KO] 외신의 군대
+- L1249 [EN] Army of the Outer God
+- L1250 [KO] 깨어남을 기다리는 땅
+- L1250 [EN] Land Awaiting the Awakening
+- L1251 [KO] 나각의 전위의 돌격
+- L1251 [EN] Nagak's Vanguard Charge
+- L1252 [KO] 어계의 핵
+- L1252 [EN] Core of the Outer Realm
+- L1253 [KO] 나각의 사도의 시험
+- L1253 [EN] Nagak's Apostle's Trial
+- L1254 [KO] 잠든 신의 심장 박동
+- L1254 [EN] Heartbeat of the Sleeping God
+- L1255 [KO] 사도들의 분노
+- L1255 [EN] Wrath of the Apostles
+- L1256 [KO] 나각의 사도
+- L1256 [EN] Apostle of Nagak
+- L1260 [KO] 외신화의 절정
+- L1260 [EN] Peak of Outer God Transformation
+- L1262 [KO] 외신화가 극에 달하다
+- L1262 [EN] Outer God Transformation Reaches Peak
+- L1263 [KO] 애기씨의 오염도가 폭발하다
+- L1263 [EN] Aegissi's Corruption Explodes
+- L1264 [KO] 외신 강림의 전조
+- L1264 [EN] Omen of Outer God's Descent
+- L1265 [KO] 나와 외신의 경계
+- L1265 [EN] Boundary Between Self and Outer God
+- L1266 [KO] 외신 강림의 전조의 습격
+- L1266 [EN] Omen's Assault
+- L1267 [KO] 외신 강림 직전
+- L1267 [EN] Moment Before Outer God's Descent
+- L1268 [KO] 애기씨의 마지막 인간성
+- L1268 [EN] Aegissi's Last Humanity
+- L1269 [KO] 외신화의 심연
+- L1269 [EN] Abyss of Outer God Transformation
+- L1270 [KO] 강림 직전의 포효
+- L1270 [EN] Roar Before Descent
+- L1271 [KO] 외신 강림체
+- L1271 [EN] Outer God Incarnate
+- L1275 [KO] 광기의 조류
+- L1275 [EN] Tide of Madness
+- L1277 [KO] 저주받은 시선
+- L1277 [EN] Cursed Gaze
+- L1278 [KO] 보는 것이 저주가 되다
+- L1278 [EN] Seeing Becomes a Curse
+- L1279 [KO] 광기가 조류처럼 밀려오다
+- L1279 [EN] Madness Washes In Like a Tide
+- L1280 [KO] 만목의 오염된 눈동자
+- L1280 [EN] Manmok's Corrupted Pupils
+- L1281 [KO] 만목의 오염된 눈동자의 습격
+- L1281 [EN] Corrupted Pupils' Assault
+- L1282 [KO] 광기의 폭풍
+- L1282 [EN] Storm of Madness
+- L1283 [KO] 만목의 마지막 저항
+- L1283 [EN] Manmok's Last Resistance
+- L1284 [KO] 오염된 시선의 심연
+- L1284 [EN] Corrupted Abyss of Gazes
+- L1285 [KO] 만목의 절규
+- L1285 [EN] Manmok's Scream
+- L1286 [KO] 타락한 만목
+- L1286 [EN] Fallen Manmok
+- L1290 [KO] 나각이 깨어나다
+- L1290 [EN] Nagak Awakens
+- L1292 [KO] 나각의 첫 번째 숨
+- L1292 [EN] Nagak's First Breath
+- L1293 [KO] 잠에서 깨어나는 신
+- L1293 [EN] God Waking from Slumber
+- L1294 [KO] 나각의 눈꺼풀이 열리다
+- L1294 [EN] Nagak's Eyelid Opens
+- L1295 [KO] 우주가 흔들리다
+- L1295 [EN] The Universe Trembles
+- L1296 [KO] 나각의 첫 번째 눈
+- L1296 [EN] Nagak's First Eye
+- L1297 [KO] 깨어남의 공포
+- L1297 [EN] Terror of Awakening
+- L1298 [KO] 나각의 절규
+- L1298 [EN] Nagak's Scream
+- L1299 [KO] 잠든 신의 분노
+- L1299 [EN] Sleeping God's Wrath
+- L1300 [KO] 나각의 마지막 잠
+- L1300 [EN] Nagak's Last Sleep
+- L1301 [KO] 각성하는 나각
+- L1301 [EN] Nagak, Awakening
+- L1305 [KO] 말할 수 없는 것
+- L1305 [EN] The Unspeakable
+- L1307 [KO] 의 영역
+- L1308 [KO] 말할 수 없는 것의 심장
+- L1308 [EN] Heart of the Unspeakable
+- L1309 [KO] 의 변이
+- L1309 [EN] s Mutation
+- L1310 [KO] 금기가 현실이 되다
+- L1310 [EN] The Forbidden Becomes Real
+- L1311 [KO] 의 오염된 현신
+- L1311 [EN] s Corrupted Manifestation
+- L1312 [KO] 의 심장 박동이 세계를 부수다
+- L1312 [EN] s Heartbeat Shatters the World
+- L1313 [KO] 의 절규
+- L1313 [EN] s Scream
+- L1314 [KO] 말할 수 없는 것의 심연
+- L1314 [EN] Abyss of the Unspeakable
+- L1315 [KO] 의 마지막 변이
+- L1315 [EN] s Final Mutation
+- L1316 [KO] 의 완전체
+- L1316 [EN] Complete Form
+- L1320 [KO] 어계의 왕좌
+- L1320 [EN] Throne of the Outer Realm
+- L1322 [KO] 태모의 숨결
+- L1322 [EN] Taemo's Breath
+- L1323 [KO] 모든 외신이 태어난 곳
+- L1323 [EN] Where All Outer Gods Were Born
+- L1324 [KO] 태모의 성역
+- L1324 [EN] Taemo's Sanctuary
+- L1325 [KO] 근원을 부패시키는 힘
+- L1325 [EN] Power That Corrupts the Origin
+- L1326 [KO] 태모의 첫 번째 울음
+- L1326 [EN] Taemo's First Cry
+- L1327 [KO] 어머니의 품
+- L1327 [EN] Mother's Embrace
+- L1328 [KO] 태모의 각성
+- L1328 [EN] Taemo's Awakening
+- L1329 [KO] 모든 외신의 귀환
+- L1329 [EN] Return of All Outer Gods
+- L1330 [KO] 태모의 마지막 노래
+- L1330 [EN] Taemo's Final Song
+- L1331 [KO] 태모(
+- L1331 [EN] Taemo, Mother of All
+- L1335 [KO] 반물질의 종말
+- L1335 [EN] End of the Antimatter World
+- L1337 [KO] 반물질계의 종말
+- L1337 [EN] End of the Antimatter World
+- L1338 [KO] 모든 것이 붕괴하는 곳
+- L1338 [EN] Where Everything Collapses
+- L1339 [KO] 반물질의 폭풍
+- L1339 [EN] Antimatter Storm
+- L1340 [KO] 종말의 파수꾼들
+- L1340 [EN] Sentinels of the End
+- L1341 [KO] 종말의 파수꾼의 시험
+- L1341 [EN] End Sentinel
+- L1341 [EN] s Trial
+- L1342 [KO] 반물질의 폭발
+- L1342 [EN] Antimatter Explosion
+- L1343 [KO] 종말의 빛
+- L1343 [EN] Light of the End
+- L1344 [KO] 반물질의 심연
+- L1344 [EN] Abyss of Antimatter
+- L1345 [KO] 종말의 수호자의 포효
+- L1345 [EN] End Guardian
+- L1346 [KO] 종말의 수호자
+- L1346 [EN] Guardian of the End
+- L1350 [KO] 거울의 바다
+- L1350 [EN] World Reflected in Mirrors
+- L1352 [KO] 거울이 반사하는 세계
+- L1352 [EN] World Reflected in Mirrors
+- L1353 [KO] 반물질의 파도
+- L1353 [EN] Waves of Antimatter
+- L1354 [KO] 거울 속의 존재들
+- L1354 [EN] Existences Within Mirrors
+- L1355 [KO] 거울의 군주의 영역
+- L1355 [EN] Domain of the Mirror Lord
+- L1356 [KO] 거울의 사자의 순찰
+- L1356 [EN] Mirror Reaper
+- L1356 [EN] s Patrol
+- L1357 [KO] 거울의 심연
+- L1357 [EN] Abyss of Mirrors
+- L1358 [KO] 반물질의 거울
+- L1358 [EN] Antimatter Mirror
+- L1359 [KO] 거울의 심장
+- L1359 [EN] Heart of Mirrors
+- L1360 [KO] 거울의 군주의 분노
+- L1360 [EN] Mirror Lord
+- L1360 [EN] s Wrath
+- L1361 [KO] 거울의 군주
+- L1361 [EN] Lord of Mirrors
+- L1365 [KO] 시간 역행의 전당
+- L1365 [EN] Time Flows Backward
+- L1367 [KO] 시간이 거꾸로 흐르다
+- L1367 [EN] Time Flows Backward
+- L1368 [KO] 과거로의 여행
+- L1368 [EN] Journey to the Past
+- L1369 [KO] 시간 역행의 미궁
+- L1369 [EN] Labyrinth of Time Reversal
+- L1370 [KO] 시간역행의 신의 영역
+- L1370 [EN] Domain of the Time Reversal God
+- L1371 [KO] 시간의 수호자의 시험
+- L1371 [EN] Time Guardian
+- L1371 [EN] s Trial
+- L1372 [KO] 시간의 심연
+- L1372 [EN] Abyss of Time
+- L1373 [KO] 역행하는 기억들
+- L1373 [EN] Reversing Memories
+- L1374 [KO] 시간의 핵심
+- L1374 [EN] Core of Time
+- L1375 [KO] 시간역행의 신의 분노
+- L1375 [EN] Time Reversal God
+- L1375 [EN] s Wrath
+- L1376 [KO] 시간역행의 신
+- L1376 [EN] God of Time Reversal
+- L1380 [KO] 반물질의 폭풍
+- L1380 [EN] Antimatter Explodes
+- L1382 [KO] 반물질이 폭발하다
+- L1382 [EN] Antimatter Explodes
+- L1383 [KO] 물질과 반물질의 충돌
+- L1383 [EN] Clash of Matter and Antimatter
+- L1384 [KO] 반물질의 신의 영역
+- L1384 [EN] Domain of the Antimatter God
+- L1385 [KO] 쌍소멸의 경계
+- L1385 [EN] Boundary of Pair Annihilation
+- L1386 [KO] 반물질의 수호자의 시험
+- L1386 [EN] Antimatter Guardian
+- L1386 [EN] s Trial
+- L1387 [KO] 반물질의 심연
+- L1387 [EN] Abyss of Antimatter
+- L1388 [KO] 쌍소멸의 폭풍
+- L1388 [EN] Storm of Pair Annihilation
+- L1389 [KO] 반물질의 핵심
+- L1389 [EN] Core of Antimatter
+- L1390 [KO] 반물질의 신의 분노
+- L1390 [EN] Antimatter God
+- L1390 [EN] s Wrath
+- L1391 [KO] 반물질의 신
+- L1391 [EN] God of Antimatter
+- L1395 [KO] 황계 심층
+- L1395 [EN] Heart of the Ruined Realm
+- L1397 [KO] 황계의 심장
+- L1397 [EN] Heart of the Ruined Realm
+- L1398 [KO] 황계대왕의 영역
+- L1398 [EN] Domain of the Ruined King
+- L1399 [KO] 반물질의 군대
+- L1399 [EN] Antimatter Army
+- L1400 [KO] 반물질석이 흐르는 땅
+- L1400 [EN] Land Where Antimatter Stones Flow
+- L1401 [KO] 황계대왕의 전위대
+- L1401 [EN] Ruined King
+- L1401 [EN] s Vanguard
+- L1402 [KO] 황계의 핵
+- L1402 [EN] Core of the Ruined Realm
+- L1403 [KO] 황계대왕의 시험
+- L1403 [EN] Ruined King
+- L1403 [EN] s Trial
+- L1404 [KO] 황계의 근원
+- L1404 [EN] Origin of the Ruined Realm
+- L1405 [KO] 황계대왕의 분노
+- L1405 [EN] Ruined King
+- L1405 [EN] s Wrath
+- L1406 [KO] 황계대왕의 왕좌
+- L1406 [EN] Ruined King
+- L1406 [EN] s Throne
+- L1410 [KO] 거울 자아의 각성
+- L1410 [EN] Mirror Self Opens Its Eyes
+- L1412 [KO] 거울 자아가 눈을 뜨다
+- L1412 [EN] Mirror Self Opens Its Eyes
+- L1413 [KO] 반물질 애기씨의 등장
+- L1413 [EN] Antimatter Aegissi Appears
+- L1414 [KO] 거울 자아의 기억
+- L1414 [EN] Mirror Self
+- L1414 [EN] s Memories
+- L1415 [KO] 나와 나의 전투
+- L1415 [EN] Battle Between Self and Self
+- L1416 [KO] 거울 자아의 분신
+- L1416 [EN] Mirror Self
+- L1416 [EN] s Doppelganger
+- L1417 [KO] 거울 자아의 각성
+- L1417 [EN] Mirror Self
+- L1417 [EN] s Awakening
+- L1418 [KO] 반물질의 힘이 폭발하다
+- L1418 [EN] Antimatter Power Explodes
+- L1419 [KO] 거울 자아의 분노
+- L1419 [EN] Mirror Self
+- L1419 [EN] s Wrath
+- L1420 [KO] 거울 자아의 절규
+- L1420 [EN] Mirror Self
+- L1420 [EN] s Scream
+- L1421 [KO] 각성한 거울 자아
+- L1421 [EN] Awakened Mirror Self
+- L1425 [KO] 합치의 예언
+- L1425 [EN] Prophecy of Convergence Flows
+- L1427 [KO] 합치의 예언이 흐르다
+- L1427 [EN] Prophecy of Convergence Flows
+- L1428 [KO] 물질과 반물질이 서로를 인식하다
+- L1428 [EN] Matter and Antimatter Recognize Each Other
+- L1429 [KO] 합치의 수호자들
+- L1429 [EN] Guardians of Convergence
+- L1430 [KO] 합치의 신의 영역
+- L1430 [EN] Domain of the Convergence God
+- L1431 [KO] 합치의 수호자의 시험
+- L1431 [EN] Convergence Guardian
+- L1431 [EN] s Trial
+- L1432 [KO] 합치의 빛
+- L1432 [EN] Light of Convergence
+- L1433 [KO] 예언의 심연
+- L1433 [EN] Abyss of Prophecy
+- L1434 [KO] 합치의 핵심
+- L1434 [EN] Core of Convergence
+- L1435 [KO] 합치의 신의 분노
+- L1435 [EN] Convergence God
+- L1435 [EN] s Wrath
+- L1436 [KO] 합치의 신
+- L1436 [EN] God of Convergence
+- L1440 [KO] 태초로의 귀환
+- L1440 [EN] Time Flows to the Origin
+- L1442 [KO] 시간이 태초로 흐르다
+- L1442 [EN] Time Flows to the Origin
+- L1443 [KO] 반물질계의 태초가 보이다
+- L1443 [EN] Origin of the Antimatter World Visible
+- L1444 [KO] 태초의 빛
+- L1444 [EN] Light of the Origin
+- L1445 [KO] 태초의 수호자들
+- L1445 [EN] Guardians of the Origin
+- L1446 [KO] 태초의 파수꾼의 시험
+- L1446 [EN] Origin Sentinel
+- L1446 [EN] s Trial
+- L1447 [KO] 태초의 안개
+- L1447 [EN] Mist of the Origin
+- L1448 [KO] 태초의 기억
+- L1448 [EN] Memory of the Origin
+- L1449 [KO] 태초의 심연
+- L1449 [EN] Abyss of the Origin
+- L1450 [KO] 태초의 수호자의 포효
+- L1450 [EN] Origin Guardian
+- L1451 [KO] 태초의 수호자
+- L1451 [EN] Guardian of the Origin
+- L1455 [KO] 순수한 자아
+- L1455 [EN] Beginning of Self
+- L1457 [KO] 자아의 시작
+- L1457 [EN] Beginning of Self
+- L1458 [KO] 아무것도 모르는 존재
+- L1458 [EN] Being Who Knows Nothing
+- L1459 [KO] 순수한 감정의 파동
+- L1459 [EN] Wave of Pure Emotion
+- L1460 [KO] 자아의 파편들
+- L1460 [EN] Fragments of Self
+- L1461 [KO] 자아의 파편의 시험
+- L1461 [EN] Self Fragment
+- L1461 [EN] s Trial
+- L1462 [KO] 순수한 자아의 빛
+- L1462 [EN] Light of the Pure Self
+- L1463 [KO] 자아의 수호자들
+- L1463 [EN] Guardians of Self
+- L1464 [KO] 자아의 심연
+- L1464 [EN] Abyss of Self
+- L1465 [KO] 자아의 수호자의 포효
+- L1465 [EN] Self Guardian
+- L1466 [KO] 자아의 수호자
+- L1466 [EN] Guardian of Self
+- L1470 [KO] 태초의 애기씨
+- L1470 [EN] Primordial Light Visible
+- L1472 [KO] 태초의 빛이 보이다
+- L1472 [EN] Primordial Light Visible
+- L1473 [KO] 어린 애기씨의 발자국
+- L1473 [EN] Little Aegissi
+- L1473 [EN] s Footsteps
+- L1474 [KO] 순수한 세계
+- L1474 [EN] Pure World
+- L1475 [KO] 자아만 있는 곳
+- L1475 [EN] Place Where Only Self Exists
+- L1476 [KO] 순수한 자아의 첫 번째 눈물
+- L1476 [EN] Pure Self
+- L1476 [EN] s First Tear
+- L1477 [KO] 태초의 고요함
+- L1477 [EN] Silence of the Origin
+- L1478 [KO] 어린 애기씨의 미소
+- L1478 [EN] Little Aegissi
+- L1478 [EN] s Smile
+- L1479 [KO] 합치 직전의 순간
+- L1479 [EN] Moment Before Convergence
+- L1480 [KO] 태초와 종말이 만나다
+- L1480 [EN] Origin and End Meet
+- L1481 [KO] 태초의 애기씨
+- L1481 [EN] Primordial Aegissi
+- L1490 [KO] 호야
+- L1491 [KO] 방어력 +20%. 주기적으로 주변 적을 위협해 이동속도 감소.
+- L1492 [EN] Periodically intimidates nearby enemies, reducing their movement speed.
+- L1494 [KO] 까마귀 삼신
+- L1494 [EN] Three-God Crow
+- L1495 [KO] 가까운 적 1명에게 약점 표식. 표식된 적은 받는 피해 +20%.
+- L1496 [EN] Marks 1 nearby enemy as weak. Marked enemy takes 20
+- L1496 [EN] more damage.
+- L1498 [KO] 여우령
+- L1498 [EN] Fox Spirit
+- L1499 [KO] 치명타 확률 +15%. 치명타 시 1.8배 피해.
+- L1500 [EN] Crit Rate
+- L1500 [EN] Crit hits deal 1.8
+- L1502 [KO] 거북령
+- L1502 [EN] Turtle Spirit
+- L1503 [KO] 매 3초마다 HP 8 회복.
+- L1504 [EN] Restores 8 HP every 3 seconds.
+- L1506 [KO] 총각신
+- L1506 [EN] Chonggak Spirit
+- L1507 [KO] 주기적으로 무작위 적에게 1.5초 혼란 부여.
+- L1508 [EN] Periodically inflicts 1.5-second confusion on random enemies.
+- L1510 [KO] 터주신
+- L1510 [EN] House Guardian
+- L1511 [KO] 획득량 +30%.
+- L1512 [EN] XP gain
+- L1514 [KO] 도깨비
+- L1515 [KO] 가까운 적을 주기적으로 밀쳐낸다.
+- L1516 [EN] Periodically pushes back nearby enemies.
+- L1518 [KO] 달토끼
+- L1518 [EN] Moon Rabbit
+- L1519 [KO] 무기 쿨타임 -22%.
+- L1520 [EN] Weapon cooldown -22
+- L1525 [KO] 싸리
+- L1526 [KO] 주변 아이템을 대신 주워온다. 강다리보다 느리지만 훨씬 넓은 범위를 훑는다.
+- L1527 [EN] Fetches nearby items. Slower than Barkley, but sweeps a much wider range.
+- L1530 [KO] 공이
+- L1531 [KO] 매 3초마다 HP 12 회복.
+- L1532 [EN] Restores 12 HP every 3 seconds.
+- L1537 [KO] 수정정령
+- L1537 [EN] Crystal Spirit
+- L1538 [KO] 방어력 +28%. 결정처럼 단단한 보호막을 두른다.
+- L1539 [EN] Wraps itself in a crystal-hard barrier.
+- L1541 [KO] 영혼불씨
+- L1541 [EN] Soul Ember
+- L1542 [KO] 영혼석/영혼조각 획득량 +30%.
+- L1543 [EN] Soul Stone
+- L1543 [EN] Soul Fragment gain
+- L1546 [KO] 성린
+- L1547 [KO] 치명타 확률 +15%. 별빛을 두른 아기 용.
+- L1548 [EN] Crit Rate
+- L1548 [EN] A baby dragon wrapped in starlight.
+- L1550 [KO] 금관학
+- L1550 [EN] Golden-Crowned Crane
+- L1551 [KO] 사망 시 2회 자동부활 (HP 50%). 선계에서 넋을 인도하는 학.
+- L1552 [EN] Auto-revive twice on death
+- L1552 [EN] A crane that guides souls in the Celestial Realm.
+- L1555 [KO] 별똥이
+- L1556 [KO] 치명타 확률 +30%. 어계에서 떨어져 나온 별 부스러기. 종소리를 내며 맴돈다.
+- L1557 [EN] Crit Rate
+- L1557 [EN] A scrap of star fallen from the Outer Realm, circling with the sound of bells.
+- L1561 [KO] 바탕/그릇
+- L1562 [KO] 무명
+- L1562 [EN] The Nameless
+- L1563 [KO] 무기 쿨타임 -30%. 이름이 없어 아무도 기억하지 못하는 작은 것. 곁에 두면 시간이 어긋난다.
+- L1564 [EN] Weapon cooldown -30
+- L1564 [EN] A small thing with no name, which no one manages to remember
+- L1564 [EN] keep it close and time itself slips.
+- L1567 [KO] 똘기
+- L1568 [KO] 동료 방어력(받는 피해 감소) +15%. 영리한 쥐신의 가호.
+- L1569 [EN] Companion damage taken -15
+- L1569 [EN] Blessing of the clever Rat God.
+- L1571 [KO] 떵이
+- L1572 [KO] 동료 최대 HP +20%. 묵묵한 소신의 가호.
+- L1573 [EN] Companion max HP
+- L1573 [EN] Blessing of the steadfast Ox God.
+- L1575 [KO] 호치
+- L1576 [KO] 치명타 확률 +25%. 맹렬한 범신의 기운.
+- L1577 [EN] Crit Rate
+- L1577 [EN] Ferocity of the Tiger God.
+- L1579 [KO] 새초미
+- L1580 [KO] 무기 쿨타임 -15%. 날쌘 토끼신의 가호.
+- L1581 [EN] Weapon cooldown -15
+- L1581 [EN] Blessing of the nimble Rabbit God.
+- L1583 [KO] 드라고
+- L1584 [KO] 주변 적을 강력하게 밀쳐낸다. 용신의 위엄.
+- L1585 [EN] Powerfully pushes back nearby enemies. Dignity of the Dragon God.
+- L1587 [KO] 요롱이
+- L1588 [KO] 가까운 적 3명에게 약점 표식. 표식된 적은 받는 피해 +15%. 뱀신의 독기.
+- L1589 [EN] Marks 3 nearby enemies as weak, each taking 15
+- L1589 [EN] more damage. Venom of the Snake God.
+- L1591 [KO] 마초
+- L1592 [KO] 아이템 흡수 범위 +75. 빠른 말신의 가호.
+- L1593 [EN] Item attraction range
+- L1593 [EN] Blessing of the swift Horse God.
+- L1595 [KO] 미미
+- L1596 [KO] 골드 획득량 +25%. 온화한 양신의 가호.
+- L1597 [EN] Gold gain
+- L1597 [EN] Blessing of the gentle Goat God.
+- L1599 [KO] 뭉치
+- L1600 [KO] 주기적으로 적 혼란 부여(2.5초, 범위 확대). 교활한 원숭이신.
+- L1601 [EN] Periodically confuses enemies for 2.5s in a wider area. The crafty Monkey God.
+- L1603 [KO] 키키
+- L1604 [KO] 동료 공격력 +15%. 새벽을 여는 닭신의 가호.
+- L1605 [EN] Companion ATK
+- L1605 [EN] Blessing of the Rooster God who heralds the dawn.
+- L1607 [KO] 강다리
+- L1608 [KO] 플레이어 주변 골드·경험치를 자동으로 찾아가 수집한다. 충직한 개신의 수호.
+- L1609 [EN] Automatically seeks out and collects nearby gold
+- L1609 [EN] XP orbs. Protection of the loyal Dog God.
+- L1612 [KO] 찡찡이
+- L1613 [KO] 특화 던전 재화 획득량 +25%. 풍요로운 돼지신.
+- L1614 [EN] Special dungeon currency gain
+- L1614 [EN] The bountiful Pig God.
+- L1617 [KO] 저승나비
+- L1617 [EN] Netherworld Butterfly
+- L1618 [KO] 영혼 조각/영혼석 획득량 +20%. 망자를 인도하는 나비.
+- L1619 [EN] Soul Fragment
+- L1619 [EN] Stone gain
+- L1619 [EN] A butterfly that guides the departed.
+- L1621 [KO] 상사화
+- L1622 [KO] 사망 시 1회 자동부활 (HP 50%). 바리공주의 애화(
+- L1623 [EN] Auto-revive once on death
+- L1623 [EN] The beloved flower of Bari-gongju.
+- L1631 [KO] 영혼의 의지
+- L1631 [EN] Will of the Soul
+- L1632 [KO] 고정치)
+- L1634 [KO] 윤회의 흐름
+- L1634 [EN] Flow of Reincarnation
+- L1635 [KO] 공격력 +0.2 (고정치)
+- L1637 [KO] 운명의 장난
+- L1637 [EN] Fate's Trick
+- L1638 [KO] 자석 반경 +0.1
+- L1638 [EN] Magnet Range
+- L1640 [KO] 순리의 이해
+- L1640 [EN] Understanding of Providence
+- L1641 [KO] 쿨타임 -0.01%
+- L1641 [EN] Cooldown -0.01
+- L1643 [KO] 선계의 호흡
+- L1643 [EN] Breath of the Immortal Realm
+- L1644 [KO] 최대 HP +0.1%
+- L1646 [KO] 법칙의 증명
+- L1646 [EN] Proof of the Law
+- L1647 [KO] 공격력 +0.1%
+- L1649 [KO] 의 이해
+- L1650 [KO] 공격력·HP 각각 +0.1%
+- L1650 [EN] HP each
+- L1652 [KO] 운명의 선택
+- L1652 [EN] Choice of Fate
+- L1653 [KO] 공격력·HP 각각 +0.1%
+- L1653 [EN] HP each
+- L1708 [KO] 딱 적정
+- L1709 [KO] 적정
+- L1710 [KO] 적정
+- L1724 [KO] 대장간
+- L1725 [KO] 무기를 제련하는 곳. 강화할수록 무기 강화 비용이 할인된다.
+- L1726 [EN] A forge for weapons. Higher levels discount weapon upgrade costs.
+- L1727 [KO] 주무기 해금 및 강화
+- L1728 [EN] Weapon unlock
+- L1730 [KO] 폐허
+- L1731 [KO] 복구
+- L1732 [KO] 활성화
+- L1733 [KO] 축복
+- L1734 [KO] 신령화
+- L1738 [KO] 의원당
+- L1738 [EN] Companion Hall
+- L1739 [KO] 동료들이 모이는 곳. 강화할수록 동료 강화 비용이 할인된다.
+- L1740 [EN] A gathering place for companions. Higher levels discount companion upgrade costs.
+- L1741 [KO] 동료 해금 및 강화
+- L1742 [EN] Companion unlock
+- L1744 [KO] 폐허
+- L1745 [KO] 복구
+- L1746 [KO] 활성화
+- L1747 [KO] 축복
+- L1748 [KO] 신령화
+- L1752 [KO] 서낭당
+- L1752 [EN] Guardian Shrine
+- L1753 [KO] 던전의 문을 여는 곳. 강화할수록 던전 수익이 증가한다.
+- L1754 [EN] The gateway to dungeons. Higher levels increase dungeon rewards.
+- L1755 [KO] 무한 던전 · 보스러쉬 해금
+- L1756 [EN] Infinite Dungeon
+- L1756 [EN] Boss Rush unlock
+- L1758 [KO] 폐허
+- L1759 [KO] 복구
+- L1760 [KO] 활성화
+- L1761 [KO] 축복
+- L1762 [KO] 신령화
+- L1766 [KO] 장승당
+- L1766 [EN] Totem Hall
+- L1767 [KO] 강화석과 천운석을 캐는 던전의 수호신. 강화할수록 던전 수익이 증가한다.
+- L1768 [EN] Guardian deity of dungeons that mine Forge Stones and Luck Stones. Higher levels increase dungeon rewards.
+- L1769 [KO] 강화석·천운석 던전 해금
+- L1770 [EN] Forge Stone
+- L1770 [EN] Luck Stone dungeon unlock
+- L1772 [KO] 폐허
+- L1773 [KO] 복구
+- L1774 [KO] 활성화
+- L1775 [KO] 축복
+- L1776 [KO] 신령화
+- L1780 [KO] 용왕 연못
+- L1780 [EN] Dragon King Pond
+- L1781 [KO] 용왕의 기운이 깃든 연못. 펫들의 능력을 강화한다.
+- L1782 [EN] A pond imbued with the Dragon King's power. Enhances pet abilities.
+- L1783 [KO] 펫 해금·강화, 천령과 던전
+- L1784 [EN] Pet unlock
+- L1784 [EN] upgrade, Spirit Fruit dungeon
+- L1786 [KO] 폐허
+- L1787 [KO] 복구
+- L1788 [KO] 활성화
+- L1789 [KO] 축복
+- L1790 [KO] 신령화
+- L1794 [KO] 신목
+- L1794 [EN] Sacred Tree
+- L1795 [KO] 귀인국의 신성한 나무. 주무기 슬롯을 늘리고 태극석 던전을 해금한다.
+- L1796 [EN] The sacred tree of Gwi-In-Guk. Increases weapon slots and unlocks the Taegeuk Stone dungeon.
+- L1797 [KO] 주무기 슬롯 증가, 태극석 던전
+- L1798 [EN] Weapon slot increase, Taegeuk Stone dungeon
+- L1800 [KO] 폐허
+- L1801 [KO] 복구
+- L1802 [KO] 활성화
+- L1803 [KO] 축복
+- L1804 [KO] 신령화
+
+## data/monsters.js
+
+- L109 [KO] 망령
+- L113 [KO] 떠도는 망자의 영혼. 무리를 지어 플레이어를 에워싼다.
+- L116 [KO] 원귀
+- L120 [KO] 강한 원한을 품은 귀신. 주기적으로 플레이어를 향해 돌진한다.
+- L127 [KO] 굶주린 혼
+- L131 [KO] 배고픔으로 미쳐버린 영혼. 작고 빠르며 무리 지어 나타난다.
+- L134 [KO] 곡성귀
+- L138 [KO] 울음소리로 공포를 퍼뜨리는 귀신. 느리지만 피해가 크다.
+- L145 [KO] 타락한 신도
+- L149 [KO] 외신에 세뇌된 신도. 저주받은 부적을 원거리로 날린다.
+- L152 [KO] 저주 인형
+- L156 [KO] 저주가 깃든 인형. 죽을 때 주변에 폭발 피해를 입힌다.
+- L163 [KO] 나무 정령
+- L167 [KO] 고목에 깃든 정령. 느리지만 체력이 매우 높다.
+- L170 [KO] 가면 여우
+- L174 [KO] 가면을 쓴 여우 정령. 빠른 속도로 기습하고 도망간다.
+- L181 [KO] 심연충
+- L185 [KO] 심연에서 기어나온 벌레. 질긴 생명력을 가진다.
+- L188 [KO] 혼돈의 눈
+- L192 [KO] 혼돈 그 자체인 눈. 에너지 빔을 발사하여 원거리를 공격한다.
+- L199 [KO] 저승 병사
+- L203 [KO] 저승왕을 섬기는 갑옷 병사. 높은 방어력과 묵직한 타격을 가진다.
+- L206 [KO] 혼 수확자
+- L210 [KO] 낫을 들고 혼을 거두는 존재. 빠르게 접근해 단번에 베어낸다.
+- L217 [KO] 공허 신도
+- L221 [KO] 외신에게 헌신한 광신도. 공허 에너지 구체를 원거리로 투척한다.
+- L224 [KO] 공허의 촉수
+- L228 [KO] 땅에서 솟아오른 공허의 촉수. 느리지만 폭발적 피해를 입힌다.
+- L235 [KO] 기억 약탈자
+- L239 [KO] 기억을 먹고 사는 존재. 빠르게 무리 지어 플레이어를 압박한다.
+- L242 [KO] 망각의 유령
+- L246 [KO] 완전히 잊혀진 존재. 거대하고 느리지만 체력이 압도적이다.
+- L253 [KO] 타락한 신령
+- L257 [KO] 혼돈에 물든 신령. 신성한 힘이 독으로 변해 독성 장판을 깐다.
+- L260 [KO] 신령의 그림자
+- L264 [KO] 신령에서 분리된 어두운 그림자. 극도로 빠르며 기습에 특화됐다.
+- L271 [KO] 혼돈 병사
+- L275 [KO] 혼돈 자체로 만들어진 전사. 맞을수록 분노해 공격속도가 빨라진다.
+- L278 [KO] 심연 기사
+- L282 [KO] 심연에서 소환된 최강의 기사. 느리지만 광역 충격파로 주변을 쓸어버린다.
+- L289 [KO] 황천 망령
+- L293 [KO] 황천강을 떠도는 망령. 강물의 기운을 머금어 움직임이 물처럼 유연하다.
+- L296 [KO] 유령 뱃길
+- L300 [KO] 황천강의 유령선. 느리지만 닿는 것을 모두 저승으로 끌어당긴다.
+- L307 [KO] 망자 방랑자
+- L311 [KO] 갈 곳 잃은 망자. 거리를 헤매며 산 자의 기운을 탐한다.
+- L314 [KO] 갇힌 혼
+- L318 [KO] 자루 속에 갇힌 혼령. 작고 빠르며 고통의 울음으로 주변을 교란한다.
+- L325 [KO] 기억 수정구
+- L329 [KO] 기억의 파편이 뭉쳐 만들어진 수정구. 닿으면 기억이 조각난다.
+- L332 [KO] 어둠 망령
+- L336 [KO] 기억이 완전히 지워진 망령. 정체를 잃어 더욱 위험하다.
+- L343 [KO] 업화 서책
+- L347 [KO] 업보의 기록이 불길에 휩싸인 서책. 불꽃 조각을 날려 공격한다.
+- L350 [KO] 저승 이정표
+- L354 [KO] 저승길의 방향을 틀어버리는 이정표. 느리지만 엄청난 무게감으로 짓누른다.
+- L361 [KO] 지옥 거인
+- L365 [KO] 명부의 심장부를 지키는 외눈 거인. 철퇴 일격으로 땅을 뒤흔든다.
+- L368 [KO] 흑염 마귀
+- L372 [KO] 검은 불꽃으로 이루어진 마귀. 그을린 자리마다 어둠이 번진다.
+- L379 [KO] 외신 거미
+- L383 [KO] 외신의 기운에 잠식된 거대 거미. 등에 새겨진 주문이 공포를 퍼트린다.
+- L386 [KO] 이끼 석시
+- L390 [KO] 오염된 땅에서 일어난 이끼 덮인 석상. 극도로 느리지만 거의 파괴되지 않는다.
+- L397 [KO] 미라 방랑자
+- L401 [KO] 뒤틀린 저승길에서 길을 잃은 미라. 이정표를 들고 다니지만 방향을 모른다.
+- L404 [KO] 외눈 저승병
+- L408 [KO] 저승 질서가 무너져 폭주한 외눈 병사. 분노로 가득 차 닥치는 대로 공격한다.
+- L415 [KO] 궁궐 악귀
+- L419 [KO] 명부의 궁궐을 점거한 악귀. 쟁반에 담긴 저주를 던지며 공격한다.
+- L422 [KO] 저주 전령
+- L426 [KO] 혼돈의 명령을 전달하는 전령. 저주를 담은 선물 쟁반을 원거리에서 던진다.
+- L433 [KO] 운명의 저울
+- L437 [KO] 수명을 측정하는 저주받은 저울. 균형이 기울면 주변에 폭발적인 저주가 퍼진다.
+- L440 [KO] 촉수 저주인
+- L444 [KO] 소멸의 저주에 먹힌 인간. 머리에서 뻗어나온 촉수가 생명을 빨아들인다.
+- L451 [KO] 죽음의 서책
+- L455 [KO] 유명계의 모든 죽음을 기록한 서책. 마귀들을 소환하며 스스로를 지킨다.
+- L458 [KO] 혼돈 곡예사
+- L462 [KO] 혼돈에 몸을 맡긴 역사(
+- L462 [KO] 역관절로 뒤집힌 채 도끼를 휘두른다.
+- L473 [KO] 꼬마도깨비
+- L477 [KO] 혼돈이 빚어낸 작은 도깨비. 앞뒤 안 가리고 몸통 박치기로 돌진한다.
+- L480 [KO] 헛개비
+- L484 [KO] 실체가 흐릿한 헛것. 눈을 깜빡이면 어느새 옆에 와 있다.
+- L489 [KO] 여우불
+- L493 [KO] 요사스러운 도깨비불. 멀리서 화염구를 날려 태운다.
+- L496 [KO] 홀린 병사
+- L500 [KO] 구미호의 술법에 홀린 병사. 가끔 넋이 나간 듯 엉뚱한 방향으로 휘청인다.
+- L505 [KO] 오류령
+- L509 [KO] 글리치가 낳은 오류의 영혼. 화면이 깨지듯 순간적으로 위치를 바꾼다.
+- L512 [KO] 깨진 그림자
+- L516 [KO] 깨진 픽셀처럼 명멸하는 그림자. 반투명해질 때는 공격이 통하지 않는다.
+- L521 [KO] 저주받은 상품령
+- L525 [KO] 혼돈 시장에서 팔리던 저주받은 물건에 깃든 원혼. 몸을 던져 폭발한다.
+- L528 [KO] 그림자 상인
+- L532 [KO] 정체를 알 수 없는 상인의 그림자. 거리를 유지하며 저주받은 물건을 던진다.
+- L537 [KO] 심층 도깨비
+- L541 [KO] 망랑계 깊은 곳에서 자란 도깨비. 육중한 몸으로 강하게 내리친다.
+- L544 [KO] 그림자 짐승
+- L548 [KO] 짐승의 형상을 한 그림자 무리. 무서운 속도로 쫓아온다.
+- L553 [KO] 오염 도깨비
+- L557 [KO] 외신의 기운에 오염된 도깨비. 쓰러지는 순간까지 위험하다.
+- L560 [KO] 잠식령
+- L564 [KO] 잠식이 퍼져나가는 영혼체. 스치기만 해도 오염이 옮는다.
+- L569 [KO] 홀린 여우
+- L573 [KO] 요술에 취한 구미호. 스치면 잠시 정신이 아득해진다.
+- L576 [KO] 저주 술사
+- L580 [KO] 저주받은 술사의 원혼. 멀리서 약화의 저주를 날린다.
+- L585 [KO] 소용돌이귀
+- L589 [KO] 혼돈이 뒤엉켜 만들어진 소용돌이. 주변을 계속 끌어당기고 밀쳐낸다.
+- L592 [KO] 혼돈 파편체
+- L596 [KO] 혼돈신의 파편. 쓰러뜨려도 조각나 다시 일어난다.
+- L601 [KO] 폭풍 글리치
+- L605 [KO] 폭풍처럼 몰아치는 글리치 파편. 예측할 수 없이 깜빡이며 접근한다.
+- L608 [KO] 오류 폭풍체
+- L612 [KO] 오류가 응축된 폭풍의 덩어리. 임계점에 달하면 크게 터진다.
+- L617 [KO] 분신 도깨비
+- L621 [KO] 왕좌를 지키는 분신. 본체가 어디인지 알 수 없다.
+- L624 [KO] 왕좌 수호병
+- L628 [KO] 망랑대왕의 왕좌를 지키는 수호병. 굳건히 버티며 물러서지 않는다.
+- L640 [KO] 파도귀
+- L644 [KO] 소멸의 파도에 휩쓸린 원혼. 파도처럼 밀려들어 몸을 부딪는다.
+- L647 [KO] 바스러진 형체
+- L651 [KO] 형체가 바스러지기 직전인 존재. 부풀어 오르다 터지듯 자폭한다.
+- L656 [KO] 익명귀
+- L660 [KO] 이름을 잊은 혼. 예고 없이 사라졌다 다른 곳에서 나타난다. (임시: 돌진으로 대체)
+- L663 [KO] 침묵하는 자
+- L667 [KO] 말을 잃고 침묵하는 존재. 아주 느리지만 꾸준히 다가온다.
+- L672 [KO] 환생 파편
+- L676 [KO] 거듭남에서 떨어져 나온 파편. 끈질기게 다시 일어선다. (임시: 근접으로 대체)
+- L679 [KO] 미완의 자아
+- L683 [KO] 아직 완성되지 못한 자아. 스치면 짧게 기억을 빨아들인다. (임시: 근접으로 대체)
+- L688 [KO] 공허귀
+- L692 [KO] 허무 속에서 태어난 혼. 순간 자취를 감췄다 기습한다. (임시: 돌진으로 대체)
+- L695 [KO] 텅빈 갑주
+- L699 [KO] 안이 텅 빈 갑주. 묵직하게 버티고 서서 내리친다.
+- L704 [KO] 심층 소멸수
+- L708 [KO] 귀허계 심층에서 자란 소멸의 짐승. 부풀었다 터지며 주변을 지운다.
+- L711 [KO] 침식귀
+- L715 [KO] 존재를 조금씩 갉아먹는 혼. 스치면 짧게 기억을 빨아들인다. (임시: 근접으로 대체)
+- L720 [KO] 오염된 파도귀
+- L724 [KO] 외신의 기운에 물든 파도귀. 닿으면 독기가 스민다.
+- L727 [KO] 잠식된 형체
+- L731 [KO] 잠식되어 불안정해진 형체. 사라졌다 나타나며 약하게 폭발한다. (임시: 자폭으로 대체)
+- L736 [KO] 뒤틀린 환생체
+- L740 [KO] 거듭남이 뒤틀려버린 존재. 쓰러져도 곧 다시 일어난다. (임시: 근접으로 대체)
+- L743 [KO] 역행하는 자
+- L747 [KO] 시간을 거스르듯 움직이는 혼. 예측과 반대로 움직인다. (임시: 근접으로 대체)
+- L752 [KO] 허무 조각
+- L756 [KO] 허무가 뭉쳐진 조각. 광역으로 부풀어 오르다 터진다.
+- L759 [KO] 붕괴하는 잔영
+- L763 [KO] 붕괴 직전의 잔영. 연달아 자취를 감췄다 나타난다. (임시: 돌진으로 대체)
+- L768 [KO] 경계귀
+- L772 [KO] 소멸의 경계에 선 혼. 스치면 강하게 기억을 빨아들인다. (임시: 근접으로 대체)
+- L775 [KO] 소멸 직전자
+- L779 [KO] 소멸 직전의 존재. 강타 후 부풀어 터진다.
+- L784 [KO] 왕좌 파편체
+- L788 [KO] 왕좌에서 떨어져 나온 파편. 사라졌다 나타나 기억을 빨아들인다. (임시: 돌진으로 대체)
+- L791 [KO] 마지막 자아
+- L795 [KO] 마지막까지 남은 자아. 쓰러지며 잔영을 소환한다. (임시: 근접으로 대체)
+- L807 [KO] 구름원혼
+- L811 [KO] 선계 관문을 떠도는 구름 형상의 혼. 바람처럼 밀려든다.
+- L814 [KO] 서리병사
+- L818 [KO] 서리로 뒤덮인 문지기 병사. 묵직하게 내리친다.
+- L823 [KO] 불로화정
+- L827 [KO] 불로초에서 태어난 화정. 닿으면 짧게 기력을 흡수한다. (임시: 근접으로 대체)
+- L830 [KO] 정원지기
+- L834 [KO] 신선의 정원을 지키는 존재. 느리지만 꾸준히 다가온다.
+- L839 [KO] 부적귀
+- L843 [KO] 도술에 깃든 부적이 폭주한 혼. 순식간에 돌진한다.
+- L846 [KO] 도술수련자
+- L850 [KO] 도술을 익히다 잘못된 존재. 스치면 기력을 빨아들인다. (임시: 근접으로 대체)
+- L855 [KO] 고행자혼
+- L859 [KO] 깨달음을 좇다 스러진 고행자의 혼. (임시: 근접으로 대체)
+- L862 [KO] 진리파편
+- L866 [KO] 진리에서 떨어져 나온 파편. 부풀었다 터진다.
+- L871 [KO] 선계수문장
+- L875 [KO] 선계 심층을 지키는 수문장. 묵직하게 버티고 선다.
+- L878 [KO] 심층선병
+- L882 [KO] 선계 심층에 잠든 선병. 예고 없이 돌진한다.
+- L887 [KO] 잠식된 신선
+- L891 [KO] 외신의 기운에 잠식된 신선. 닿으면 독기가 스민다.
+- L894 [KO] 오염된 빛
+- L898 [KO] 오염되어 뒤틀린 신성한 빛. 번쩍이며 달려든다.
+- L903 [KO] 뒤틀린 부적
+- L907 [KO] 뒤틀려버린 부적의 혼. 통제 불능으로 돌진한다.
+- L910 [KO] 저주도사
+- L914 [KO] 저주에 물든 도사. 무겁게 내리친다.
+- L919 [KO] 오염된 진리
+- L923 [KO] 오염되어 뒤틀린 진리의 파편. 부풀어 터진다.
+- L926 [KO] 타락한 고행자
+- L930 [KO] 타락해버린 고행자의 잔영. (임시: 근접으로 대체)
+- L935 [KO] 타락한 신선
+- L939 [KO] 타락해버린 신선. 스치면 강하게 기력을 빨아들인다. (임시: 근접으로 대체)
+- L942 [KO] 잠식된 눈
+- L946 [KO] 선계대왕의 오염된 눈에서 떨어져 나온 파편. 번뜩이며 달려든다.
+- L951 [KO] 타락한 천인
+- L955 [KO] 타락한 천존을 따르던 천인. 묵직하게 내리친다.
+- L958 [KO] 마지막 눈물
+- L962 [KO] 천존의 마지막 눈물이 맺힌 혼. 스러지며 주변을 지운다. (임시: 자폭으로 대체)
+- L974 [KO] 법칙 파편
+- L978 [KO] 원계에 흩어진 법칙의 파편. 스치기만 해도 존재가 뒤틀린다.
+- L981 [KO] 원초의 메아리
+- L985 [KO] 태초의 소리가 남긴 메아리. 잔상처럼 빠르게 달려든다.
+- L990 [KO] 전자기 잔재
+- L994 [KO] 전자기력의 흐름에서 떨어져 나온 잔재. 지지직 스파크를 튄다.
+- L997 [KO] 핵력 결정체
+- L1001 [KO] 핵력이 응축된 결정체. 단단하게 버티며 짓누른다.
+- L1006 [KO] 인과의 그림자
+- L1010 [KO] 원인 없이 나타난 결과의 그림자. 예고 없이 들이닥친다.
+- L1013 [KO] 파괴의 사도
+- L1017 [KO] 파괴신을 섬기는 사도. 닿는 모든 법칙을 무너뜨린다.
+- L1022 [KO] 질투의 파편
+- L1026 [KO] 뒤틀린 관계에서 태어난 질투의 파편. 날카로운 시선을 쏘아 보낸다.
+- L1029 [KO] 경외의 잔영
+- L1033 [KO] 경외의 감정이 남긴 잔영. 무리 지어 몰려든다.
+- L1038 [KO] 원계의 파수병
+- L1042 [KO] 원계 심층을 지키는 파수병. 법칙 그 자체로 무장했다.
+- L1045 [KO] 법칙 수호수
+- L1049 [KO] 법칙을 지키도록 빚어진 짐승. 원초적인 힘으로 밀어붙인다.
+- L1054 [KO] 오염된 법칙체
+- L1058 [KO] 외신의 기운에 잠식된 법칙의 화신. 오염된 채로 폭주한다.
+- L1061 [KO] 잠식의 촉수
+- L1065 [KO] 원계를 잠식해가는 촉수 덩어리. 다가가면 터진다.
+- L1070 [KO] 뒤집힌 원인
+- L1074 [KO] 결과가 먼저 온 원인. 시간의 순서를 거슬러 공격한다.
+- L1077 [KO] 결과 없는 그림자
+- L1081 [KO] 원인만 있고 결과가 사라진 그림자. 붙잡을 수 없이 빠르다.
+- L1086 [KO] 붕괴하는 파편
+- L1090 [KO] 무너져 내리는 법칙의 파편. 붕괴의 여파를 흩뿌린다.
+- L1093 [KO] 창조의 잔해
+- L1097 [KO] 멈춰버린 창조가 남긴 잔해. 최후의 발악처럼 터져나간다.
+- L1102 [KO] 소멸하는 눈
+- L1106 [KO] 스러져가는 원계대왕의 눈. 사그라지기 직전 마지막 빛을 쏜다.
+- L1109 [KO] 근원의 파편
+- L1113 [KO] 근원이 소멸하며 흩어진 파편. 서로를 향해 몰려든다.
+- L1118 [KO] 중력의 파편
+- L1122 [KO] 왕좌 주변에 흩어진 중력의 파편. 짓누르듯 무겁게 짓쳐든다.
+- L1125 [KO] 왕좌의 그림자
+- L1129 [KO] 타락한 왕좌가 드리운 그림자. 마지막 관문을 지킨다.
+- L1141 [KO] 꿈의 파편
+- L1145 [KO] 인식의 균열 사이로 흘러나온 꿈의 파편. 스치면 잠에 빠뜨린다.
+- L1148 [KO] 균열귀
+- L1152 [KO] 인식의 틈으로 뛰쳐나온 혼. 순식간에 거리를 좁힌다.
+- L1157 [KO] 무형체
+- L1161 [KO] 형체를 갖지 못한 존재. 닿기 전까지 그 크기를 가늠할 수 없다.
+- L1164 [KO] 심연촉수
+- L1168 [KO] 심연에서 뻗어나온 촉수. 부풀었다 터지며 먹물을 흩뿌린다.
+- L1173 [KO] 천개의 눈 조각
+- L1177 [KO] 만목에서 떨어져 나온 눈 조각. 시선이 닿으면 정신이 흐트러진다.
+- L1180 [KO] 응시자
+- L1184 [KO] 그저 바라보기만 하는 존재. 그러나 그 시선은 죽음보다 무겁다.
+- L1189 [KO] 금기의 속삭임
+- L1193 [KO] 발음해서는 안 될 말을 속삭이는 혼. 들으면 존재가 뒤틀린다.
+- L1196 [KO] 이름없는자
+- L1200 [KO] 이름을 잃어 존재조차 희미한 것. 사라지며 주변을 함께 지운다.
+- L1205 [KO] 나각신도
+- L1209 [KO] 잠든 신 나각을 섬기는 광신도. 묵직하게 짓쳐든다.
+- L1212 [KO] 잠든자의 종
+- L1216 [KO] 잠든 신의 종. 무리 지어 다가온다.
+- L1221 [KO] 오염된 애기씨의 잔영
+- L1225 [KO] 오염을 감당하지 못한 또 다른 애기씨의 잔영. 낯설고도 익숙하다.
+- L1228 [KO] 강림의 그림자
+- L1232 [KO] 외신이 강림하기 직전 드리우는 그림자. 짙어질수록 무거워진다.
+- L1237 [KO] 광기의 파도
+- L1241 [KO] 밀려드는 광기의 파도. 닿으면 이성이 쓸려나간다.
+- L1244 [KO] 조류귀
+- L1248 [KO] 조류를 타고 밀려온 혼. 파도보다 빠르게 덮친다.
+- L1253 [KO] 눈꺼풀의 균열
+- L1257 [KO] 잠든 신의 눈꺼풀에 생긴 균열. 벌어질 때마다 세상이 흔들린다.
+- L1260 [KO] 잠깨는자
+- L1264 [KO] 잠에서 반쯤 깨어난 존재. 움직임 하나하나가 재앙이다.
+- L1269 [KO] 침묵귀
+- L1273 [KO] 존재 자체가 침묵을 강요하는 혼. 이름을 알아도 부를 수 없다.
+- L1276 [KO] 말해선안될것
+- L1280 [KO] 언급하는 것조차 금기인 존재. 침묵 속에서만 안전하다.
+- L1285 [KO] 태초의 자식
+- L1289 [KO] 태모가 낳은 수많은 자식 중 하나. 왕좌를 지킨다.
+- L1292 [KO] 어머니의 파편
+- L1296 [KO] 태모에게서 떨어져 나온 파편. 흩어지며 근원의 힘을 흘린다.
+- L1301 [KO] 종말파편
+- L1301 [EN] End Shard
+- L1305 [KO] 반물질이 무너지며 떨어져 나온 조각.
+- L1308 [KO] 붕괴자
+- L1312 [KO] 닿는 모든 것을 함께 무너뜨린다.
+- L1315 [KO] 거울파편
+- L1315 [EN] Mirror Shard
+- L1319 [KO] 깨진 거울 조각이 스스로 움직인다.
+- L1322 [KO] 반사체
+- L1326 [KO] 공격을 되비추는 표면.
+- L1329 [KO] 역행귀
+- L1329 [EN] Reversal Wraith
+- L1333 [KO] 시간을 거슬러 걷는 혼.
+- L1336 [KO] 과거의 잔재
+- L1336 [EN] Remnant of the Past
+- L1340 [KO] 이미 지나간 것이 남긴 자국.
+- L1343 [KO] 쌍소멸체
+- L1347 [KO] 물질과 만나면 함께 사라진다.
+- L1350 [KO] 반물질구
+- L1350 [EN] Antimatter Orb
+- L1354 [KO] 불안정하게 진동하는 구체.
+- L1357 [KO] 황계병졸
+- L1357 [EN] Ruined Soldier
+- L1361 [KO] 황계대왕의 이름으로 움직이는 병졸.
+- L1364 [KO] 반물질석 수집가
+- L1364 [EN] Antimatter Collector
+- L1368 [KO] 반물질석을 그러모으는 것.
+- L1371 [KO] 거울자아 분신
+- L1371 [EN] Mirror Self Fragment
+- L1375 [KO] 애기씨의 얼굴을 한 무언가.
+- L1378 [KO] 각성의 전조
+- L1378 [EN] Omen of Awakening
+- L1382 [KO] 무언가가 깨어나기 직전의 떨림.
+- L1385 [KO] 합치의 사도
+- L1385 [EN] Apostle of Convergence
+- L1389 [KO] 둘이 하나가 되기를 갈망한다.
+- L1392 [KO] 예언의 조각
+- L1392 [EN] Fragment of Prophecy
+- L1396 [KO] 적혀 있던 결말의 일부.
+- L1399 [KO] 태초의 잔향
+- L1399 [EN] Echo of the Origin
+- L1403 [KO] 가장 처음의 소리가 남긴 울림.
+- L1406 [KO] 귀환하는 것
+- L1406 [EN] The Returning
+- L1410 [KO] 왔던 길을 되짚어 돌아간다.
+- L1413 [KO] 자아의 파편
+- L1413 [EN] Shard of Self
+- L1417 [KO] 누군가의 자아에서 떨어져 나온 조각.
+- L1420 [KO] 순수한 그림자
+- L1420 [EN] Pure Shadow
+- L1424 [KO] 자아만 남아 그림자가 된 것.
+- L1427 [KO] 태초의 빛
+- L1427 [EN] Primordial Light
+- L1431 [KO] 해치려는 뜻이 없는 빛.
+- L1434 [KO] 어린 웃음
+- L1434 [EN] Little Laughter
+- L1438 [KO] 어디선가 아이가 웃는 소리.
+- L1445 [KO] 강령귀
+- L1449 [KO] 원귀가 강령술로 각성한 형태.
+- L1452 [KO] 구미호령
+- L1456 [KO] 가면을 쓴 여우 정령의 강화체.
+- L1459 [KO] 혼돈의 대안
+- L1463 [KO] 혼돈의 눈이 완전히 각성한 형태.
+- L1466 [KO] 심연 거충
+- L1470 [KO] 심연의 벌레가 완전히 성장한 형태.
+- L1473 [KO] 대망령
+- L1477 [KO] 수천의 망령이 하나로 합쳐진 존재.
+- L1485 [KO] 곤봉귀
+- L1489 [KO] 황천강가를 떠도는 곤봉 든 도깨비. 무자비하게 내리찍는다.
+- L1492 [KO] 여우불 환영
+- L1496 [KO] 유명계를 떠도는 여우 정령의 환영. 도깨비불을 흩뿌린다.
+- L1499 [KO] 명부 파수병
+- L1503 [KO] 명부의 관문을 지키는 석상 파수병. 굳건히 버틴다.
+- L1506 [KO] 도깨비불 삼혼
+- L1510 [KO] 세 혼불이 뭉쳐 하나가 된 존재. 번갈아 화염구를 날린다.
+- L1513 [KO] 저승 문지기
+- L1517 [KO] 저승 문턱을 지키는 오니. 산 자를 절대 들여보내지 않는다.
+- L1522 [KO] 파편 원혼
+- L1526 [KO] 혼돈에 산산조각난 원혼의 파편들이 뭉쳐 떠돈다.
+- L1529 [KO] 통곡의 사당
+- L1533 [KO] 세 얼굴로 통곡하는 사당의 석상. 제자리에서 저주를 흩뿌린다.
+- L1536 [KO] 저주받은 두루마리
+- L1540 [KO] 구름을 두른 유령이 저주받은 두루마리를 펼쳐 든다.
+- L1543 [KO] 성운 골렘
+- L1547 [KO] 별빛 조각이 뭉쳐 이루어진 골렘. 느리지만 압도적이다.
+- L1550 [KO] 역병 덩어리
+- L1554 [KO] 망랑계를 떠도는 역병 덩어리. 다가가면 터진다.
+- L1559 [KO] 다안충
+- L1563 [KO] 수많은 눈이 달린 촉수 괴물. 모든 방향을 동시에 노려본다.
+- L1566 [KO] 육편더미
+- L1570 [KO] 귀허계에 쌓인 살점 더미. 가까이 가면 부풀어 터진다.
+- L1573 [KO] 천안성
+- L1577 [KO] 수많은 눈을 가진 별의 형상. 시선이 닿는 곳마다 저주를 내린다.
+- L1580 [KO] 공허의 균열
+- L1584 [KO] 허공에 갈라진 균열. 그 너머에서 무언가 계속 새어나온다.
+- L1587 [KO] 내장 방황자
+- L1591 [KO] 귀허계를 헤매는 좀비. 끊임없이 무언가를 찾아 헤맨다.
+- L1596 [KO] 현무 수호령
+- L1600 [KO] 선계 관문을 지키는 북방의 수호령. 굳건한 등껍질로 모든 공격을 막아낸다.
+- L1603 [KO] 청룡
+- L1607 [KO] 동방을 다스리는 푸른 용. 구름을 가르며 쏜살같이 달려든다.
+- L1610 [KO] 백호
+- L1614 [KO] 서방을 다스리는 흰 호랑이. 날카로운 발톱으로 순식간에 베어낸다.
+- L1617 [KO] 주작
+- L1621 [KO] 남방을 다스리는 붉은 봉황. 불의 깃털을 흩뿌려 태운다.
+- L1629 [KO] 결정 파수병
+- L1633 [KO] 원계의 법칙이 결정화되어 갑주를 이룬 파수병.
+- L1636 [KO] 균열거미
+- L1640 [KO] 법칙의 틈새에서 기어나온 다리 많은 결정체.
+- L1643 [KO] 공허 결정체
+- L1647 [KO] 가슴에 뚫린 공허가 모든 빛을 집어삼킨다.
+- L1650 [KO] 붕괴하는 소용돌이
+- L1654 [KO] 법칙이 붕괴하며 생긴 소용돌이. 닿으면 찢겨나간다.
+- L1657 [KO] 법칙의 파편체
+- L1661 [KO] 원계의 법칙이 응집되어 하나의 존재가 된 파편체. 원계 최강의 엘리트.
+- L1664 [KO] 성운을 삼킨 뱀
+- L1668 [KO] 별의 죽음을 몸에 두르고 소리 없이 미끄러진다.
+- L1671 [KO] 심연의 촉수괴
+- L1675 [KO] 셀 수 없는 촉수로 인식 밖에서 붙잡아온다.
+- L1678 [KO] 천안의 심연체
+- L1682 [KO] 수천 개의 눈이 동시에 플레이어를 겨눈다.
+- L1685 [KO] 다안의 유영자
+- L1689 [KO] 허공을 헤엄치며 존재 자체로 인식을 좀먹는다.
+- L1692 [KO] 미명의 감시안
+- L1696 [KO] 어계의 신격들을 대신해 지켜보는 이름 없는 눈.
+- L1702 [KO] 황계의 사자
+- L1706 [KO] 황계의 뜻을 전하러 온 어두운 사자. 시즌8 최강의 엘리트.
+- L1709 [KO] 잔영의 해골병
+- L1713 [KO] 존재가 다한 뒤에도 남은 잔영이 뼈째로 움직인다.
+- L1716 [KO] 타천의 파수
+- L1720 [KO] 날개 꺾인 파수꾼이 마지막 관문을 지킨다.
+- L1723 [KO] 은하를 삼킨 자
+- L1727 [KO] 은하 하나를 통째로 몸속에 품고 있다.
+- L1730 [KO] 황계 최후의 파편
+- L1734 [KO] 황계로 향하는 마지막 관문에 선 결정체. 옛 위세는 이미 다했다.
+- L1743 [KO] 묘지기
+- L1743 [EN] The Gravekeeer
+- L1744 [KO] 무덤을 지키는 자
+- L1744 [EN] Guardian of the Ancient Graves
+- L1751 [KO] 타락한 무당
+- L1751 [EN] The Fallen Mudang
+- L1752 [KO] 부적 탄막과 저주 장판의 화신
+- L1752 [EN] Master of cursed talismans and hex fields
+- L1762 [KO] 우물귀신
+- L1762 [EN] Well Wraith
+- L1763 [KO] 우물 깊숙이 숨어 있는 원혼
+- L1763 [EN] A vengeful spirit lurking in the depths of the well
+- L1770 [KO] 창귀
+- L1771 [KO] 망령을 소환하는 안개의 지배자
+- L1771 [EN] Lord of the mist who commands the wandering dead
+- L1781 [KO] 타락한 장승
+- L1781 [EN] Corrupted Jangseung
+- L1782 [KO] 서낭당을 오염시킨 수호신
+- L1782 [EN] A sacred totem guardian twisted by corruption
+- L1789 [KO] 두억시니
+- L1790 [KO] 광폭화와 충격파의 거대 요괴
+- L1790 [EN] A colossal demon of rage and shockwaves
+- L1800 [KO] 흑호
+- L1800 [EN] Black Tiger
+- L1801 [KO] 숲 속을 지배하는 검은 호랑이
+- L1801 [EN] A shadow tiger that reigns over the forest
+- L1808 [KO] 장산범
+- L1809 [KO] 소리로 유인하는 산중의 지배자
+- L1809 [EN] The mountain predator that lures prey with its cry
+- L1819 [KO] 왜곡자
+- L1819 [EN] The Distorter
+- L1820 [KO] 공간을 뒤틀어 플레이어를 혼란
+- L1820 [EN] A being that warps space to disorient its prey
+- L1827 [KO] 구미호
+- L1828 [KO] 방향 레이저와 여우불의 네임드
+- L1828 [EN] Nine-tailed fox of foxfire and nine-way laser beams
+- L1838 [KO] 염라대왕의 문지기
+- L1838 [EN] Yeomra's Gatekeeper
+- L1839 [KO] 저승 입구를 지키는 철갑 거인
+- L1839 [EN] An iron-clad giant guarding the gates of the underworld
+- L1846 [KO] 저승왕의 사자
+- L1846 [EN] Envoy of the Underworld King
+- L1847 [KO] 사슬과 낫으로 혼을 가두는 집행자
+- L1847 [EN] An executioner that binds souls with chains and a scythe
+- L1857 [KO] 외신 대사제
+- L1857 [EN] Outer God High Priest
+- L1858 [KO] 공허 소환과 광역 저주의 지도자
+- L1858 [EN] Leader of void summons and wide-range curses
+- L1865 [KO] 공허의 선구자
+- L1865 [EN] Pioneer of the Void
+- L1866 [KO] 차원 균열을 열어 촉수 군단을 소환
+- L1866 [EN] Tears open dimensional rifts to unleash a tentacle horde
+- L1876 [KO] 기억 파괴자
+- L1876 [EN] Memory Destroyer
+- L1877 [KO] 플레이어의 스킬을 일시 봉인하는 자
+- L1877 [EN] A being that temporarily seals the player
+- L1877 [EN] s skills
+- L1884 [KO] 잊혀진 왕
+- L1884 [EN] The Forgotten King
+- L1885 [KO] 망각의 안개로 화면을 잠식하는 군주
+- L1885 [EN] A monarch who devours the battlefield in mist of oblivion
+- L1895 [KO] 반신령 군주
+- L1895 [EN] Half-Divine Lord
+- L1896 [KO] 신성과 어둠이 혼재한 타락한 수호신
+- L1896 [EN] A fallen guardian where divinity and darkness collide
+- L1903 [KO] 잠든 산신
+- L1903 [EN] The Sleeping Mountain God
+- L1904 [KO] 깨어나는 순간 대지 전체를 진동시킴
+- L1904 [EN] Its awakening shakes the very ground of the mortal realm
+- L1914 [KO] 혼돈의 선봉장
+- L1914 [EN] Vanguard of Chaos
+- L1915 [KO] 혼돈의 의지를 집행하는 최강의 전위
+- L1915 [EN] The mightiest enforcer of chaos
+- L1922 [KO] 기어오는 혼돈
+- L1922 [EN] The Creeping Chaos
+- L1923 [KO] 모든 것의 끝. 존재 자체가 세계를 삼킨다
+- L1923 [EN] The end of all things
+- L1923 [EN] its very existence consumes the world
+- L1934 [KO] 뱃사공의 심판
+- L1934 [EN] Ferryman's Judgment
+- L1935 [KO] 황천강 망자들을 심판하는 사공
+- L1935 [EN] The ferryman who judges souls crossing the Sanzu River
+- L1942 [KO] 황천 뱃사공
+- L1942 [EN] Ferryman of the Sanzu River
+- L1943 [KO] 황천강을 지배하는 망자의 인도자
+- L1943 [EN] The ancient ferryman who rules the river of the dead
+- L1953 [KO] 포졸대장의 검문
+- L1953 [EN] Captain's Checkpoint
+- L1954 [KO] 저승 관문을 지키는 검문관
+- L1954 [EN] Underworld checkpoint enforcer blocking all passage
+- L1961 [KO] 저승 포졸대장
+- L1961 [EN] Underworld Guard Captain
+- L1962 [KO] 사슬 속박과 처형의 집행자
+- L1962 [EN] Commander of chains who executes judgment without mercy
+- L1972 [KO] 기억귀의 먹이터
+- L1972 [EN] Memory Devourer's Feeding Ground
+- L1973 [KO] 기억을 뜯어먹는 먹이터의 주인
+- L1973 [EN] Master of the ground where memories are consumed
+- L1980 [KO] 기억귀
+- L1980 [EN] The Memory Devourer
+- L1981 [KO] 망각의 안개로 기억을 지워버리는 미궁의 지배자
+- L1981 [EN] Ruler of the labyrinth who erases memories with mist of oblivion
+- L1991 [KO] 심판관의 첫 번째 시험
+- L1991 [EN] Judge's First Trial
+- L1992 [KO] 업보를 저울질하는 첫 심판
+- L1992 [EN] The opening judgment that weighs karmic debt
+- L1999 [KO] 환생 심판관
+- L1999 [EN] Reincarnation Judge
+- L2000 [KO] 영혼의 무게를 재는 환생 전당의 지배자
+- L2000 [EN] Sovereign of the Hall of Reincarnation who weighs every soul
+- L2010 [KO] 오관대왕의 시험
+- L2010 [EN] Ogwan's Trial
+- L2011 [KO] 명부의 다섯 관문을 지키는 시험관
+- L2011 [EN] Overseer of the five gates of the underworld records
+- L2018 [KO] 오관대왕
+- L2018 [EN] Ogwan, King of Five Gates
+- L2019 [KO] 명부의 심장을 지배하는 시왕 중의 왕
+- L2019 [EN] Greatest among the Ten Kings who rules the heart of the underworld
+- L2029 [KO] 강림의 첫 번째 강림
+- L2029 [EN] Gangrim's First Descent
+- L2030 [KO] 오염된 기운을 앞세워 강림하는 차사
+- L2030 [EN] A soul reaper descending with the taint of the Outer God
+- L2037 [KO] 오염된 강림도령
+- L2037 [EN] Corrupted Gangrim
+- L2038 [KO] 외신에 잠식되어 타락한 저승사자
+- L2038 [EN] The legendary soul reaper devoured and corrupted by the Outer God
+- L2048 [KO] 판관의 첫 번째 심판
+- L2048 [EN] Judge's First Corrupt Ruling
+- L2049 [KO] 뒤틀린 저승법으로 죄를 날조하는 판관
+- L2049 [EN] A judge who fabricates guilt using the twisted laws of the dead
+- L2056 [KO] 타락한 판관
+- L2056 [EN] The Corrupt Judge
+- L2057 [KO] 저승법을 유린하는 혼돈의 집행자
+- L2057 [EN] An executioner of chaos who tramples the laws of the underworld
+- L2067 [KO] 대별왕의 마지막 저항
+- L2067 [EN] Daebyelwang's Last Resistance
+- L2068 [KO] 오염에 저항하는 창세신의 마지막 의지
+- L2068 [EN] The final will of a creation god resisting total corruption
+- L2075 [KO] 오염된 대별왕
+- L2075 [EN] Corrupted Daebyelwang
+- L2076 [KO] 이승과 저승의 법칙을 붕괴시키는 오염된 창세신
+- L2076 [EN] A corrupted creation god who collapses the boundary between life and death
+- L2086 [KO] 태산대왕의 첫 번째 눈
+- L2086 [EN] Taesan's First Eye
+- L2087 [KO] 수명을 갉아먹는 태산의 감시자
+- L2087 [EN] s watchful eye that gnaws away at lifespan
+- L2094 [KO] 잠식된 태산대왕
+- L2094 [EN] Devoured Taesan
+- L2095 [KO] 수명 자체를 무기로 사용하는 변이한 시왕
+- L2095 [EN] A mutated underworld king who weaponizes lifespan itself
+- L2105 [KO] 바리공주의 첫 번째 눈물
+- L2105 [EN] Bari's First Tear
+- L2106 [KO] 구원자가 흘리는 오염된 슬픔
+- L2106 [EN] The corrupted grief of a savior who lost her way
+- L2113 [KO] 타락한 바리공주
+- L2113 [EN] Fallen Bari-gongju
+- L2114 [KO] 생명수가 독으로 변한 저승의 구원자
+- L2114 [EN] The savior of the underworld whose life water has turned to poison
+- L2128 [KO] 도깨비 대장
+- L2128 [EN] Dokkaebi Captain
+- L2129 [KO] 혼돈의 입구를 지키는 첫 시험
+- L2129 [EN] The first trial guarding the Gate of Chaos
+- L2136 [KO] 도깨비 왕
+- L2136 [EN] Dokkaebi King
+- L2137 [KO] 망랑계 혼돈을 다스리는 첫 번째 왕
+- L2137 [EN] The first king to rule the chaos of the Chaos Realm
+- L2147 [KO] 구미호 술사
+- L2147 [EN] Fox Sorcerer
+- L2148 [KO] 요술의 거리에서 홀림을 걸다
+- L2148 [EN] Casts enchantment on the Street of Illusions
+- L2155 [KO] 구미호 여왕
+- L2155 [EN] Fox Queen
+- L2156 [KO] 천 개의 가면 뒤에 숨은 여왕
+- L2156 [EN] A queen hidden behind a thousand masks
+- L2166 [KO] 글리치 사냥꾼
+- L2166 [EN] Glitch Hunter
+- L2167 [KO] 픽셀이 무너지는 숲의 포식자
+- L2167 [EN] A predator in the forest where pixels collapse
+- L2174 [KO] 글리치 정령
+- L2174 [EN] Glitch Spirit
+- L2175 [KO] 오류의 심연에서 태어난 핵
+- L2175 [EN] A core born from the abyss of errors
+- L2185 [KO] 혼돈 경비대장
+- L2185 [EN] Chaos Guard Captain
+- L2186 [KO] 뒤틀린 시장의 문지기
+- L2186 [EN] Gatekeeper of the Twisted Market
+- L2193 [KO] 혼돈 상인
+- L2193 [EN] Chaos Merchant
+- L2194 [KO] 거래의 이름으로 모든 것을 삼키다
+- L2194 [EN] Devours everything in the name of the deal
+- L2204 [KO] 망랑 전위대장
+- L2204 [EN] Chaos Vanguard
+- L2205 [KO] 망랑계 심층으로 향하는 돌격대
+- L2205 [EN] The vanguard charging into the Deep Chaos Realm
+- L2212 [KO] 망랑 대군주
+- L2212 [EN] Chaos Grand Lord
+- L2213 [KO] 혼돈의 근원을 다스리는 대군주
+- L2213 [EN] The grand lord ruling the origin of chaos
+- L2223 [KO] 타락한 도깨비 무사
+- L2223 [EN] Corrupted Dokkaebi Warrior
+- L2224 [KO] 외신의 기운에 잠식된 무사
+- L2224 [EN] A warrior consumed by the Outer God
+- L2224 [EN] s power
+- L2231 [KO] 오염된 도깨비신
+- L2231 [EN] Corrupted Dokkaebi God
+- L2232 [KO] 도깨비신의 마지막 변이
+- L2232 [EN] The final mutation of the Dokkaebi God
+- L2242 [KO] 홀린 술사
+- L2242 [EN] Enchanted Sorcerer
+- L2243 [KO] 요술에 홀린 세계의 마법진
+- L2243 [EN] The magic circle of a world lost in illusion
+- L2250 [KO] 타락한 구미호 선녀
+- L2250 [EN] Fallen Fox Fairy
+- L2251 [KO] 선녀의 마지막 환상이 흩어지다
+- L2251 [EN] The fairy
+- L2251 [EN] s last illusion scatters
+- L2261 [KO] 혼돈의 파편
+- L2261 [EN] Chaos Fragment
+- L2262 [KO] 혼돈신의 균열에서 떨어져나온 조각
+- L2262 [EN] A shard fallen from a crack in the Chaos God
+- L2269 [KO] 오염된 혼돈신
+- L2269 [EN] Corrupted Chaos God
+- L2270 [KO] 질서와 부딪혀 삼켜진 혼돈
+- L2270 [EN] Chaos devoured after clashing with order
+- L2280 [KO] 글리치 폭풍의 눈
+- L2280 [EN] Eye of the Glitch Storm
+- L2281 [KO] 폭풍의 중심에서 깜빡이는 오류
+- L2281 [EN] An error flickering at the heart of the storm
+- L2288 [KO] 잠식된 글리치 왕
+- L2288 [EN] Corrupted Glitch King
+- L2289 [KO] 현실을 삼킨 마지막 오류
+- L2289 [EN] The final error that devoured reality
+- L2299 [KO] 망랑대왕의 분신
+- L2299 [EN] Chaos King's Doppelganger
+- L2300 [KO] 왕좌를 지키는 그림자 분신
+- L2300 [EN] A shadow doppelganger guarding the throne
+- L2307 [KO] 타락한 망랑대왕
+- L2307 [EN] Fallen Chaos King
+- L2308 [KO] 외신의 그릇이 된 혼돈의 지배자
+- L2308 [EN] The ruler of chaos, now a vessel of the Outer God
+- L2322 [KO] 소멸의 파수꾼
+- L2322 [EN] Void Sentinel
+- L2323 [KO] 소멸의 해안을 지키는 첫 시험
+- L2323 [EN] The first trial guarding the Shore of Annihilation
+- L2330 [KO] 소멸의 수호자
+- L2330 [EN] Guardian of Annihilation
+- L2331 [KO] 귀허계 첫 관문을 지키는 소멸의 화신
+- L2331 [EN] The avatar of annihilation guarding the first gate of the Void Realm
+- L2341 [KO] 망각의 사자
+- L2341 [EN] Oblivion Reaper
+- L2342 [KO] 잊혀진 자들의 바다를 순찰하는 사자
+- L2342 [EN] A reaper patrolling the Sea of Forgotten Existences
+- L2349 [KO] 망각의 군주
+- L2349 [EN] Lord of Oblivion
+- L2350 [KO] 존재의 이름마저 지우는 망각의 지배자
+- L2350 [EN] The ruler of oblivion who erases even the names of the living
+- L2360 [KO] 환생의 수호자
+- L2360 [EN] Rebirth Guardian
+- L2361 [KO] 거듭남의 제단을 지키는 자
+- L2361 [EN] The guardian of the Altar of Rebirth
+- L2368 [KO] 환생의 신
+- L2368 [EN] God of Rebirth
+- L2369 [KO] 소멸과 탄생의 경계를 다스리는 신
+- L2369 [EN] The god who governs the boundary of death and birth
+- L2379 [KO] 허무의 파편
+- L2379 [EN] Void Fragment
+- L2380 [KO] 허무의 심연에서 떨어져 나온 파편
+- L2380 [EN] A fragment fallen from the Abyss of Nothingness
+- L2387 [KO] 허무의 왕
+- L2387 [EN] King of Nothingness
+- L2388 [KO] 모든 것이 사라지는 곳을 다스리는 왕
+- L2388 [EN] The king who rules where everything disappears
+- L2398 [KO] 소멸대왕의 전위대
+- L2398 [EN] Annihilation King
+- L2398 [EN] s Vanguard
+- L2399 [KO] 귀허계 심층을 지키는 전위대
+- L2399 [EN] The vanguard guarding the Deep Void Realm
+- L2406 [KO] 소멸대왕
+- L2406 [EN] Annihilation King
+- L2407 [KO] 귀허계의 심장을 다스리는 소멸의 대왕
+- L2407 [EN] The great king of annihilation who rules the heart of the Void Realm
+- L2417 [KO] 타락한 소멸의 사자
+- L2417 [EN] Corrupted Annihilation Reaper
+- L2418 [KO] 외신의 기운에 물든 소멸의 사자
+- L2418 [EN] A reaper of annihilation tainted by the Outer God
+- L2425 [KO] 오염된 소멸신
+- L2425 [EN] Corrupted Annihilation God
+- L2426 [KO] 소멸신의 마지막 변이, 잠식된 귀허계의 정점
+- L2426 [EN] The final mutation of the Annihilation God, apex of the Corrupted Void Realm
+- L2436 [KO] 오염된 환생의 수호자
+- L2436 [EN] Corrupted Rebirth Guardian
+- L2437 [KO] 거듭남의 저주에 잠식된 수호자
+- L2437 [EN] A guardian consumed by the curse of rebirth
+- L2444 [KO] 타락한 환생신
+- L2444 [EN] Corrupted Rebirth God
+- L2445 [KO] 뒤틀린 거듭남의 고리를 다스리는 타락한 신
+- L2445 [EN] The fallen god ruling the twisted cycle of rebirth
+- L2455 [KO] 허무의 오염된 파편
+- L2455 [EN] Corrupted Void Fragment
+- L2456 [KO] 혼돈에 삼켜진 허무의 파편
+- L2456 [EN] A void fragment swallowed by chaos
+- L2463 [KO] 오염된 허무신
+- L2463 [EN] Corrupted Void God
+- L2464 [KO] 혼돈의 허무를 다스리는 오염된 신
+- L2464 [EN] The corrupted god who rules the chaotic void
+- L2474 [KO] 귀허대왕의 오염된 눈
+- L2474 [EN] Void King
+- L2474 [EN] s Corrupted Eye
+- L2475 [KO] 소멸의 경계를 감시하는 오염된 눈
+- L2475 [EN] A corrupted eye watching over the Edge of Annihilation
+- L2482 [KO] 잠식된 귀허대왕
+- L2482 [EN] Devoured Void King
+- L2483 [KO] 외신의 눈이 박힌 왕좌의 지배자
+- L2483 [EN] The ruler of the throne embedded with the Outer God
+- L2493 [KO] 소멸의 여신의 첫 번째 눈물
+- L2493 [EN] Annihilation Goddess
+- L2493 [EN] s First Tear
+- L2494 [KO] 귀허계의 왕좌 앞에 흐르는 첫 눈물
+- L2494 [EN] The first tear shed before the Throne of the Void Realm
+- L2501 [KO] 타락한 소멸의 여신
+- L2501 [EN] Fallen Annihilation Goddess
+- L2502 [KO] 외신의 그릇이 된 귀허계 최후의 지배자
+- L2502 [EN] The final ruler of the Void Realm, now a vessel of the Outer God
+- L2517 [KO] 선계 문지기
+- L2517 [EN] Celestial Gatekeeper
+- L2518 [KO] 선계의 관문을 지키는 첫 시험
+- L2518 [EN] The first trial guarding the Gate of the Celestial Realm
+- L2525 [KO] 선계의 수호신
+- L2525 [EN] Guardian God of the Celestial Realm
+- L2526 [KO] 선계 첫 관문을 지키는 빛의 화신
+- L2526 [EN] The avatar of light guarding the first gate of the Celestial Realm
+- L2536 [KO] 신선 원로
+- L2536 [EN] Immortal Elder
+- L2537 [KO] 신선들의 정원을 지키는 노현자
+- L2537 [EN] The wise elder guarding the Garden of Immortals
+- L2544 [KO] 신선 대장로
+- L2544 [EN] Grand Elder of the Immortals
+- L2545 [KO] 불로초의 정원을 다스리는 대장로
+- L2545 [EN] The grand elder who rules the Garden of Eternal Herbs
+- L2555 [KO] 도술 대사제
+- L2555 [EN] High Priest of Celestial Arts
+- L2556 [KO] 도술의 전당을 지키는 사제
+- L2556 [EN] The priest guarding the Hall of Celestial Arts
+- L2563 [KO] 도술의 신
+- L2563 [EN] God of Celestial Arts
+- L2564 [KO] 선술의 근원을 다스리는 신
+- L2564 [EN] The god who governs the source of celestial skill
+- L2574 [KO] 깨달음의 수호자
+- L2574 [EN] Guardian of Enlightenment
+- L2575 [KO] 진리의 문 앞을 지키는 수호자
+- L2575 [EN] The guardian standing before the Gate of Truth
+- L2582 [KO] 깨달음의 신
+- L2582 [EN] God of Enlightenment
+- L2583 [KO] 깨달음의 정상에 좌정한 신
+- L2583 [EN] The god seated at the summit of enlightenment
+- L2593 [KO] 선계대왕의 전위대
+- L2593 [EN] Celestial King's Vanguard
+- L2594 [KO] 선계 심층을 지키는 전위대
+- L2594 [EN] The vanguard guarding the Celestial Depths
+- L2601 [KO] 선계대왕
+- L2601 [EN] Celestial King
+- L2602 [KO] 선계 심층 왕좌에 앉은 대왕
+- L2602 [EN] The great king seated on the throne of the Celestial Depths
+- L2612 [KO] 타락한 선계 수호자
+- L2612 [EN] Corrupted Celestial Guardian
+- L2613 [KO] 외신의 기운에 잠식된 수호자
+- L2613 [EN] The guardian consumed by the Outer God
+- L2613 [EN] s power
+- L2620 [KO] 오염된 선신
+- L2620 [EN] Corrupted Celestial God
+- L2621 [KO] 빛을 잃고 잠식된 선계의 신
+- L2621 [EN] The celestial god consumed and stripped of its light
+- L2631 [KO] 오염된 도술 대사제
+- L2631 [EN] Corrupted High Priest
+- L2632 [KO] 뒤틀린 도술에 잠식된 사제
+- L2632 [EN] The priest consumed by twisted celestial arts
+- L2639 [KO] 타락한 도술신
+- L2639 [EN] Corrupted Art God
+- L2640 [KO] 선술이 저주로 뒤바뀐 신
+- L2640 [EN] The god whose celestial skill has turned to curse
+- L2650 [KO] 깨달음의 오염된 파편
+- L2650 [EN] Corrupted Enlightenment Fragment
+- L2651 [KO] 진리가 뒤틀려 남은 파편
+- L2651 [EN] A fragment left behind as truth grew twisted
+- L2658 [KO] 오염된 깨달음의 신
+- L2658 [EN] Corrupted God of Enlightenment
+- L2659 [KO] 진리를 잃고 오염된 깨달음의 신
+- L2659 [EN] The god of enlightenment, corrupted and stripped of truth
+- L2669 [KO] 선계대왕의 오염된 눈
+- L2669 [EN] Celestial King's Corrupted Eye
+- L2670 [KO] 선계대왕의 몸에서 떨어져나온 눈
+- L2670 [EN] A corrupted eye torn from the Celestial King's own body
+- L2677 [KO] 잠식된 선계대왕
+- L2677 [EN] Devoured Celestial King
+- L2678 [KO] 외신의 그릇이 된 선계의 대왕
+- L2678 [EN] The Celestial King, now a vessel of the Outer God
+- L2688 [KO] 천존의 첫 번째 눈물
+- L2688 [EN] Heavenly Lord's First Tear
+- L2689 [KO] 타락하기 전 마지막으로 흘린 눈물
+- L2689 [EN] The last tear shed before the fall
+- L2696 [KO] 타락한 천존
+- L2696 [EN] Fallen Heavenly Lord
+- L2697 [KO] 외신의 그릇이 된 선계 최후의 지배자
+- L2697 [EN] The final ruler of the Celestial Realm, now a vessel of the Outer God
+- L2714 [KO] 법칙의 파수꾼
+- L2714 [EN] Sentinel of the Laws
+- L2715 [KO] 원계 첫 관문을 지키는 감시자
+- L2715 [EN] The watcher guarding the first gate of the Primal Realm
+- L2722 [KO] 법칙의 수호자
+- L2722 [EN] Guardian of Laws
+- L2723 [KO] 원계의 근원 법칙을 지키는 최초의 화신
+- L2723 [EN] The first avatar guarding the Primal Realm
+- L2723 [EN] s foundational laws
+- L2733 [KO] 핵력의 수호자
+- L2733 [EN] Guardian of Nuclear Force
+- L2734 [KO] 핵력의 결속을 지키는 파수병
+- L2734 [EN] The sentinel guarding the bond of nuclear force
+- L2741 [KO] 전자기력의 신
+- L2741 [EN] God of Electromagnetic Force
+- L2742 [KO] 물리 법칙의 전당을 다스리는 신격
+- L2742 [EN] The deity ruling the Hall of Physical Laws
+- L2752 [KO] 파괴신의 사자
+- L2752 [EN] Destruction God's Reaper
+- L2753 [KO] 파괴신을 대리하는 인과의 사자
+- L2753 [EN] The reaper who acts on the Destruction God
+- L2753 [EN] s behalf
+- L2760 [KO] 인과신
+- L2760 [EN] God of Causality
+- L2761 [KO] 원인과 결과를 지배하는 신적 법칙의 정점
+- L2761 [EN] The god who governs cause and effect, apex of divine law
+- L2771 [KO] 경외의 수호자
+- L2771 [EN] Guardian of Reverence
+- L2772 [KO] 관계 법칙의 미궁을 지키는 파수병
+- L2772 [EN] The sentinel guarding the Labyrinth of Relational Laws
+- L2779 [KO] 관계의 신
+- L2779 [EN] God of Relations
+- L2780 [KO] 사랑과 질투, 경외를 다스리는 신격
+- L2780 [EN] The deity ruling love, jealousy, and reverence
+- L2790 [KO] 원계대왕의 전위대
+- L2790 [EN] Primal King's Vanguard
+- L2791 [KO] 원계 심층을 지키는 왕의 선봉
+- L2791 [EN] The vanguard guarding the depths of the Primal Realm
+- L2798 [KO] 원계대왕
+- L2798 [EN] Primal King
+- L2799 [KO] 원계 그 자체를 다스리는 지배자
+- L2799 [EN] The sovereign who rules the Primal Realm itself
+- L2809 [KO] 타락한 법칙의 수호자
+- L2809 [EN] Corrupted Law Guardian
+- L2810 [KO] 외신에게 잠식당한 법칙의 수호자
+- L2810 [EN] The law guardian devoured by the Outer God
+- L2817 [KO] 오염된 법칙신
+- L2817 [EN] Corrupted Law God
+- L2818 [KO] 외신의 기운에 잠식된 원계의 법칙신
+- L2818 [EN] The Primal Realm
+- L2818 [EN] s law god, devoured by the Outer God
+- L2818 [EN] s influence
+- L2828 [KO] 오염된 인과의 사자
+- L2828 [EN] Corrupted Causality Reaper
+- L2829 [KO] 뒤틀린 인과를 대리하는 오염된 사자
+- L2829 [EN] The reaper of twisted causality, now corrupted
+- L2836 [KO] 타락한 인과신
+- L2836 [EN] Corrupted God of Causality
+- L2837 [KO] 원인과 결과가 뒤집힌 인과신의 타락체
+- L2837 [EN] The fallen causality god whose cause and effect are inverted
+- L2847 [KO] 창조신의 오염된 파편
+- L2847 [EN] Corrupted Creation Fragment
+- L2848 [KO] 멈춰버린 창조가 남긴 파편
+- L2848 [EN] A fragment left behind by creation come to a halt
+- L2855 [KO] 오염된 창조신
+- L2855 [EN] Corrupted God of Creation
+- L2856 [KO] 파괴가 창조를 집어삼킨 결과
+- L2856 [EN] The result of destruction consuming creation entirely
+- L2866 [KO] 원계대왕의 오염된 눈
+- L2866 [EN] Primal King's Corrupted Eye
+- L2867 [KO] 외신의 기운이 박힌 왕의 눈
+- L2867 [EN] The king
+- L2867 [EN] s eye, embedded with the Outer God
+- L2867 [EN] s influence
+- L2874 [KO] 잠식된 원계대왕
+- L2874 [EN] Devoured Primal King
+- L2875 [KO] 외신에게 완전히 잠식된 원계의 마지막 지배자
+- L2875 [EN] The Primal Realm
+- L2875 [EN] s last ruler, fully devoured by the Outer God
+- L2885 [KO] 중력신의 첫 번째 눈물
+- L2885 [EN] Gravity God's First Tear
+- L2886 [KO] 타락하기 전 마지막으로 흘린 눈물
+- L2886 [EN] The last tear shed before the fall
+- L2893 [KO] 타락한 중력신
+- L2893 [EN] Fallen Gravity God
+- L2894 [KO] 외신의 그릇이 된 원계 최후의 지배자
+- L2894 [EN] The final ruler of the Primal Realm, now a vessel of the Outer God
+- L2908 [KO] 어계 5대 신격
+- L2912 [KO] 꿈의 파수꾼
+- L2912 [EN] Dream Sentinel
+- L2913 [KO] 잠든 나각의 꿈 언저리를 지키는 파수꾼
+- L2913 [EN] The sentinel guarding the edges of the sleeping Nagak
+- L2913 [EN] s dream
+- L2920 [KO] 문지기 나각의 꿈
+- L2920 [EN] Nagak's Dream Gatekeeper
+- L2921 [KO] 인식의 균열 너머, 잠든 신의 꿈이 빚어낸 문지기
+- L2921 [EN] A gatekeeper woven from the sleeping god
+- L2921 [EN] s dream, beyond the crack in perception
+- L2931 [KO] 무형의 촉수
+- L2931 [EN] The Formless Appendage
+- L2932 [KO] 형태 없는 바다 밑에서 뻗어나온 촉수
+- L2932 [EN] An appendage reaching up from beneath the formless sea
+- L2939 [KO] 무형의 현현
+- L2939 [EN] Manifestation of the Formless
+- L2940 [KO] 인식하는 순간 무너지는, 형태 없는 것의 현현
+- L2940 [EN] The formless made manifest
+- L2940 [EN] to perceive it is to collapse
+- L2950 [KO] 만목의 눈동자
+- L2950 [EN] Manmok's Pupil
+- L2951 [KO] 천개의 눈 중 하나, 그러나 그 무게는 전부와 같다
+- L2951 [EN] One of a thousand eyes
+- L2951 [EN] yet its weight equals them all
+- L2958 [KO] 만목(
+- L2958 [EN] Manmok, the Ten Thousand Eyes
+- L2959 [KO] 모든 것을 보지만 아무것도 이해하지 못하는 신격
+- L2959 [EN] A god that sees everything and understands nothing
+- L2969 [KO] 의 파편
+- L2970 [KO] 이름조차 발음할 수 없는 것의 조각
+- L2970 [EN] A shard of something whose name cannot even be spoken
+- L2977 [KO] 의 현신
+- L2978 [KO] 금기의 이름이 현실에 새겨진 순간
+- L2978 [EN] The moment the forbidden name is carved into reality
+- L2988 [KO] 나각의 전위
+- L2988 [EN] Vanguard of Nagak
+- L2989 [KO] 잠든 신을 대신해 어계 심층을 지키는 선봉
+- L2989 [EN] A vanguard guarding the Outer Realm
+- L2989 [EN] s depths in the sleeping god
+- L2989 [EN] s stead
+- L2996 [KO] 나각의 사도
+- L2996 [EN] Apostle of Nagak
+- L2997 [KO] 잠든 신을 섬기며 그 꿈을 대신 실현하는 자
+- L2997 [EN] One who serves the sleeping god and enacts its dream in its stead
+- L3007 [KO] 외신 강림의 전조
+- L3007 [EN] Omen of the Outer God's Descent
+- L3008 [KO] 애기씨의 오염도가 임계에 달했음을 알리는 전조
+- L3008 [EN] A sign that Aegissi
+- L3008 [EN] s corruption has reached its critical point
+- L3015 [KO] 외신 강림체
+- L3015 [EN] Outer God Incarnate
+- L3016 [KO] 외신화가 절정에 달해 형체를 갖춘 강림체
+- L3016 [EN] A form given to the Outer God transformation at its peak
+- L3026 [KO] 만목의 오염된 눈동자
+- L3026 [EN] Manmok's Corrupted Pupil
+- L3027 [KO] 광기의 조류에 잠식되어 이지를 잃은 만목의 눈
+- L3027 [EN] One of Manmok
+- L3027 [EN] s eyes, devoured by the tide of madness and stripped of reason
+- L3034 [KO] 타락한 만목
+- L3034 [EN] Fallen Manmok
+- L3035 [KO] 천 개의 눈이 전부 광기로 물든 신격
+- L3035 [EN] A god whose thousand eyes have all been dyed with madness
+- L3045 [KO] 나각의 첫 번째 눈
+- L3045 [EN] Nagak's First Eye
+- L3046 [KO] 잠든 신의 눈꺼풀이 처음으로 열린 순간
+- L3046 [EN] The moment the sleeping god
+- L3046 [EN] s eyelid first opens
+- L3053 [KO] 각성하는 나각
+- L3053 [EN] Nagak, Awakening
+- L3054 [KO] 깨어나면 우주가 끝난다는, 잠든 외신의 각성
+- L3054 [EN] The awakening of the sleeping outer god
+- L3054 [EN] whose waking ends the universe
+- L3064 [KO] 의 오염된 현신
+- L3064 [EN] s Corrupted Manifestation
+- L3065 [KO] 말할 수 없는 것이 광기로 물들어 다시 태어난 모습
+- L3065 [EN] The unspeakable thing, reborn tainted with madness
+- L3072 [KO] 의 완전체
+- L3072 [EN] Complete Form
+- L3073 [KO] 언급하는 것조차 존재를 위협하는, 완전해진 금기
+- L3073 [EN] A completed taboo
+- L3073 [EN] to even mention it is to risk one
+- L3073 [EN] s existence
+- L3083 [KO] 태모의 첫 번째 울음
+- L3083 [EN] Taemo's First Cry
+- L3084 [KO] 모든 외신을 낳은 어머니가 처음으로 흘린 울음
+- L3084 [EN] The first cry of the mother who birthed every outer god
+- L3091 [KO] 태모(
+- L3091 [EN] Taemo, Mother of All
+- L3092 [KO] 모든 외신의 근원, 어계의 왕좌에 앉은 최후의 신격
+- L3092 [EN] The origin of every outer god, seated upon the Outer Realm
+- L3092 [EN] s final throne
+- L3103 [KO] 종말의 파수꾼
+- L3103 [EN] Mid Boss
+- L3104 [KO] 반물질의 종말
+- L3104 [EN] Ruined Realm
+- L3112 [KO] 종말의 수호자
+- L3112 [EN] Chapter Boss
+- L3113 [KO] 반물질의 종말
+- L3113 [EN] Ruined Realm
+- L3124 [KO] 거울의 사자
+- L3124 [EN] Mid Boss
+- L3125 [KO] 거울의 바다
+- L3125 [EN] Ruined Realm
+- L3133 [KO] 거울의 군주
+- L3133 [EN] Chapter Boss
+- L3134 [KO] 거울의 바다
+- L3134 [EN] Ruined Realm
+- L3145 [KO] 시간의 수호자
+- L3145 [EN] Mid Boss
+- L3146 [KO] 시간 역행의 전당
+- L3146 [EN] Ruined Realm
+- L3154 [KO] 시간역행의 신
+- L3154 [EN] Chapter Boss
+- L3155 [KO] 시간 역행의 전당
+- L3155 [EN] Ruined Realm
+- L3166 [KO] 반물질의 수호자
+- L3166 [EN] Mid Boss
+- L3167 [KO] 반물질의 폭풍
+- L3167 [EN] Ruined Realm
+- L3175 [KO] 반물질의 신
+- L3175 [EN] Chapter Boss
+- L3176 [KO] 반물질의 폭풍
+- L3176 [EN] Ruined Realm
+- L3187 [KO] 황계대왕의 전위대
+- L3187 [EN] Mid Boss
+- L3188 [KO] 황계 심층
+- L3188 [EN] Ruined Realm
+- L3196 [KO] 황계대왕
+- L3196 [EN] Chapter Boss
+- L3197 [KO] 황계 심층
+- L3197 [EN] Ruined Realm
+- L3208 [KO] 거울 자아의 분신
+- L3208 [EN] Mid Boss
+- L3209 [KO] 거울 자아의 각성
+- L3209 [EN] Ruined Realm
+- L3217 [KO] 각성한 거울 자아
+- L3217 [EN] Chapter Boss
+- L3218 [KO] 거울 자아의 각성
+- L3218 [EN] Ruined Realm
+- L3229 [KO] 합치의 수호자
+- L3229 [EN] Mid Boss
+- L3230 [KO] 합치의 예언
+- L3230 [EN] Ruined Realm
+- L3238 [KO] 합치의 신
+- L3238 [EN] Chapter Boss
+- L3239 [KO] 합치의 예언
+- L3239 [EN] Ruined Realm
+- L3250 [KO] 태초의 파수꾼
+- L3250 [EN] Mid Boss
+- L3251 [KO] 태초로의 귀환
+- L3251 [EN] Ruined Realm
+- L3259 [KO] 태초의 수호자
+- L3259 [EN] Chapter Boss
+- L3260 [KO] 태초로의 귀환
+- L3260 [EN] Ruined Realm
+- L3271 [KO] 자아의 파편
+- L3271 [EN] Mid Boss
+- L3272 [KO] 순수한 자아
+- L3272 [EN] Ruined Realm
+- L3280 [KO] 자아의 수호자
+- L3280 [EN] Chapter Boss
+- L3281 [KO] 순수한 자아
+- L3281 [EN] Ruined Realm
+- L3292 [KO] 순수한 자아의 첫 번째 눈물
+- L3292 [EN] Mid Boss
+- L3293 [KO] 태초의 애기씨
+- L3293 [EN] Ruined Realm
+- L3301 [KO] 어린 애기씨 (최종보스)
+- L3301 [EN] Chapter Boss
+- L3302 [KO] 태초의 애기씨
+- L3302 [EN] Ruined Realm
+- L3321 [KO] 뒤쪽(두 번째로 등장하는) 종
+- L3334 [KO] 잔상 5초 합체 실체화
+- L3346 [KO] 순리석 확정 획득에 비해 리스크가 너무 약함
+
+## data/promo-codes.js
+
+- L3 [KO] 스테이지19까지만 깬 사람
+- L4 [KO] 이미 클리어한 스테이지분만
+- L9 [KO] 초반 스테이지 보상 시스템 추가 이전 클리어자 소급 보상
+- L29 [KO] 코드를 입력해주세요
+- L31 [KO] 이미 사용한 코드입니다
+- L33 [KO] 존재하지 않는 코드입니다
+- L36 [KO] 지금은 받을 보상이 없습니다 (해당 스테이지를 클리어한 뒤 다시 시도해주세요)
+
+## data/sprite-config.js
+
+- L41 [KO] 뚱뚱해 보인다
+- L48 [KO] 마법력을 뻗는
+- L52 [KO] 직전
+- L63 [KO] 어색하다
+- L72 [KO] 애기씨의 부적
+- L286 [KO] 쓴것
+- L334 [KO] 이미지 모음/00. 종합 안쓴거/몬스터, 보스 안쓴거
+- L380 [KO] 그레이트 이스
+- L438 [KO] 쓴것
+- L448 [KO] 쓴것
+- L448 [KO] 아카식과 부적
+- L449 [KO] 최종 엔딩 — 아카식과 부적
+- L595 [KO] 기록의 공간
+- L754 [KO] 쓴것
+- L1171 [KO] 스프라이트 ‹VAR›개 프리로드
+
+## entities/boss.js
+
+- L6 [KO] 원귀장
+- L7 [KO] 분노한 원혼의 수장
+- L22 [KO] 목 없는 장군
+- L23 [KO] 귀-인-국을 무너뜨린 전쟁의 화신
+- L283 [EN] player is not defined
+- L433 [KO] 추적형
+- L579 [EN] px sans-serif
+- L625 [EN] px sans-serif
+
+## entities/companion-entity.js
+
+- L10 [KO] 탱커
+- L17 [KO] 딜러
+- L24 [KO] 힐러
+- L31 [KO] 서포터
+- L38 [KO] 암살자
+- L45 [KO] 마법사
+- L52 [KO] 버서커
+- L60 [KO] 돌진탱커
+- L67 [KO] 화염딜러
+- L74 [KO] 검호
+- L81 [KO] 방어막탱커
+- L89 [KO] 저승무관
+- L96 [KO] 저승차사
+- L132 [KO] 천 마리의 부름
+- L187 [KO] 가 딱
+- L548 [EN] px sans-serif
+- L586 [EN] px sans-serif
+- L629 [EN] px sans-serif
+
+## entities/enemy.js
+
+- L41 [KO] 몽달귀신
+- L42 [KO] 물귀신
+- L43 [KO] 도깨비
+- L44 [KO] 원혼
+- L53 [KO] 몽달귀신
+- L133 [KO] 투명
+- L231 [KO] 투명
+- L317 [KO] 투명
+- L343 [EN] px serif
+- L355 [EN] px serif
+
+## entities/pet-entity.js
+
+- L61 [KO] 플레이어 기준 최근접 1개
+- L62 [KO] 가장 많이 모인 곳
+- L194 [EN] px sans-serif
+- L230 [KO] 치명타 확률 +25%
+
+## entities/player.js
+
+- L22 [KO] 전투 중이냐
+- L145 [KO] 보유만 하면
+- L243 [KO] 배 강해짐
+- L275 [KO] 전투 중
+- L476 [KO] 완전체(초월 9~10성)
+- L479 [KO] 기본 위치 대비 상대값
+- L557 [KO] 전투 중
+- L567 [KO] 진입 확정
+- L568 [KO] 존재했다는 사실 그 자체가
+- L568 [KO] 조용히 지워졌다
+
+## scenes/achievement-scene.js
+
+- L45 [KO] 달성 후 수령하면 다음 목표가 N+increment로
+- L96 [KO] 한 번에 전부 몰아 수령
+- L213 [EN] width .3s
+- L223 [EN] Noto Serif KR',serif
+
+## scenes/blacksmith-scene.js
+
+- L10 [KO] 부적
+- L11 [KO] 귀신을 봉인하는 부적을 날린다.
+- L11 [EN] Launches a sealing talisman.
+- L12 [KO] 신검
+- L13 [KO] 신령한 검으로 적을 베어낸다.
+- L13 [EN] Slash enemies with a divine sword.
+- L14 [KO] 신궁
+- L15 [KO] 정확한 화살로 적을 꿰뚫는다.
+- L15 [EN] Pierce enemies with precise arrows.
+- L16 [KO] 무당 지팡이
+- L17 [KO] 영혼체가 주변을 선회하며 공격한다.
+- L17 [EN] Spirit orbs orbit and strike foes.
+- L18 [KO] 영혼낫
+- L19 [KO] 초승달 낫이 주변을 회전하며 베어낸다.
+- L19 [EN] A crescent scythe rotates and slashes.
+- L154 [KO] 슬롯
+- L170 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L219 [KO] 기록이 허락되지 않은
+- L401 [EN] Sub-mechanic active
+- L401 [KO] 서브 메커닉 발동
+- L454 [KO] 다음: ‹VAR› · ‹VAR›‹VAR›개 ·
+
+## scenes/building-scene.js
+
+- L11 [EN] No effect yet
+- L11 [KO] 효과 없음
+- L16 [EN] Upgrade cost -
+- L16 [KO] 강화 비용 -
+- L18 [EN] Dungeon income
+- L18 [KO] 던전 수익 +
+- L52 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L82 [EN] No buildings unlocked yet.
+- L82 [KO] 아직 해금된 건물이 없습니다.
+- L83 [EN] b, isEn
+- L203 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L254 [EN] Max Level
+- L254 [KO] 최대 강화 완료
+- L264 [KO] 강화
+
+## scenes/character.js
+
+- L43 [EN] h2 class
+
+## scenes/dev-scene.js
+
+- L23 [KO] 로비
+- L23 [KO] 개발자 도구
+- L23 [KO] 초기화
+- L23 [EN] section style
+- L55 [KO] 파트2 프로필
+- L55 [KO] 현재
+- L55 [KO] 파트2 즉시 진입(신규)
+- L55 [KO] 파트1로 전환
+- L55 [KO] 파트2로 전환(기존)
+- L55 [KO] 파트2 세이브 삭제
+- L55 [KO] 스테이지 클리어
+- L55 [EN] section style
+- L91 [KO] 전체 클리어(1~100)
+- L91 [KO] 전체 초기화
+- L118 [KO] 재화 추가
+- L118 [EN] section style
+- L165 [KO] 전체 초기화
+- L165 [KO] 모든 세이브 데이터가 삭제됩니다.
+- L165 [KO] 계속하시겠습니까?
+- L165 [KO] 취소
+- L165 [KO] 초기화
+
+## scenes/dungeon-scene.js
+
+- L118 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L170 [EN] No dungeons unlocked yet.
+- L170 [EN] nClear Stage 5 to unlock.
+- L170 [KO] 스테이지 5 클리어 시
+- L170 [KO] 강화석 던전이 해금됩니다.
+- L171 [EN] d, isEn
+- L199 [KO] 적정
+- L200 [KO] 위험
+- L201 [EN] Very Risky
+- L201 [KO] 매우위험
+- L241 [EN] Lv down refunds
+- L241 [EN] Sky Stone
+- L242 [KO] 레벨 다운 시 ‹VAR›골드 + ‹VAR›천운석 환급
+- L258 [KO] 너무 세게 올려버렸다
+- L276 [EN] No record
+- L276 [KO] 기록 없음
+- L279 [EN] Enhancement stones drop instead of gold.
+- L279 [KO] 골드 대신 강화석이 드랍됩니다.
+- L280 [EN] Endless gold farming dungeon.
+- L280 [KO] 골드 파밍용 무한 모드 던전.
+- L281 [EN] Challenge 10 bosses for diamonds.
+- L281 [KO] 보스 10마리 연속 도전, 다이아 획득.
+- L282 [EN] Heavenly stones drop instead of gold.
+- L282 [KO] 골드 대신 천운석이 드랍됩니다.
+- L283 [EN] Spirit fruits drop instead of gold.
+- L283 [KO] 골드 대신 천령과가 드랍됩니다.
+- L284 [EN] Taeguk stones drop instead of gold.
+- L284 [KO] 골드 대신 태극석이 드랍됩니다.
+- L285 [EN] Chaos stones drop instead of gold.
+- L285 [KO] 골드 대신 혼돈석이 드랍됩니다.
+- L286 [EN] Sunri stones drop instead of gold.
+- L286 [KO] 골드 대신 순리석이 드랍됩니다.
+
+## scenes/ending-scene.js
+
+- L11 [KO] 시즌 N 완료
+- L19 [KO] 현계의 원혼들이 잠들었다.
+- L19 [KO] 귀인국에 오랜만에 평화가 찾아왔다.
+- L20 [EN] The restless spirits of the Living World are at rest.
+- L20 [EN] Peace has returned to Gwi-In-Guk at last.
+- L28 [KO] 그러나 혼돈은 더 깊은 곳에서 시작되고 있었다.
+- L28 [KO] 이제 다른 차원을 도울 때다, 애기씨야.
+- L29 [EN] But chaos was stirring in realms far deeper.
+- L29 [EN] It is time to help the other dimensions, Aegissi.
+- L40 [KO] 멈춰있던 넋들이, 다시 강을 따라 흐르기 시작했다.
+- L40 [KO] 저승나비가 그 위를 조용히 맴돈다.
+- L41 [EN] The souls that had been frozen began to flow along the river once more.
+- L41 [EN] The Jeoseung Butterfly quietly circles above them.
+- L48 [KO] 타락에서 돌아온 바리공주가 상사화 한 송이를 건넨다.
+- L48 [KO] 이 꽃처럼... 나도 누군가를 다시 만날 수 있을까."
+- L49 [EN] Princess Bari, returned from corruption, offers a single sangsahwa flower.
+- L49 [EN] Like this flower... could I meet someone again too?
+- L56 [KO] 그러나 어딘가에서, 실눈 하나가 천천히 떠졌다.
+- L57 [EN] But somewhere, a single slitted eye slowly opened.
+- L65 [KO] 숲 곳곳에서 낄낄거리는 기척이 느껴진다.
+- L65 [KO] 누군가... 지켜보고 있다.
+- L66 [EN] Snickering presences stir throughout the forest.
+- L66 [EN] Someone... is watching.
+- L74 [KO] 먼동이 트고 있었다.
+- L74 [KO] 망랑계의 문이... 열리고 있어."
+- L75 [EN] Dawn was breaking.
+- L75 [EN] The gate to the Chaos Realm... is opening.
+- L79 [KO] 코믹한 액시던트형
+- L87 [KO] 망랑계의 혼란이 서서히 가라앉았다.
+- L87 [KO] 그런데 도깨비들은... 여전히 웃고 있었다.
+- L88 [EN] The chaos of the Illusion Realm slowly settled.
+- L88 [EN] And yet the dokkaebi... were still laughing.
+- L96 [KO] 애기씨가 이겼다아아!!"
+- L96 [KO] 박수와 장구애비가 대뜸 뒤풀이를 선포했다.
+- L97 [EN] Aegissi won! Aegissi WON!!
+- L97 [EN] Baksu and Janggu-aebi immediately declared an after-party.
+- L104 [KO] 꺽쇠는 저 멀리서 그 광경을 가만히 지켜보았다.
+- L104 [KO] 저 녀석한테도, 언젠가는 말해줘야겠지."
+- L105 [EN] Ggeoksoe watched the scene quietly from afar.
+- L105 [EN] I suppose I
+- L105 [EN] ll have to tell him, someday.
+- L113 [KO] 흥겨운 등불 사이로, 밤하늘 한쪽이 소리없이 갈라져 있었다.
+- L113 [KO] 귀허계도, 뭔가 이상해." 애기씨 홀로, 조용히 그 틈을 바라보았다.
+- L114 [EN] Amid the festive lanterns, a silent crack split the night sky.
+- L114 [EN] s off, in the Void Realm too.
+- L114 [EN] Alone, Aegissi quietly gazed at the rift.
+- L126 [KO] 오랫동안 갇혀있던 넋들이, 마침내 위로 향하는 길을 되찾았다.
+- L127 [EN] The spirits long trapped at last found their way upward once more.
+- L134 [KO] 빛으로 이루어진 계단이 스스로 놓였다.
+- L134 [KO] 순리를 따라, 거듭남을 향해.
+- L135 [EN] A staircase of light laid itself out.
+- L135 [EN] Following the natural order, toward rebirth.
+- L143 [KO] 귀허계의 문이 마침내 열렸다.
+- L143 [KO] 그 너머엔... 아직 이름 모를 무언가가 있었다.
+- L144 [EN] The gate of the Void Realm finally opened.
+- L144 [EN] And beyond it... something as yet unnamed awaited.
+- L151 [KO] 구름과 벚꽃이 흐르는 곳.
+- L151 [KO] 넋들이 편안히 흩어지는 그곳을, 애기씨는 처음 보았다.
+- L152 [EN] A place where clouds and cherry blossoms drifted.
+- L152 [EN] Aegissi saw it for the first time
+- L152 [EN] where souls could finally rest.
+- L159 [KO] 선계
+- L159 [KO] 라 불리는 곳이라 했다. 평화로워 보였다.
+- L159 [KO] 그런데... 왜 이렇게, 발밑이 서늘한 걸까.
+- L160 [EN] They called it the Celestial Realm. It looked peaceful.
+- L160 [EN] And yet... why did the ground beneath her feel so cold?
+- L168 [KO] 어쩌면... 선계도.
+- L168 [KO] 어쩌면...... 전 차원이......
+- L169 [EN] Maybe... even the Celestial Realm.
+- L169 [EN] Maybe...... every single realm......
+- L173 [KO] 어쩌면... 전 차원이......
+- L182 [KO] 선계의 문이 다시 열렸다.
+- L182 [KO] 구름 사이로, 아주 오랜만에 맑은 빛이 스며들었다.
+- L183 [EN] The gate of the Celestial Realm opened once more.
+- L183 [EN] For the first time in ages, clear light filtered through the clouds.
+- L190 [KO] 그러나 완전히 낫지는 않았다.
+- L190 [KO] 선계 수호신도, 신선들도... 어딘가 지쳐 보였다.
+- L191 [EN] But it was not fully healed.
+- L191 [EN] The guardian god, the immortals... all seemed weary, somehow.
+- L199 [KO] 고맙다, 애기씨야. 하지만... 이건 시작에 불과했던 것 같구나."
+- L199 [KO] 수호신이 낮게 읊조렸다.
+- L200 [EN] Thank you, Aegissi. But... I fear this was only the beginning.
+- L200 [EN] The guardian god murmured, low and quiet.
+- L207 [KO] 선계보다 더 깊은 곳, 원계에서부터.
+- L207 [KO] 오래전에 무언가 이미 새어나오고 있었다.
+- L208 [EN] From somewhere deeper than the Celestial Realm
+- L208 [EN] the Primal Realm.
+- L208 [EN] Something had already begun to seep out, long ago.
+- L216 [KO] 애기씨는 조용히 하늘 너머를 바라보았다.
+- L216 [KO] 다음은, 저곳인가."
+- L217 [EN] Aegissi quietly gazed beyond the sky.
+- L217 [EN] So that
+- L217 [EN] s where I
+- L217 [EN] m needed next.
+- L230 [KO] 원계를 향해 걸음을 옮겼다.
+- L230 [KO] 그러나 닿기도 전, 낯선 회랑이 그녀를 맞았다.
+- L231 [EN] She walked toward the Primal Realm.
+- L231 [EN] But before she could arrive, an unfamiliar corridor received her instead.
+- L238 [KO] 부서진 법칙의 조각들이 허공에 떠 있었다.
+- L238 [KO] 중력도, 인과도, 윤회도 — 온전한 모습이 아니었다.
+- L239 [EN] Shattered fragments of law hung suspended in the air.
+- L239 [EN] Gravity, causality, reincarnation
+- L239 [EN] none of them whole.
+- L247 [KO] 금이 간 거울 속에서, 낯익은 얼굴이 그녀를 마주 보았다.
+- L247 [KO] 아니야. 그럴 리 없어."
+- L248 [EN] From within the cracked mirror, a familiar face looked back.
+- L248 [EN] No. That can
+- L248 [EN] t be true.
+- L255 [KO] 그녀는 조각들을 그러모아 하나로 품었다.
+- L255 [KO] 완전히 이해하지 못한 채로, 일단 손에 쥐었다.
+- L256 [EN] She gathered the fragments and held them close.
+- L256 [EN] Without fully understanding, she took hold of them anyway.
+- L264 [KO] 법칙의 일부를 얻었다.
+- L264 [KO] 하늘이 갈라진 틈 너머, 어계가 그녀를 기다리고 있었다.
+- L265 [EN] She had obtained a piece of Law.
+- L265 [EN] Beyond the tear in the sky, the Barren Realm awaited her.
+- L270 [KO] 거울 속 낯익은 얼굴
+- L280 [KO] 기어오는 혼돈에는 의지도, 악의도 없었다.
+- L280 [KO] 그저 멸망으로 기울어가는 우주의 비명이었을 뿐.
+- L280 [KO] 그리고 마침내... 부정하고 싶었던 진실이 넋을 관통한다.
+- L281 [EN] The crawling chaos held neither will nor malice.
+- L281 [EN] It was only the scream of a universe tilting toward ruin.
+- L281 [EN] And at last... the truth she had wanted to deny pierced her soul.
+- L289 [KO] 나는 물질도, 반물질도 아니었다.
+- L289 [KO] 우주가 생겨난 이래... 온전히 나 하나만이, 둘로 나뉘지 않은 채 홀로 존재했다.
+- L289 [KO] 나는, 전 우주를 통틀어 혼자만이 혼자였다.
+- L290 [EN] I was neither matter nor antimatter.
+- L290 [EN] Since the universe began... I alone existed whole, never split in two.
+- L290 [EN] In all the cosmos, I was the only one who was alone.
+- L297 [KO] 하지만 보아라... 내가 짊어진 이 외신의 오염을.
+- L297 [KO] 어계를 뚫기 위해 품어버린 이 미친 축복의 찌꺼기를 안고서...
+- L297 [KO] 저 거울을 깨뜨린다면, 우리는 하나가 되기도 전에 소멸할 것이다.
+- L298 [EN] But look... at this Outer God
+- L298 [EN] s corruption I carry.
+- L298 [EN] Holding the dregs of that mad blessing I swallowed to breach the Barren Realm...
+- L298 [EN] If I shatter that mirror now, we will perish before we ever become one.
+- L305 [KO] 이란 하늘이 정한 명(
+- L305 [KO] 을 받아들이는 것이 아니라, 제 발로 차고 나가는 의지란다."
+- L305 [KO] 황계가 이 오염을 이유로 나를 거부한다면..."
+- L305 [KO] 수천 번, 수만 번 스러지며 내 몸의 모든 오염을 다 깎아낼 때까지 덤벼주마."
+- L306 [EN] Fortune is not accepting the fate the heavens assign
+- L306 [EN] it is the will to kick your way out of it.
+- L306 [EN] If the Ruined Realm turns me away over this corruption...
+- L306 [EN] Then I will fall a thousand times, ten thousand times, and keep coming until every last stain is scraped from me.
+- L314 [KO] 하나였던 것은 둘이 된다.
+- L314 [KO] 그러나 둘이 된 것은... 마침내 서로를 찾는다.
+- L315 [EN] What was one becomes two.
+- L315 [EN] But what has become two... will, at last, find each other.
+- L321 [KO] 아카식과 부적
+- L326 [KO] 균열 앞에 선다.
+- L326 [KO] 이 너머에, 또 다른 내가 있다.
+- L327 [EN] She stood before the rift.
+- L327 [EN] Beyond it waited another her.
+- L331 [KO] 눈을 감았다.
+- L331 [KO] 두렵지 않다면 거짓말이었다.
+- L332 [EN] She closed her eyes.
+- L332 [EN] It would be a lie to say she wasn
+- L332 [EN] t afraid.
+- L336 [KO] 갓난아기였던 그날, 이미 손에 쥐고 있던 빛.
+- L336 [KO] 은 태어나기 전부터 정해져 있었다.
+- L337 [EN] Even as a newborn, a light already in her hands.
+- L337 [EN] Her fate had been set before she was born.
+- L341 [KO] 갈라진 틈 너머로, 손을 뻗었다.
+- L341 [KO] 반대편에서도, 같은 손이 뻗어왔다.
+- L342 [EN] She reached across the divide.
+- L342 [EN] And from the other side, the same hand reached back.
+- L346 [KO] 손끝이 닿는 순간, 눈물이 흘렀다.
+- L346 [KO] 낮과 밤이, 물질과 반물질이, 마침내 하나의 자리에 섰다.
+- L347 [EN] The instant their fingers touched, tears fell.
+- L347 [EN] Day and night, matter and antimatter, stood at last in the same place.
+- L351 [KO] 별들이 갈라지고, 은하가 그녀를 향해 쏟아졌다.
+- L351 [KO] 전 우주를 통틀어, 혼자만이 혼자였다.
+- L352 [EN] The stars split open, and galaxies poured toward her.
+- L352 [EN] In all the cosmos, she alone had been alone.
+- L356 [KO] 기록의 법칙조차, 그녀를 붙잡지 못했다.
+- L356 [KO] 존재했다는 사실 그 자체가, 조용히 지워졌다.
+- L357 [EN] Even the Law that records all things could not hold her.
+- L357 [EN] The very fact that she had existed was quietly erased.
+- L361 [KO] 아무도 그녀를 기억하지 못하는 자리에,
+- L361 [KO] 꽃잎만이 그녀가 서 있던 모양으로 내려앉았다.
+- L362 [EN] In the place no one remembered her standing,
+- L362 [EN] only fallen petals kept the shape where she once stood.
+- L366 [KO] 그러나 물건은, 법칙이 아니었다.
+- L366 [KO] 부적 하나가, 손에서 손으로 전해졌다.
+- L367 [EN] But an object was not a Law.
+- L367 [EN] A single talisman passed from hand to hand.
+- L371 [KO] 그리고 마침내, 어느 어린 무당의 손에 닿았을 때—
+- L371 [KO] 난 기억해."
+- L372 [EN] And at last, when it reached the hands of a young shaman
+- L372 [EN] I remember.
+- L403 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L403 [EN] opacity 0.9s ease
+- L403 [EN] keyframes endingFadeUp
+- L489 [EN] endingFadeUp 0.8s ease
+- L489 [EN] s forwards
+- L504 [EN] opacity 0.7s ease
+- L514 [KO] 시즌 N 완료 / 탭하여 계속
+- L516 [KO] 시즌 N 완료
+- L526 [EN] opacity 0.7s ease
+- L535 [EN] endingFadeUp 0.8s ease 0.3s forwards
+- L541 [EN] endingFadeUp 0.6s ease 1.2s forwards
+- L558 [EN] opacity 0.6s ease
+
+## scenes/game.js
+
+- L31 [KO] 다음 스테이지
+- L42 [KO] 콘텐츠 없는 시즌5+
+- L174 [KO] 심판의 법칙
+- L186 [KO] 파멸의 법칙
+- L194 [KO] 인과응보의 법칙
+- L206 [KO] 역행의 법칙
+- L211 [KO] 보스 전용 데미지
+- L215 [KO] 발동 순간
+- L218 [KO] 왕좌의 법칙
+- L233 [KO] 태초의 법칙
+- L251 [KO] 발동 순간 한 번 뿜어져 나오는
+- L354 [KO] 발견했다
+- L355 [KO] 짊어진 오염
+- L362 [EN] The Blessing... became poison?!
+- L362 [EN] Corruption held
+- L362 [EN] b style
+- L362 [EN] combat power
+- L362 [EN] Challenging any Ruined Realm stage purifies it
+- L362 [EN] win or lose.
+- L364 [KO] 축복이... 독이 된건가?!
+- L364 [KO] 보유 오염도
+- L364 [KO] 전투력
+- L364 [KO] 황계 어느 스테이지든 도전하면(승패 무관) 정화된다.
+- L364 [EN] b style
+- L366 [EN] px rgba
+- L366 [EN] opacity .4s ease
+- L375 [KO] 수호 부적
+- L381 [EN] The Guardian Talisman
+- L381 [EN] Aegissi's last trace stands where you began. Some enemies will
+- L381 [EN] ignore you and attack it instead
+- L381 [EN] if it falls, it's over.
+- L381 [EN] If it's off-screen, check the
+- L381 [EN] in the corner. Strengthen it at the blacksmith.
+- L385 [KO] 수호 부적
+- L385 [KO] 애기씨가 남긴 마지막 흔적이 시작 지점에 서 있다. 일부 몬스터는
+- L385 [KO] 플레이어 대신 저것부터 노린다 — 파괴되면 그걸로 끝이다.
+- L385 [KO] 화면 밖으로 나가면 구석의
+- L385 [KO] 화면으로 상태를
+- L385 [KO] 확인할 수 있다. 대장간에서 강화할 수 있다.
+- L389 [EN] px rgba
+- L389 [EN] opacity .4s ease
+- L398 [KO] 스테이지당 1회
+- L399 [KO] 지금 위험하다
+- L403 [EN] The Guardian Talisman is in danger!
+- L403 [KO] 수호 부적이 위험하다!
+- L404 [EN] opacity .3s ease
+- L404 [EN] px rgba
+- L432 [EN] Hidden Synergy Discovered!
+- L433 [KO] 숨겨진 시너지 발견! (+‹VAR›)
+- L434 [EN] opacity .3s ease
+- L449 [KO] 오염의 법칙
+- L455 [KO] 붕괴의 법칙
+- L467 [KO] 중력의 법칙
+- L472 [KO] 절규의 법칙
+- L481 [KO] 소멸의 법칙
+- L486 [KO] 왜곡의 법칙
+- L511 [KO] 벼락술!
+- L523 [KO] 뇌성벽력
+- L530 [KO] 화염술!
+- L530 [KO] 독안개
+- L543 [KO] 대혼란!
+- L553 [KO] 명부낙인
+- L562 [KO] 어둠...
+- L568 [KO] 정화!
+- L649 [KO] 수호 부적
+- L669 [KO] 저주 — 받는피해 +15%
+- L669 [EN] Damage Taken
+- L671 [KO] 쇠약 — 공격력 -10%
+- L673 [KO] 꽝 — 아무 일도 없었다
+- L673 [EN] Nothing happens
+- L675 [KO] 날쌤 — 이동속도 +10%
+- L675 [EN] Move Speed
+- L677 [KO] 재물운 — 골드 획득량 +20%
+- L677 [EN] Gold Gain
+- L679 [KO] 대박 — 공격력 +20%, 받는피해 -10%
+- L679 [EN] Damage Taken -10
+- L705 [KO] 즉시 사용
+- L754 [KO] 현재 챕터(시즌4) 몬스터
+- L782 [KO] 거듭남
+- L890 [KO] 더 강한 적을 더 많이
+- L950 [KO] 수호 부적
+- L976 [KO] 축복 안 사고 버티기
+- L1018 [KO] 현계 밖에서 사는 동안은 계속 차원석이 필요하다
+- L1092 [KO] 아무도 데려갈 수 없는 계
+- L1123 [KO] 뭔가 발동했다
+- L1127 [KO] 향후 확장 여지
+- L1193 [KO] 인도
+- L1271 [KO] 뭔가 됐다
+- L1335 [KO] 챕터
+- L1335 [KO] 킬타겟
+- L1335 [KO] 보스스테이지
+- L1337 [KO] 수동
+- L1337 [EN] canvas id
+- L1362 [KO] 분신
+- L1393 [EN] opacity .5s
+- L1427 [EN] Noto Serif KR',serif
+- L1427 [EN] px rgba
+- L1468 [KO] 무한던전
+- L1469 [KO] 보스러시
+- L1469 [EN] Boss Rush
+- L1470 [KO] 스테이지
+- L1605 [EN] Music Off
+- L1605 [KO] 음악 꺼짐
+- L1605 [EN] Music On
+- L1605 [KO] 음악 켜짐
+- L1622 [KO] 목 없는 장군
+- L1622 [EN] The Headless General
+- L1622 [KO] 귀-인-국을 무너뜨린 전쟁의 화신
+- L1622 [EN] The incarnation of war that shattered Gwi-In-Guk
+- L1623 [KO] 원귀장
+- L1623 [EN] Ghost Warlord
+- L1623 [KO] 분노한 원혼의 수장
+- L1623 [EN] Leader of the enraged vengeful spirits
+- L1631 [EN] wP .5s infinite alternate
+- L1631 [EN] keyframes wP
+- L1652 [KO] 수동
+- L1652 [KO] 반자동
+- L1652 [KO] 자동
+- L1652 [KO] 자동재도전
+- L1723 [KO] 게임 루프 시작
+- L1730 [KO] 게임 루프 에러
+- L1797 [KO] 시간 버킷 누적
+- L1849 [KO] 잠식 발동!
+- L1872 [KO] 챕터 ‹VAR› 몬스터 출현!
+- L1962 [EN] Fate Bonus!
+- L1962 [KO] 의 가호!
+- L1971 [EN] Stage ends in 5s!
+- L1971 [KO] 초 후 스테이지 종료!
+- L2178 [KO] 플레이어용
+- L2180 [KO] 암살자처럼 반짝반짝 하며 샤샤샥
+- L2230 [KO] 수호 부적
+- L2236 [KO] 지키는 입장
+- L2421 [KO] 호밍 투사체 1개당 매 프레임
+- L2500 [KO] 이번에 오른 레벨 수
+- L2607 [KO] 분열
+- L2740 [KO] 챕터11+
+- L2748 [KO] 챕터11+
+- L2844 [KO] 이질적인
+- L3092 [KO] 모래 어둠
+- L3094 [KO] 베인 뒤 벌어지는
+- L3169 [EN] Stage Clear!
+- L3169 [KO] 스테이지 클리어!
+- L3170 [EN] px sans-serif
+- L3172 [EN] Back to lobby in
+- L3172 [EN] loot up!
+- L3172 [KO] 초 후 로비 이동 — 파밍하세요!
+- L3230 [EN] px sans-serif
+- L3267 [KO] 이지
+- L3267 [KO] 노말
+- L3267 [KO] 하드
+- L3269 [EN] px sans-serif
+- L3282 [KO] 보스를 처치하라!
+- L3282 [EN] Defeat the Boss!
+- L3282 [KO] 처치 ‹VAR› /
+- L3331 [EN] px sans-serif
+- L3363 [EN] px sans-serif
+- L3391 [EN] px sans-serif
+- L3491 [EN] px sans-serif
+- L3495 [EN] px sans-serif
+- L3522 [KO] 잠식중
+- L3592 [EN] px sans-serif
+- L3607 [EN] px sans-serif
+- L3644 [KO] 진화!
+- L3645 [KO] 진화
+- L3649 [KO] 특화
+- L3650 [KO] 주무기
+- L3650 [EN] Main Wpn
+- L3661 [KO] 데미지 +
+- L3669 [KO] 각성!
+- L3673 [KO] 각성 MAX!
+- L3673 [EN] th Awaken MAX!
+- L3675 [KO] 쿨타임
+- L3677 [KO] 각성
+- L3685 [KO] 주무기
+- L3685 [EN] Main Wpn
+- L3685 [KO] 보조무기
+- L3690 [KO] 새 무기
+- L3692 [KO] 보조무기
+- L3697 [KO] 신규
+- L3698 [KO] 스탯
+- L3701 [KO] 공격
+- L3701 [KO] 범위
+- L3701 [KO] 디버프
+- L3701 [KO] 서포트
+- L3706 [EN] px rgba
+- L3727 [EN] Evolved to Legend!
+- L3727 [KO] 전설로 진화!
+- L3804 [KO] 레벨업 선택지 오류
+- L3834 [EN] opacity .3s
+- L3845 [KO] 주 무 기
+- L3846 [KO] 보 조 무 기
+- L3847 [KO] 스   탯
+- L3852 [EN] px rgba
+- L3860 [KO] 초 후 자동선택
+- L3878 [EN] keyframes lvupPickFlash
+- L3884 [EN] px rgba
+- L3939 [KO] 최초 클리어일 때만
+- L3982 [KO] 순리석 +‹VAR› (챕터 최초 클리어 보너스)
+- L3982 [EN] First chapter clear bonus
+- L3988 [KO] 새 동료
+- L3988 [KO] 강림차사
+- L3988 [KO] 가 해금되었다!
+- L3988 [EN] New companion
+- L3988 [EN] Gangnim Chasa
+- L4006 [KO] 새 펫
+- L4006 [KO] 상사화
+- L4006 [KO] 가 해금되었다!
+- L4017 [KO] 무한 던전
+- L4023 [KO] 기록 없음
+- L4041 [KO] 엔딩을 이미 봤는지
+- L4065 [KO] 도전했다는 사실 자체
+- L4067 [KO] 수천 번, 수만 번 스러지며 ... 다 깎아낼 때까지 덤벼주마
+- L4136 [KO] 무한 도전 종료!
+- L4136 [EN] Infinite Run End!
+- L4136 [KO] 전멸
+- L4138 [KO] 전체 클리어
+- L4139 [KO] 보스 처치
+- L4141 [KO] 보스 격파!
+- L4141 [EN] Boss Defeated!
+- L4141 [KO] 스테이지 클리어!
+- L4141 [EN] Stage Clear!
+- L4142 [KO] 시간 초과
+- L4142 [EN] Time Up
+- L4142 [KO] 전멸
+- L4154 [KO] 분 ‹VAR›초
+- L4171 [KO] 획득 골드
+- L4172 [KO] 획득 차원석
+- L4172 [KO] 획득 재화
+- L4172 [EN] Dim. Stones
+- L4173 [KO] 영혼 조각
+- L4173 [EN] Soul Frag.
+- L4174 [KO] 영혼석
+- L4174 [EN] Soul Stone
+- L4181 [KO] 결과 화면 표시용
+- L4183 [KO] 오염도 정화
+- L4183 [EN] Corruption Purified
+- L4185 [KO] 획득 골드
+- L4189 [KO] 처치
+- L4190 [KO] 생존시간
+- L4192 [KO] 남은
+- L4192 [EN] HP Left
+- L4193 [KO] 동료 생존
+- L4194 [KO] 레벨
+- L4208 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L4208 [EN] opacity 0.6s ease
+- L4274 [KO] 초보자 선물
+- L4274 [EN] Beginner Gift
+- L4282 [EN] opacity 0.4s ease, transform 0.4s ease
+- L4298 [KO] 재도전
+- L4305 [KO] 다음 스테이지
+- L4305 [EN] Next Stage
+- L4379 [EN] Auto-retrying in
+- L4379 [KO] 자동 재도전 ‹VAR›초 후...
+- L4380 [EN] Auto-advancing in
+- L4380 [KO] 자동 진행 ‹VAR›초 후...
+- L4473 [KO] 수호 부적
+- L4562 [EN] px sans-serif
+- L4563 [KO] 수호 부적
+
+## scenes/intro-scene.js
+
+- L43 [KO] 몽달퇴마록"
+- L43 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L43 [EN] opacity 1s ease
+- L43 [EN] opacity 0.5s ease
+- L43 [EN] px rgba
+- L43 [EN] opacity 0.9s ease
+- L43 [EN] keyframes tapPulse
+- L43 [EN] keyframes fadeInUp
+- L43 [EN] keyframes shakeX
+- L168 [EN] shakeX 0.5s ease 0.5s
+- L186 [EN] fadeInUp 0.7s ease
+- L186 [EN] s forwards
+- L202 [EN] opacity 0.6s ease
+- L220 [EN] opacity 0.8s ease
+- L261 [EN] opacity 0.5s ease
+
+## scenes/lang-select.js
+
+- L6 [KO] 언어
+- L6 [KO] 한국어
+- L6 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L6 [EN] ellipse at 50
+- L6 [EN] opacity 0.6s ease
+- L122 [EN] opacity 0.4s ease
+
+## scenes/lobby.js
+
+- L29 [EN] lobby-root bg-ruins
+- L29 [EN] currency-group currency-extra
+- L66 [KO] 동료 상점"
+- L66 [KO] 업적"
+- L66 [KO] 설정"
+- L74 [KO] 개발자 도구
+- L74 [EN] opacity 0.05s
+- L188 [EN] px rgba
+- L238 [EN] px rgba
+- L259 [EN] Noto Serif KR',serif
+- L293 [KO] 골드 ‹VAR›개가 있군. 차원석으로 교환할 수 있네.
+- L295 [KO] 골드가 조금 모자라네. ‹VAR›개가 있어야 차원석 하나를 주지.
+- L296 [KO] 골드가 없으면 거래가 안 된다네. 스테이지를 더 클리어해 보시게.
+- L298 [EN] You have
+- L298 [EN] Gold. I can exchange it for Dimensional Stones.
+- L300 [EN] A bit short. You need
+- L300 [EN] Gold per Dimensional Stone.
+- L301 [EN] No Gold, no deal. Clear more stages to earn some.
+- L303 [EN] px rgba
+- L356 [KO] 필요 골드':'Cost',
+- L356 [KO] 구매':'Exchange',
+- L356 [EN] c0ff', barColor
+- L394 [KO] 필요 골드
+- L396 [KO] 필요 영혼조각
+- L398 [KO] 필요 차원석
+- L495 [EN] px rgba
+- L530 [EN] px rgba
+- L543 [KO] 슈브니구라스의 축복
+- L545 [KO] 어계
+- L545 [KO] 황계 전환 시스템
+- L568 [EN] px rgba
+- L580 [KO] 뭔가 잘못됐다
+- L582 [KO] 하하
+- L582 [KO] 하하하
+- L582 [KO] 하하하하
+- L582 [KO] 하하하하하
+- L582 [KO] 하하하하하하
+- L583 [KO] 하하하하하하하하
+- L583 [KO] 하하하하하하하하하하하하
+- L597 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L632 [EN] px rgba
+- L652 [KO] 더 담을 수 없다.
+- L652 [EN] You cannot hold any more.
+- L657 [EN] button data-q
+- L670 [KO] 개 받기 ·
+- L712 [KO] 스테이지 입장마다 재고 리셋
+- L714 [KO] 품절
+- L721 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L731 [EN] px rgba
+- L746 [KO] 오늘 물건은 다 팔렸다.
+- L746 [KO] 다음 스테이지를 클리어하면 새 물건이 들어온다.
+- L746 [EN] Sold out for now.
+- L746 [EN] New stock arrives after your next stage clear.
+- L753 [KO] 차원상인은 "골드
+- L753 [KO] 차원석"처럼 이름이 명시되는데 혼돈시장은 아이콘만 있어서
+- L753 [KO] 뭐가 나온 건지 헷갈린다는 피드백 — 재화 이름 라벨 추가(shop-scene.
+- L753 [KO] 와 동일 이름 사용)
+- L753 [KO] 강화석', en:'Enhance Stone'
+- L753 [KO] 천운석', en:'Sky Stone'
+- L753 [KO] 천령과', en:'Spirit Fruit'
+- L753 [KO] 태극석', en:'Taeguk Stone'
+- L753 [KO] 차원석', en:'Dimension Stone'
+- L753 [KO] 영혼석', en:'Soul Stone'
+- L753 [KO] 순리석', en:'Sunri Stone'
+- L753 [EN] Enhance Stone'
+- L753 [EN] Sky Stone'
+- L753 [EN] Spirit Fruit'
+- L753 [EN] Taeguk Stone'
+- L753 [EN] Dimension Stone'
+- L753 [EN] Soul Stone'
+- L753 [EN] Sunri Stone'
+- L830 [EN] px rgba
+- L852 [EN] Noto Serif KR',serif
+- L860 [EN] px rgba
+- L874 [KO] 그러고 보니... 네가 태어나던 날 밤, 이상한 꿈을 꾸었단다.
+- L874 [KO] 하나였던 달이 둘로 갈라지더니, 다시 하나로 겹쳐지는 꿈이었지.
+- L874 [KO] 그 꿈이... 무엇을 뜻하는지 이제야 알겠구나."
+- L875 [EN] Now that I think of it... the night you were born, I had a strange dream.
+- L875 [EN] A single moon split in two, then merged back into one.
+- L875 [EN] I finally understand now... what that dream meant.
+- L880 [KO] 요즘 망랑계 쪽 기운이 심상치 않구나.
+- L880 [KO] 그 곳의 문이 서서히 열리고 있는 듯하다.
+- L881 [EN] I sense something stirring in the Chaos Realm lately.
+- L881 [EN] Its gate seems to be slowly opening.
+- L936 [EN] from 0deg, rgba
+- L936 [EN] sinmokGoldSpin 6s linear infinite
+- L945 [EN] keyframes sinmokCrackPulse
+- L945 [EN] keyframes sinmokGoldSpin
+- L968 [EN] shakeX 0.5s ease
+- L972 [KO] 이 균열, 뭔가 낯익은 기운이 느껴져."
+- L972 [EN] This crack. I feel a strange, familiar presence.
+- L973 [EN] opacity .3s ease
+- L973 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L993 [KO] 기억 조각
+- L998 [KO] 서막
+- L1000 [KO] 모든 것이 폐허가 된 지금, 삼신할머니가 마지막 무당을 깨웠다.
+- L1000 [KO] 하나였던 달이 둘로 갈라지더니, 다시 하나로 겹쳐지는 꿈이었다.
+- L1001 [EN] Now that everything lies in ruins, Samsin Halmi awakened the last shaman.
+- L1001 [EN] A dream where one moon split in two, then merged back into one.
+- L1002 [KO] 난 기억해
+- L1004 [KO] 시즌8
+- L1004 [EN] Season 8
+- L1007 [KO] 아무것도 남길 수 없었지만, 아무것도 모르는 부적 하나가 남았다.
+- L1007 [KO] 난 기억해."
+- L1008 [EN] Nothing could remain
+- L1008 [EN] yet a single talisman, unwritten even by the Record, did.
+- L1008 [EN] I remember.
+- L1012 [KO] 시즌1
+- L1012 [EN] Season 1
+- L1015 [KO] 현계의 원혼들이 잠들었다.
+- L1015 [KO] 귀인국에 오랜만에 평화가 찾아왔다.
+- L1016 [EN] The restless spirits of the Living World are at rest.
+- L1016 [EN] nPeace has returned to Gwi-In-Guk at last.
+- L1018 [KO] 시즌6
+- L1018 [EN] Season 6
+- L1021 [KO] 법칙의 일부를 얻었다.
+- L1021 [KO] 하늘이 갈라진 틈 너머, 어계가 그녀를 기다리고 있었다.
+- L1022 [EN] She had obtained a piece of Law.
+- L1022 [EN] nBeyond the tear in the sky, the Outer Realm awaited her.
+- L1024 [KO] 시즌7
+- L1024 [EN] Season 7
+- L1027 [KO] 하나였던 것은 둘이 된다.
+- L1027 [KO] 그러나 둘이 된 것은... 마침내 서로를 찾는다.
+- L1028 [EN] What was one becomes two.
+- L1028 [EN] nBut what has become two... will, at last, find each other.
+- L1031 [KO] 시즌2
+- L1031 [EN] Season 2
+- L1034 [KO] 타락에서 돌아온 바리공주가 상사화 한 송이를 건넨다.
+- L1034 [KO] 이 꽃처럼... 나도 누군가를 다시 만날 수 있을까."
+- L1035 [EN] Princess Bari, returned from corruption, offers a single sangsahwa flower.
+- L1035 [EN] Like this flower... could I meet someone again too?
+- L1037 [KO] 시즌3
+- L1037 [EN] Season 3
+- L1040 [KO] 도깨비들의 흥겨운 뒤풀이 속에서, 꺽쇠는 조용히 한 아이를 바라보았다.
+- L1040 [KO] 언젠가는, 말해줘야겠지."
+- L1041 [EN] Amid the dokkaebi
+- L1041 [EN] s cheerful after-party, Ggeoksoe quietly watched a child.
+- L1041 [EN] Someday, I
+- L1041 [EN] ll have to tell him.
+- L1043 [KO] 시즌4
+- L1043 [EN] Season 4
+- L1046 [KO] 넋들이 편안히 흩어지는 곳, 선계.
+- L1046 [KO] 애기씨는 처음으로 그 이름을 알았다.
+- L1047 [EN] A place where souls could finally rest
+- L1047 [EN] the Celestial Realm.
+- L1047 [EN] nAegissi learned its name for the first time.
+- L1049 [KO] 시즌5
+- L1049 [EN] Season 5
+- L1052 [KO] 고맙다, 애기씨야. 하지만... 이건 시작에 불과했던 것 같구나."
+- L1052 [KO] 수호신이 낮게 읊조렸다.
+- L1053 [EN] Thank you, Aegissi. But... I fear this was only the beginning.
+- L1053 [EN] nThe guardian god murmured, low and quiet.
+- L1085 [KO] 시즌 N 완료
+- L1099 [KO] 너무 작아 보인다
+- L1109 [EN] circle at center,
+- L1109 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L1114 [EN] px rgba
+- L1114 [EN] memoryHallSpin 50s linear infinite
+- L1133 [EN] transparent 70
+- L1133 [EN] px rgba
+- L1144 [EN] circle at 35
+- L1161 [EN] keyframes memoryHallSpin
+- L1161 [EN] keyframes memoryOrbPulse
+- L1183 [KO] 완전히 새로 시작
+- L1187 [KO] 파트2
+- L1187 [KO] 이제는 우리가 구할 때입니다.
+- L1187 [KO] 진입하시겠습니까?
+- L1187 [EN] Now it is our turn to save her.
+- L1188 [KO] 다시는 지금의 세계로 올 수 없습니다.
+- L1188 [KO] 각오되셨습니까?
+- L1188 [EN] You can never return to this world again.
+- L1189 [KO] 한 번 더, 마지막으로,
+- L1189 [KO] 당신의 모든 걸 포기하고 그녀를 구하시겠습니까?
+- L1189 [EN] One last time
+- L1189 [EN] nwill you give up everything to save her?
+- L1192 [KO] 다양한 경험과 무기가 없다면 애기씨를 구할 수 없다
+- L1194 [KO] 웬만큼 다 해본 사람
+- L1197 [KO] 강화석 던전
+- L1197 [EN] Reinforcement Stone Dungeon
+- L1198 [KO] 무한 던전
+- L1198 [EN] Infinite Dungeon
+- L1199 [KO] 보스 러시
+- L1199 [EN] Boss Rush
+- L1200 [KO] 천운석 던전
+- L1200 [EN] Heaven-Fortune Stone Dungeon
+- L1201 [KO] 천령과 던전
+- L1201 [EN] Heavenly Spirit Fruit Dungeon
+- L1202 [KO] 태극석 던전
+- L1202 [EN] Taegeuk Stone Dungeon
+- L1203 [KO] 혼돈석 던전
+- L1203 [EN] Chaos Stone Dungeon
+- L1204 [KO] 술리석 던전
+- L1204 [EN] Sullri Stone Dungeon
+- L1207 [KO] 부적
+- L1208 [KO] 신검
+- L1208 [EN] Divine Sword
+- L1209 [KO] 신궁
+- L1209 [EN] Divine Bow
+- L1210 [KO] 무당 지팡이
+- L1210 [EN] Shaman Staff
+- L1211 [KO] 영혼낫
+- L1211 [EN] Soul Scythe
+- L1232 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L1237 [EN] px rgba
+- L1259 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L1264 [EN] px rgba
+- L1283 [KO] 완전히 새로 시작
+- L1306 [EN] Shadow Realm
+- L1311 [KO] 원계
+- L1311 [EN] Primal Realm
+- L1313 [KO] 어계
+- L1313 [EN] Outer Realm
+- L1315 [KO] 황계
+- L1315 [EN] Ruined Realm
+- L1317 [KO] 선계
+- L1317 [EN] Celestial Realm
+- L1318 [KO] 현계
+- L1318 [EN] Mortal Realm
+- L1319 [KO] 유명계
+- L1319 [EN] Shadow Realm
+- L1321 [KO] 망랑계
+- L1321 [EN] Chaos Realm
+- L1323 [KO] 귀허계
+- L1323 [EN] Void Realm
+- L1350 [EN] Noto Serif KR',serif
+- L1382 [KO] 지도 준비 중)
+- L1414 [KO] 아직 열리지 않은 계입니다
+- L1414 [EN] This realm has not opened yet
+- L1416 [EN] opacity .25s ease
+- L1435 [EN] Noto Serif KR',serif
+- L1478 [KO] 뚱뚱해
+- L1740 [EN] b style
+- L1772 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L1780 [KO] 한국어
+- L1938 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L1985 [KO] 수령 완료!
+- L2005 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2012 [EN] textarea id
+- L2012 [EN] readonly style
+- L2053 [EN] no clipboard api
+- L2070 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2080 [EN] textarea id
+- L2187 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2246 [KO] 숨겨진
+- L2255 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2332 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2388 [EN] const cb
+- L2433 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L2433 [EN] lobbyDlgIn 0.3s ease
+- L2449 [EN] keyframes lobbyDlgIn
+- L2455 [EN] opacity 0.5s
+- L2633 [EN] clearedChapters reset
+
+## scenes/pet.js
+
+- L50 [EN] h2 class
+
+## scenes/player-scene.js
+
+- L18 [KO] 골드
+- L19 [KO] 몬스터 처치 시 기본 드랍
+- L19 [KO] 스테이지 클리어 보상
+- L19 [KO] 무한 던전(
+- L19 [KO] 서낭당 해금) 처치 드랍
+- L19 [KO] 차원 상인(로비)/상점 재화교환: 다이아 1개
+- L19 [KO] 골드 500개
+- L20 [EN] Basic drop from defeating monsters
+- L20 [EN] Stage clear reward
+- L20 [EN] Infinite Dungeon
+- L20 [EN] unlocked at Guardian Shrine
+- L20 [EN] kill drops
+- L20 [EN] Dimension Merchant
+- L20 [EN] Shop exchange
+- L21 [KO] 다이아
+- L22 [KO] 보스 러시 던전(
+- L22 [KO] 서낭당 해금) 처치 보상
+- L22 [KO] 일반 스테이지 챕터보스 처치 시 확정 +1
+- L22 [KO] 하드 난이도 스테이지 클리어 보상
+- L22 [KO] 업적 달성 보상(한번형/누적 마일스톤 모두)
+- L22 [KO] 초보자 선물(스테이지 5~20 최초클리어)
+- L23 [EN] Boss Rush Dungeon
+- L23 [EN] unlocked at Guardian Shrine
+- L23 [EN] kill reward
+- L23 [EN] on defeating a chapter boss
+- L23 [EN] Hard difficulty stage clear reward
+- L23 [EN] Achievement rewards
+- L23 [EN] infinite milestones
+- L23 [EN] Beginner gift
+- L23 [EN] first clear of stage 5-20
+- L24 [KO] 강화석
+- L24 [EN] Enhance Stone
+- L25 [KO] 강화석 던전(
+- L25 [KO] 대장간 해금) — 골드 대신 드랍
+- L25 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L25 [KO] 강화석 50개
+- L26 [EN] Enhance Stone Dungeon
+- L26 [EN] unlocked at Blacksmith
+- L26 [EN] drops instead of gold
+- L26 [EN] Dimension Merchant
+- L26 [EN] Shop exchange
+- L26 [EN] Enhance Stones
+- L27 [KO] 천운석
+- L27 [EN] Sky Stone
+- L28 [KO] 천운석 던전(
+- L28 [KO] 장승당 해금) — 골드 대신 드랍
+- L28 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L28 [KO] 천운석 40개
+- L29 [EN] Sky Stone Dungeon
+- L29 [EN] unlocked at Totem Hall
+- L29 [EN] drops instead of gold
+- L29 [EN] Dimension Merchant
+- L29 [EN] Shop exchange
+- L29 [EN] Sky Stones
+- L30 [KO] 천령과
+- L30 [EN] Spirit Fruit
+- L31 [KO] 천령과 던전(
+- L31 [KO] 용왕 연못 해금) — 골드 대신 드랍
+- L31 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L31 [KO] 천령과 35개
+- L32 [EN] Spirit Fruit Dungeon
+- L32 [EN] unlocked at Dragon King Pond
+- L32 [EN] drops instead of gold
+- L32 [EN] Dimension Merchant
+- L32 [EN] Shop exchange
+- L32 [EN] Spirit Fruits
+- L33 [KO] 태극석
+- L33 [EN] Taeguk Stone
+- L34 [KO] 태극석 던전(
+- L34 [KO] 신목 해금) — 골드 대신 드랍
+- L34 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L34 [KO] 태극석 20개
+- L35 [EN] Taeguk Stone Dungeon
+- L35 [EN] unlocked at Sacred Tree
+- L35 [EN] drops instead of gold
+- L35 [EN] Dimension Merchant
+- L35 [EN] Shop exchange
+- L35 [EN] Taeguk Stones
+- L36 [KO] 차원석
+- L36 [EN] Dimension Stone
+- L37 [KO] 스테이지 101(시즌2) 이후 일반 스테이지에서 골드 대신 자연 드랍(10%)
+- L37 [KO] 로비 차원 상인: 골드 1,000
+- L37 [KO] 차원석 1개 교환
+- L37 [KO] 상점 재화교환: 다이아 1개
+- L37 [KO] 차원석 20개
+- L38 [EN] From stage 101
+- L38 [EN] Season 2
+- L38 [EN] onward, replaces gold drops in regular stages
+- L38 [EN] Lobby Dimension Merchant
+- L38 [EN] Dimension Stone
+- L38 [EN] Shop exchange
+- L38 [EN] Dimension Stones
+- L39 [KO] 혼돈석
+- L39 [EN] Chaos Stone
+- L40 [KO] 혼돈석 던전(
+- L40 [KO] 시즌2 클리어 후 해금) — 골드 대신 드랍
+- L40 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L40 [KO] 혼돈석 15개
+- L41 [EN] Chaos Stone Dungeon
+- L41 [EN] unlocked after clearing Season 2
+- L41 [EN] drops instead of gold
+- L41 [EN] Dimension Merchant
+- L41 [EN] Shop exchange
+- L41 [EN] Chaos Stones
+- L42 [KO] 순리석
+- L42 [EN] Sunri Stone
+- L43 [KO] 순리석 던전(
+- L43 [KO] 시즌3 클리어 후 해금) — 골드 대신 드랍
+- L43 [KO] 시즌4 스토리 스테이지(301~400)에서 골드 대신 자연 드랍(12%)
+- L43 [KO] 차원 상인/상점 재화교환: 다이아 1개
+- L43 [KO] 순리석 15개
+- L44 [EN] Sunri Stone Dungeon
+- L44 [EN] unlocked after clearing Season 3
+- L44 [EN] drops instead of gold
+- L44 [EN] From Season 4 story stages
+- L44 [EN] replaces gold drops
+- L44 [EN] Dimension Merchant
+- L44 [EN] Shop exchange
+- L44 [EN] Sunri Stones
+- L45 [KO] 영혼석
+- L45 [EN] Soul Stone
+- L46 [KO] 스테이지 101(시즌2) 이후 "빅골드" 드랍이 영혼석으로 대체됨
+- L46 [KO] 로비 차원 상인: 영혼조각
+- L46 [KO] 영혼석 제작(시즌1 클리어 후)
+- L46 [KO] 로비 차원 상인: 차원석
+- L46 [KO] 영혼석
+- L46 [KO] 제작(시즌2 클리어 후)
+- L46 [KO] 상점 재화교환: 다이아 1개
+- L46 [KO] 영혼석 10개
+- L47 [EN] From stage 101
+- L47 [EN] Season 2
+- L47 [EN] onward, replaces
+- L47 [EN] big gold
+- L47 [EN] Lobby Dimension Merchant
+- L47 [EN] craft Soul Fragments
+- L47 [EN] Soul Stone
+- L47 [EN] after clearing Season 1
+- L47 [EN] craft Dimension Stone
+- L47 [EN] after clearing Season 2
+- L47 [EN] Shop exchange
+- L47 [EN] Soul Stones
+- L48 [KO] 선기석
+- L48 [EN] Seongi Stone
+- L49 [KO] 로비 차원 상인: 차원석
+- L49 [KO] 선기석
+- L49 [KO] 제작(시즌4 클리어 후 해금)
+- L50 [EN] Lobby Dimension Merchant
+- L50 [EN] craft Dimension Stone
+- L50 [EN] Seongi Stone
+- L50 [EN] unlocked after clearing Season 4
+- L51 [KO] 규율석
+- L51 [EN] Rule Stone
+- L52 [KO] 던전 드랍 없음 — 상점 "동료 파편 교환"에서 중복으로 쌓인 동료 파편을 규율석으로 교환하는 방식으로만 획득
+- L53 [EN] No dungeon drop
+- L53 [EN] obtained only by exchanging duplicate companion fragments for Rule Stones in the Shop
+- L54 [KO] 만능파편
+- L54 [EN] Universal Fragment
+- L55 [KO] 동료 뽑기에서 이미 보유한 동료가 중복으로 나오면 파편
+- L55 [KO] 으로 전환
+- L55 [KO] 상점 재화교환: 다이아 1개
+- L55 [KO] 만능파편 5개
+- L56 [EN] Pulling a companion you already own converts it to
+- L56 [EN] Shop exchange
+- L56 [EN] Universal Fragments
+- L61 [KO] 대장간
+- L61 [KO] 무기 구매·강화
+- L61 [EN] upgrade weapons
+- L62 [KO] 의원당
+- L62 [EN] Uiwon Hall
+- L62 [KO] 동료 편성
+- L62 [EN] Recruit companions
+- L63 [KO] 서낭당
+- L63 [EN] Seonang Shrine
+- L63 [KO] 무한던전·보스러시
+- L63 [EN] Infinite Dungeon
+- L63 [EN] Boss Rush
+- L64 [KO] 장승당
+- L64 [EN] Jangsang Hall
+- L64 [KO] 건물 업그레이드
+- L64 [EN] Building upgrades
+- L65 [KO] 용왕연못
+- L65 [EN] Dragon King Pond
+- L66 [KO] 신목
+- L66 [EN] Sacred Tree
+- L66 [KO] 영구강화
+- L66 [EN] Permanent upgrades
+- L67 [KO] 시즌1 완료
+- L67 [EN] Season 1 Complete
+- L67 [KO] 차원석·차원상인 오픈
+- L67 [EN] Dimensional Merchant unlocked
+- L68 [KO] 해원맥·저승나비
+- L68 [EN] Jeoseung Nabi
+- L68 [KO] 신규 동료·펫 오픈
+- L68 [EN] New companion
+- L68 [EN] pet unlocked
+- L69 [KO] 강림차사
+- L69 [EN] Gangnim Chasa
+- L69 [KO] 신규 동료 오픈
+- L69 [EN] New companion unlocked
+- L70 [KO] 상사화·시즌2 완료
+- L70 [EN] Season 2 Complete
+- L70 [KO] 상사화 펫 오픈
+- L70 [EN] Sangsahwa pet unlocked
+- L84 [KO] 단계
+- L85 [KO] 기본
+- L107 [KO] 애기씨"
+- L107 [EN] h2 class
+- L190 [KO] 이지 전용 슬롯 확장도 반영
+- L190 [EN] typeof StageSelectScene !
+- L190 [EN] const slotsHTML
+- L190 [EN] const cur
+- L190 [EN] const locked
+- L232 [EN] return slotsHTML
+- L304 [EN] const lv
+- L304 [EN] const cost
+- L304 [EN] const tCost
+- L304 [EN] const maxed
+- L304 [EN] const canBuy
+- L304 [EN] const curVal
+- L304 [EN] const btnLabel
+- L345 [KO] 단계
+- L345 [KO] 최대
+- L345 [KO] 데미지 반사',
+- L345 [EN] reflectDmg', icon
+- L345 [EN] isEn?'Damage Reflect'
+- L347 [KO] 단계
+- L347 [KO] 최대
+- L347 [EN] return '
+- L350 [EN] Soul Registry
+- L350 [KO] 명부 강화
+- L351 [EN] Clear Season 1
+- L351 [KO] 시즌1 클리어 후 해금
+- L353 [EN] Permanent upgrades using Soul Stones
+- L353 [KO] 영혼석으로 영구 강화
+- L353 [EN] const lv
+- L353 [EN] const max
+- L353 [EN] const cost
+- L353 [EN] const maxed
+- L353 [EN] const canBuy
+- L353 [EN] const curVal
+- L353 [EN] const btnLabel
+- L399 [EN] bossBonus,       text
+- L400 [EN] const btnLabel
+- L404 [KO] 강화
+- L405 [EN] Clear Season 3
+- L405 [KO] 시즌3 클리어 후 해금
+- L407 [EN] Permanent upgrades using Sunri Stones
+- L407 [KO] 순리석으로 영구 강화
+- L537 [KO] 다음 층이 열리는 기준
+- L538 [KO] 아무 노드 하나만 3강이면 다음 층 열림
+- L885 [EN] b style
+- L886 [EN] b style
+- L904 [EN] Not enough
+- L904 [KO] 선기석 부족)
+- L921 [EN] px rgba
+- L932 [EN] Unlock after clearing Season 4
+- L932 [KO] 시즌4 클리어 후 해금
+- L950 [EN] Reset Everything
+- L950 [KO] 선술 전체 초기화
+- L953 [EN] This clears roots, all trees, and synergy. Seongi Stones spent will be refunded
+- L953 [KO] 뿌리·모든 나무·시너지가 전부 초기화됩니다. 투자한 선기석 +‹VAR› 환불됩니다. 정말 초기화할까요?
+- L958 [EN] Yes, reset
+- L958 [KO] 예, 초기화
+- L963 [KO] 취소
+- L990 [EN] How to obtain
+- L990 [KO] 획득처
+- L999 [EN] px rgba
+- L1056 [EN] px rgba
+- L1131 [EN] px rgba
+- L1149 [KO] 슬롯
+- L1154 [KO] 저장
+- L1160 [KO] 불러오기
+- L1165 [KO] 삭제
+- L1207 [KO] 공격력
+- L1208 [KO] 방어력
+- L1209 [EN] Move Speed
+- L1209 [KO] 이동속도
+- L1210 [EN] Atk Speed
+- L1210 [KO] 공격속도
+- L1211 [KO] 회피율
+- L1212 [EN] Crit Chance
+- L1212 [KO] 크리티컬 확률
+- L1213 [EN] Crit Mult
+- L1213 [KO] 크리티컬 배율
+- L1214 [EN] Extra DMG
+- L1214 [KO] 추가 데미지
+- L1215 [EN] DMG Reflect
+- L1215 [KO] 피해 반사
+- L1257 [KO] 공격력
+- L1261 [KO] 방어력
+- L1263 [EN] Move Speed
+- L1263 [KO] 이동속도
+- L1265 [EN] Atk Speed
+- L1265 [KO] 공격속도
+- L1267 [KO] 회피율
+- L1269 [EN] Crit Chance
+- L1269 [KO] 크리티컬 확률
+- L1272 [KO] 없음
+- L1273 [EN] Crit Mult
+- L1273 [KO] 크리티컬 배율
+- L1275 [EN] Extra DMG
+- L1275 [KO] 추가 데미지
+- L1276 [KO] 없음
+- L1277 [EN] DMG Reflect
+- L1277 [KO] 피해 반사
+- L1278 [KO] 없음
+- L1285 [KO] 지팡이
+- L1285 [KO] 신궁: 사거리+15%
+- L1286 [KO] 신궁
+- L1286 [KO] 부적: 화상 부여
+- L1287 [KO] 부적
+- L1287 [KO] 영혼낫: 지속시간+15%
+- L1288 [KO] 영혼낫
+- L1288 [KO] 신검: 처치시 쿨감 스택
+- L1288 [EN] CDR Stack on Kill
+- L1289 [KO] 신검
+- L1289 [KO] 지팡이: 크리티컬시 오브 추가
+- L1289 [EN] Bonus Orb on Crit
+- L1333 [EN] Clash x
+- L1334 [KO] 상극 x‹VAR›: 공격력+‹VAR›%/피해+‹VAR›%
+- L1337 [KO] 속성 연쇄: 쿨감+5% (전체)
+- L1346 [KO] 상생: 공격력+6%
+- L1348 [KO] 속성 연쇄: 쿨감+4%
+- L1357 [KO] 상생: 효과+6%
+- L1359 [KO] 속성 연쇄: 효과+4%
+- L1375 [KO] 종합
+- L1376 [KO] 상세
+- L1377 [KO] 시너지
+- L1382 [EN] px rgba
+
+## scenes/shop-scene.js
+
+- L75 [KO] 챕터11 클리어(스테이지110)
+- L76 [KO] 길잡이
+- L104 [KO] 커먼
+- L104 [KO] 언커먼
+- L104 [KO] 레어
+- L104 [KO] 유니크
+- L105 [KO] 에픽
+- L105 [KO] 레전더리
+- L105 [KO] 미소스
+- L105 [KO] 스페셜
+- L105 [KO] 만능
+- L217 [EN] Companion Gacha
+- L217 [KO] 동료 뽑기
+- L218 [EN] Spend Gold or Diamonds to get companion fragments and summons.
+- L218 [KO] 골드 또는 다이아로 동료 파편/완전체를 획득합니다.
+- L226 [EN] Currency Exchange
+- L226 [KO] 재화 교환
+- L227 [EN] Exchange Diamonds for various resources.
+- L227 [KO] 다이아몬드로 각종 재화를 교환합니다.
+- L233 [KO] 시즌6 오픈 필요
+- L237 [EN] Rule Stone
+- L237 [KO] 동료 파편 상점
+- L238 [EN] Exchange companion fragments for Rule Stones
+- L238 [EN] used for Laws
+- L238 [KO] 동료 파편을 규율석(법칙 재화)으로 교환합니다.
+- L244 [EN] Black Market
+- L244 [KO] 암시장
+- L247 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L286 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L294 [KO] 다이아 뽑기'
+- L294 [EN] Diamond Gacha'
+- L341 [KO] 뽑기 결과 (‹VAR›개)
+- L377 [EN] width .3s
+- L397 [KO] 다이아로 재화를 대량 교환
+- L401 [KO] 골드
+- L402 [KO] 강화석
+- L402 [EN] Enhance Stone
+- L403 [KO] 천운석
+- L403 [EN] Sky Stone
+- L404 [KO] 천령과
+- L404 [EN] Spirit Fruit
+- L405 [KO] 태극석
+- L405 [EN] Taeguk Stone
+- L406 [KO] 차원석
+- L406 [EN] Dimension Stone
+- L408 [KO] 혼돈석
+- L408 [EN] Chaos Stone
+- L409 [KO] 순리석
+- L409 [EN] Sunri Stone
+- L411 [KO] 영혼석
+- L411 [EN] Soul Stone
+- L412 [KO] 만능파편
+- L412 [EN] Universal Fragment
+- L415 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L467 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L492 [KO] 해당 등급 동료가 아직 하나도 없는
+- L497 [EN] Noto Serif KR','Apple SD Gothic Neo',serif
+- L518 [KO] 보유 ‹VAR›개 · ‹VAR›개당 ‹VAR›1개
+- L527 [KO] 전부 교환
+- L551 [KO] 중복
+- L551 [KO] 파편
+
+## scenes/stage-select.js
+
+- L14 [EN] Living World
+- L14 [EN] Mortal Realm
+- L15 [KO] 현계
+- L15 [EN] Mortal Realm
+- L16 [KO] 귀인국을 되살려라
+- L16 [EN] Restore the Kingdom
+- L17 [KO] 챕터 1~10
+- L23 [KO] 유명계
+- L23 [EN] Shadow Realm
+- L24 [KO] 저승의 질서를 되찾아라
+- L24 [EN] Restore Order to the Underworld
+- L25 [KO] 챕터 11~20
+- L32 [KO] 망랑계
+- L32 [EN] Chaos Realm
+- L33 [KO] 혼돈과 요술의 문을 넘어라
+- L33 [EN] Cross the Gate of Chaos and Illusion
+- L34 [KO] 챕터 21~30
+- L43 [KO] 귀허계
+- L43 [EN] Void Realm
+- L44 [KO] 소멸과 거듭남의 경계를 넘어라
+- L44 [EN] Cross the Boundary of Annihilation and Rebirth
+- L45 [KO] 챕터 31~40
+- L54 [KO] 선계
+- L54 [EN] Celestial Realm
+- L55 [KO] 타락한 하늘의 문을 넘어라
+- L55 [EN] Cross the Gate of the Fallen Heavens
+- L56 [KO] 챕터 41~50
+- L64 [KO] 원계
+- L64 [EN] Primal Realm
+- L65 [KO] 법칙의 근원과 마주하라
+- L65 [EN] Face the Origin of the Laws
+- L66 [KO] 챕터 51~60
+- L74 [KO] 어계
+- L74 [EN] Outer Realm
+- L75 [KO] 인식 밖의 신격들과 마주하라
+- L75 [EN] Face the Gods Beyond Perception
+- L76 [KO] 챕터 61~70
+- L82 [KO] 황계
+- L82 [EN] Ruined Realm
+- L83 [KO] 시간이 거꾸로 흐르는 반물질의 끝
+- L83 [EN] The Antimatter End Where Time Runs Backward
+- L84 [KO] 챕터 71~80
+- L109 [KO] 이지
+- L110 [KO] 노말
+- L111 [KO] 하드
+- L128 [KO] 이지
+- L129 [KO] 노말
+- L130 [KO] 하드
+- L149 [KO] 이지
+- L150 [KO] 노말
+- L151 [KO] 하드
+- L170 [KO] 이지
+- L171 [KO] 노말
+- L172 [KO] 하드
+- L190 [KO] 이지
+- L191 [KO] 노말
+- L192 [KO] 하드
+- L210 [KO] 이지
+- L211 [KO] 노말
+- L212 [KO] 하드
+- L223 [KO] 이지
+- L224 [KO] 노말
+- L225 [KO] 하드
+- L301 [KO] 재렌더 전 스크롤 위치 저장
+- L301 [KO] 재렌더 후 복원
+- L316 [EN] Noto Serif KR',serif
+- L420 [EN] px rgba
+- L426 [KO] 어계의 축복이 오염도로 뒤집혔습니다
+- L426 [EN] The Blessing of the Outer Realm has turned into corruption
+- L430 [KO] 보유 오염도
+- L430 [KO] 전투력
+- L430 [KO] 만 남습니다.
+- L430 [KO] 황계 어느 스테이지든 도전하면
+- L430 [KO] 승패와 무관하게
+- L430 [KO] 오염도가 깎입니다 — 져도 진행됩니다.
+- L430 [EN] b style
+- L432 [EN] Corruption held
+- L432 [EN] b style
+- L432 [EN] combat power remains.
+- L432 [EN] Challenging any Ruined Realm stage reduces it
+- L432 [EN] win or lose
+- L432 [EN] even defeat makes progress.
+- L448 [EN] px rgba
+- L454 [KO] 동료와 펫은 황계에서 버틸 수 없습니다
+- L454 [EN] Companions and pets cannot endure the Ruined Realm
+- L458 [KO] 편성해도 소환되지 않으며, 편성한 수만큼 전투력만 깎입니다.
+- L458 [KO] 현재 편성
+- L458 [KO] 동료 ‹VAR› · 펫
+- L458 [KO] 전투력
+- L458 [EN] b style
+- L460 [EN] They will not be summoned, and each one you bring only weakens you.
+- L460 [EN] b style
+- L460 [EN] combat power
+- L464 [KO] 혼자서 이겨내야 합니다 — 편성을 해제하세요.
+- L464 [EN] You must endure this alone
+- L464 [EN] unequip everything.
+- L476 [KO] 챕터 보스 이름 (보스 스테이지
+- L476 [KO] 마지막 스테이지)
+- L476 [EN] const bossCleared
+- L476 [EN] const chColor
+- L476 [EN] const chBorder
+- L476 [EN] const bossStage
+- L476 [EN] const midBossStage
+- L476 [EN] const bossName
+- L476 [EN] const midBossName
+- L510 [KO] 미들
+- L511 [KO] 보스
+
+## scenes/vault-scene.js
+
+- L16 [KO] 빌드에 콘텐츠가 존재하는지
+- L17 [KO] 그 시즌을 클리어했는지
+- L19 [EN] h2 class
+- L101 [KO] 일반
+- L101 [KO] 조건형
+- L166 [KO] 적용 중
+- L174 [KO] 미해금')
+- L183 [KO] 해금
+
+## systems/items.js
+
+- L128 [EN] px sans-serif
+- L210 [KO] 자석
+- L211 [KO] 폭탄
+- L212 [KO] 포션
+- L214 [KO] 도깨비 카드
+- L215 [KO] 구미호 카드
+- L216 [KO] 해골귀 카드
+- L400 [KO] 회복 불가
+
+## systems/spawner.js
+
+- L29 [KO] 글리치 몬스터
+- L67 [KO] 같은 킬수 기준이면 강화 레벨이 높을수록 항상 마리당 보상이 더 크다
+- L83 [KO] 두 번째 종
+
+## systems/weapons.js
+
+- L73 [KO] 짧게 날아가 멈춘 후 흔들리는
+- L112 [KO] 너무 크다
+- L156 [KO] 투사체 수
+- L156 [KO] 적 수
+- L275 [KO] 쾅 내려찍기
+- L275 [KO] 그냥 천천히 커지는
+- L534 [KO] 부적
+- L535 [KO] 귀신을 봉인하는 부적을 가장 가까운 적에게 날린다.
+- L536 [KO] 특수 강화
+- L536 [KO] 초 후 부적 +1발
+- L643 [KO] 신검
+- L644 [KO] 사거리 내 적을 향해 베는 강력한 신의 검.
+- L645 [KO] 특수 강화
+- L645 [KO] 잔상 +1개 (3초마다)
+- L697 [KO] 샤사사사삭!
+- L740 [KO] 신궁
+- L741 [KO] 정면으로 화살을 쏜다. 레벨업 시 연사, 각성 시 다발 발사.
+- L742 [KO] 특수 강화
+- L742 [KO] 초마다 유도 분열 화살
+- L827 [KO] 무당 지팡이
+- L828 [KO] 주변을 맴도는 오브를 소환한다. 각성 시 오브를 발사한다.
+- L829 [KO] 특수 강화
+- L829 [KO] 외부 궤도 오브 +1
+- L944 [KO] 영혼낫
+- L945 [KO] 주변에 낫 이펙트를 뿌린다. 낫이 자체 회전하며 사라진다.
+- L946 [KO] 특수 강화
+- L946 [KO] 회오리 낫 (2.5초)
+- L1041 [KO] 무당 방울
+- L1042 [KO] 주변에 충격파를 발생시킨다.
+- L1059 [KO] 수행 염주
+- L1060 [KO] 직선으로 꿰뚫는 염주알을 날린다.
+- L1079 [KO] 천둥북
+- L1080 [KO] 가장 가까운 적에게 번개를 내리친다. 레벨업 시 대상 수 증가.
+- L1107 [KO] 도깨비 도끼
+- L1108 [KO] 도끼가 주인공을 중심으로 왕복 진동한다. 레벨업마다 축이 추가된다.
+- L1149 [KO] 용왕 물줄기
+- L1150 [KO] 토네이도가 날아가며 적을 빨아들인다.
+- L1179 [KO] 도깨비불
+- L1180 [KO] 주인공 주변에 불꽃 장판을 생성한다.
+- L1220 [KO] 독안개
+- L1221 [KO] 주변에 독 안개 장판을 생성한다.
+- L1239 [KO] 정화수 뿌리기
+- L1240 [KO] 발 밑에 정화수 장판을 깐다.
+- L1259 [KO] 정화의 소금
+- L1260 [KO] 소금을 사방에 흩뿌려 적을 맞히고, 맞은 적을 잠시 멈춘다.
+- L1288 [KO] 귀신 손
+- L1289 [KO] 랜덤 위치 땅에서 귀신 손이 솟아오른다.
+- L1318 [KO] 번개 장판
+- L1319 [KO] 범위 내 랜덤 위치에 번개가 떨어진다.
+- L1354 [KO] 저승낫
+- L1355 [KO] 맞은 적의 이동속도를 감소시킨다.
+- L1378 [KO] 얼음 부적
+- L1379 [KO] 범위 내 적을 잠시 빙결시킨다.
+- L1395 [KO] 독 침
+- L1396 [KO] 도트 독 데미지를 입힌다.
+- L1418 [KO] 저주 인형
+- L1419 [KO] 범위 내 적이 받는 데미지를 증가시킨다.
+- L1435 [KO] 현혹 부적
+- L1436 [KO] 범위 내 적을 잠시 아군으로 현혹시킨다. (보스 제외)
+- L1454 [KO] 치유 향
+- L1455 [KO] 주기적으로 소량 HP를 회복한다.
+- L1471 [KO] 신령 방패
+- L1472 [KO] 주기적으로 잠시 무적이 된다.
+- L1488 [KO] 호패
+- L1489 [KO] 골드·경험치 획득량이 증가한다. (패시브)
+- L1506 [KO] 업 구슬
+- L1507 [KO] 공격력이 패시브로 증가한다.
+- L1524 [KO] 무당 북
+- L1525 [KO] 주기적으로 공격력을 일시 증가시킨다.
+- L1558 [EN] px rgba
+- L1566 [KO] 이미지 가로폭 기준 %
+- L1587 [KO] 완벽하다
+- L1619 [EN] polygon points
+- L1667 [KO] 완벽
+- L1681 [EN] clipPath id
+- L1684 [EN] clipPath id
+- L1691 [EN] let genImages
+- L1691 [EN] image href
+- L1695 [EN] image href
+- L1699 [EN] const glowLayer
+- L1699 [EN] svg viewBox
+- L1702 [EN] filter id
+- L1706 [EN] feColorMatrix type
+- L1707 [EN] feComponentTransfer in
+- L1708 [EN] feFuncR type
+- L1708 [EN] feFuncG type
+- L1708 [EN] feFuncB type
+- L1708 [EN] feGaussianBlur in
+- L1709 [EN] feMergeNode in
+- L1710 [EN] feMergeNode in
+- L1710 [EN] filter id
+- L1712 [EN] feColorMatrix type
+- L1713 [EN] feComponentTransfer in
+- L1714 [EN] feFuncR type
+- L1714 [EN] feFuncG type
+- L1714 [EN] feFuncB type
+- L1714 [EN] feGaussianBlur in
+- L1715 [EN] feMergeNode in
+- L1716 [EN] feMergeNode in
+- L1716 [EN] filter id
+- L1718 [EN] feGaussianBlur stdDeviation
+- L1719 [EN] feMergeNode in
+- L1720 [EN] feMergeNode in
+- L1729 [KO] 과 otherEls(비교 대상 원소들) 사이 관계: 상생 있으면 'gen', 상극 있으면 'clash', 없으면 null. (방향 무관 — 표시 목적)
+- L1729 [KO] 삼위일체 발동 토스트 — 장비창(대장간/캐릭터/동료/펫)에서 슬롯 편성이 바뀔 때마다 호출.
+- L1729 [KO] 와 달리 부작용(버프 적용) 없이 슬롯별 무기/동료/펫 오행 일치 여부만 순수 계산.
+- L1729 [KO] 직전 판정 상태와 비교해 새로 켜진(꺼짐
+- L1729 [KO] 켜짐) 슬롯에만 토스트 표시. 장비창 4곳에서 편성 변경 시마다 호출.
+- L1729 [KO] 삼위일체 (
+- L1729 [KO] 슬롯) 발동!
+- L1729 [KO] 무기 상생 5조합
+- L1729 [KO] 생성원소weapon, 대상원소
+- L1729 [KO] 대상weapon에 고유 효과 플래그/배율 설정
+- L1729 [KO] 신궁 사거리(수명) +15%
+- L1729 [KO] 신궁 화살 적중 시 화상
+- L1729 [KO] 영혼낫 지속시간 +15%
+- L1729 [KO] 낫 처치마다 신검 쿨감 스택
+- L1729 [KO] 신검 크리티컬 시 지팡이 오브 임시추가
+- L1729 [KO] 매 스테이지 진입 시 1회 호출 — 장착한 무기/동료/펫의 오행 상생·상극을 계산해 각 인스턴스/player에 배율·플래그로 반영
+- L1729 [KO] 초기화 (재입장 대비 잔여값 제거)
+- L1729 [KO] 삼위일체 달성 슬롯의 오행 목록 — 궤도 시각효과용
+- L1729 [KO] 펫에서 이미 초기화됐을 수 있음 — 없으면 기본 1 유지)
+- L1729 [KO] 하드(3슬롯) 상생 연쇄 2단 완성: 참여 3무기 쿨타임 -5% 추가
+- L1729 [KO] 동료 레이어: 2개 이상 상생 조합 존재 시 동료 공격력 +6%, 하드3슬롯 연쇄완성 시 +4% 추가 쿨감
+- L1729 [KO] 펫 레이어: 2개 이상 상생 조합 존재 시 펫 효과량 +6%, 하드3슬롯 연쇄완성 시 +4% 추가
+- L1729 [KO] 슬롯 번호 일치 크로스 시너지 — 같은 슬롯의 무기/동료/펫 오행이 맞을수록 보너스
+- L1729 [KO] 종 일치(동료+펫): 해당 슬롯 동료 공격력 +8%
+- L1729 [KO] 종 일치(삼위일체): 해당 오행 무기 데미지 +12% + 오행별
+- L1729 [KO] 크리티컬 확률 +8%
+- L1729 [KO] 흡혈 효율
+- L1729 [KO] 미투자 시 무효과)
+- L1729 [KO] 공격속도(쿨감) -8%
+- L1729 [KO] 받는 피해 -10%
+- L1729 [KO] 최대 HP +10%
+- L1729 [KO] 궤도 시각효과용 기록
+- L1729 [KO] 무기 성장(강화+각성) 통합 계산 함수
+- L1729 [KO] 규칙: 0각Lv1~4
+- L1729 [KO] 각Lv1~4(총 20픽)
+- L1729 [KO] 각Lv1(1픽, MAX)
+- L1729 [KO] 각+(데미지+8%/픽)
+- L1729 [KO] 각성(MAX, Lv4 테이블 고정), 22+
+- L1729 [KO] 각,7각... 데미지 +8%/픽
+- L1729 [KO] 표시용 (효과는 5각에서 캡)
+- L1729 [KO] 무기 초월 시스템 (260707
+- L1729 [KO] 번/8번 확정안 기준)
+- L1729 [KO] 랭크 0~10. 누적 데미지%: 1~4성 30%/랭크, 5~8성 40%/랭크, 9성 90%(독립), 10성 130%(독립)
+- L1729 [KO] 재료 수량은 260707
+- L1729 [EN] function elementRelation
+- L1729 [EN] el, otherEls
+- L1729 [EN] const others
+- L1729 [EN] const o of others
+- L1729 [EN] return 'gen'
+- L1729 [EN] return 'clash'
+- L1729 [EN] function computeTrinitySlots
+- L1729 [EN] const mains
+- L1729 [EN] const comps
+- L1729 [EN] const pets
+- L1729 [EN] const slots
+- L1729 [EN] const wEl
+- L1729 [EN] const cEl
+- L1729 [EN] const pEl
+- L1729 [EN] return slots
+- L1729 [EN] function checkTrinityToast
+- L1729 [EN] const cur
+- L1729 [EN] const prev
+- L1729 [EN] let newlyOnCount
+- L1729 [EN] i, newlyOnCount
+- L1729 [EN] function showTrinityToast
+- L1729 [EN] slotIdx, stackIdx
+- L1729 [EN] const el
+- L1729 [EN] opacity .3s ease
+- L1729 [EN] const WEAPON
+- L1729 [EN] staff', to
+- L1729 [EN] bow', to
+- L1729 [EN] talisman', to
+- L1729 [EN] main', to
+- L1729 [EN] sword', to
+- L1729 [EN] const perms
+- L1729 [EN] return perms.some
+- L1729 [EN] function applyElementSynergies
+- L1729 [EN] mainWeapons, companions, activePetData, player
+- L1729 [EN] const w of mainWeapons
+- L1729 [EN] const byId
+- L1729 [EN] const has
+- L1729 [EN] const syn of WEAPON
+- L1729 [EN] syn.from, syn.to
+- L1729 [EN] let clashCount
+- L1729 [EN] const els
+- L1729 [EN] const cEls
+- L1729 [EN] let compSynergy
+- L1729 [EN] const pEls
+- L1729 [EN] let petSynergy
+- L1729 [EN] let petMult
+- L1729 [EN] petMult !
+- L1729 [EN] const pd of activePetData
+- L1729 [EN] mainWeapons.length, companions?.length
+- L1729 [EN] const wSlot
+- L1729 [EN] const cSlot
+- L1729 [EN] const pSlot
+- L1729 [EN] case 'metal'
+- L1729 [EN] case 'wood'
+- L1729 [EN] case 'fire'
+- L1729 [EN] case 'water'
+- L1729 [EN] case 'earth'
+- L1729 [EN] function computeWeaponGrowth
+- L1729 [EN] const awakLv
+- L1729 [EN] totalLv - 1
+- L1729 [EN] const lv
+- L1729 [EN] lv, ascendLv
+- L1729 [EN] totalLv - 1, awakLv, awakSubLv
+- L1729 [EN] lv - 1, overSteps
+- L1729 [EN] const overSteps
+- L1729 [EN] totalLv - 21
+- L1729 [EN] awakLv, awakSubLv
+- L1729 [EN] overSteps, overAwkDmg
+- L1729 [EN] function getTranscendMult
+- L1729 [EN] RANK, rank
+- L1924 [KO] 기준 (영혼석 5·10·15·20·25·30·35·40·60·80, 합 320개/무기).
+- L1924 [KO] 골드/강화석/차원석 수량은 이번 구현에서 처음 정한 잠정치 — 밸런스 확정 전까지 조정 대상.
+- L1924 [KO] 랭크(미시작)는 비용 없음
+- L1924 [KO] 성 이상에서 활성화되는 무기별 서브 메커닉 (부적:관통+1 / 신검:판정폭+50% / 신궁:약한유도 / 지팡이:잔류장판 / 낫:소멸폭발)
+- L1924 [KO] 인게임 스탯 강화 정의 (패시브 슬롯 최대 4개)
+- L1924 [KO] 쿨감 통합 재계산: 스탯(쿨타임) + 펫 효과를 합산해 상한 60% 적용
+- L1924 [KO] 제거 —
+- L1924 [EN] function getTranscendCost
+- L1924 [EN] return TRANSCEND
+- L1924 [EN] RANK, nextRank
+- L1924 [EN] function hasTranscend8
+- L1924 [EN] weaponId, rank
+- L1951 [KO] 는 이제 totalSpd 경로로 분리되어 이 풀과 무관
+- L1951 [KO] 선술 스킬트리 도력
+- L1951 [KO] 쿨감(
+- L1951 [KO] 합산 추가
+- L1951 [KO] 공격력',   icon:'
+- L1951 [KO] 공격력 +8%',       maxLevel:5, apply(p,lv)
+- L1951 [KO] 체력',     icon:'
+- L1951 [KO] 최대 체력 +10%',    maxLevel:5, apply(p,lv)
+- L1951 [KO] 이동속도', icon:'
+- L1951 [KO] 이동속도 +8%',      maxLevel:5, apply(p,lv)
+- L1951 [EN] function recalcCdReduction
+- L1951 [EN] const STAT
+- L1951 [EN] atk',     name
+- L1951 [EN] hp',      name
+- L1951 [EN] const b
+- L1951 [EN] mov',     name
+- L1962 [KO] 스탯과 같은
+- L1962 [KO] 풀을 공유해서 사실상 동일 효과였던 버그 수정.
+- L1962 [KO] 공속 스탯)를 직접 올리는 별개 경로로 재배선 — 이 경로는 각 무기 fire()의 spdScale로 이미 쿨타임에 곱연산 적용 중(신목 공속강화와 동일 방식)
+- L1962 [KO] 공격속도', icon:'
+- L1962 [KO] 공격속도 +8%',      maxLevel:5, apply(p,lv)
+- L1962 [KO] 쿨타임',   icon:'
+- L1962 [KO] 쿨타임 감소 -6%',   maxLevel:5, apply(p,lv)
+- L1962 [KO] 흡혈',     icon:'
+- L1962 [KO] 공격 시 HP 흡수',   maxLevel:5, apply(p,lv)
+- L1962 [KO] 자석',     icon:'
+- L1962 [KO] 경험치 범위 +40',   maxLevel:5, apply(p,lv)
+- L1962 [KO] 번: 실제 효과(잔상 검 소환, 3초마다)와 전혀 다른 죽은 텍스트였음 — 한글판 기준으로 수정
+- L1962 [KO] 진화 시스템 삭제 — 각성은 대장간
+- L1962 [KO] 시스템으로 통합
+- L1962 [KO] 참고용 보관 (실제 사용 안 함)
+- L1962 [KO] 각성 부적', icon:'
+- L1962 [KO] 신검 각성: 전방 3방향 동시 발사
+- L1962 [KO] 각성 신검', icon:'
+- L1962 [KO] 신궁 각성: 명중 시 분열/복제 (기본 화살 3발, 적 맞으면 2갈래 분열)
+- L1962 [KO] 각성 신궁', icon:'
+- L1962 [KO] 무당지팡이 각성: 오브 착탄 시 AOE 폭발
+- L1962 [KO] 각성 무당 지팡이', icon:'
+- L1962 [KO] 영혼낫 각성: 초록 궤적 AOE 잔상 남기며 회전
+- L1962 [KO] 각성 영혼낫', icon:'
+- L1962 [KO] 초마다 궤적 AOE 잔상 생성
+- L1962 [KO] 투사체 전용 이미지 (손 무기 이미지와 분리)
+- L1962 [KO] 주무기 (sprites/weapons/ - 대장간과 동일한 이미지)
+- L1962 [KO] 보조무기 (sprites/icons/ 스프라이트시트 크롭)
+- L1962 [KO] 정화의 소금 — 레벨업 카드 전용 아이콘
+- L1962 [KO] 동료 전용 이펙트 이미지 (주인공 무기와 완전 분리)
+- L1962 [KO] 시즌2 동료 이펙트
+- L1962 [KO] 시즌3(도깨비 계열) 동료 이펙트 — 그동안 빠져있어서 폴백 도형으로만 그려지던 것
+- L1962 [KO] 시즌4(귀허계) 동료 이펙트
+- L1962 [KO] 시즌5(선계) 영입 동료 — 백운선인/매화검선
+- L1962 [KO] 시즌7(어계) 영입 동료 — 미리내(별빛/황금 태극), 천자(촉수 폭발/보라 소용돌이)
+- L1962 [KO] 렙 이후 각성 강화 횟수
+- L1962 [KO] 무한 강화: 항상
+- L1962 [KO] 각성 이후: 표시 각성만 오르고(6각,7각...) 데미지 +8% — lv/테이블은 5각L4 고정
+- L1962 [KO] 렙 미만: 레벨업
+- L1962 [KO] 렙에서 강화
+- L1962 [KO] 각성 +1
+- L1962 [KO] 다음 각성: 레벨 1로 리셋 / 4각
+- L1962 [KO] 각(MAX): 마지막 테이블(Lv4) 유지
+- L1962 [KO] 현재 레벨 데이터 (maxLevel 이상이면 마지막 레벨 기준)
+- L1962 [KO] 각성 강화 쿨타임 보정 (ascendLv회
+- L1962 [KO] 적용)
+- L1962 [KO] 인 무기(영혼낫 등)는 매 프레임 호출이므로 클램프 적용 안 함
+- L1962 [KO] 레벨업 선택지 생성
+- L1962 [KO] 반환
+- L1962 [KO] 선택지 1개
+- L1962 [KO] 선택지 최대 3개
+- L1962 [KO] 선택지 2개
+- L1962 [KO] 스테이지)
+- L1962 [KO] 무한던전)
+- L1962 [KO] 보스러시)
+- L1962 [KO] 슬롯1: 주무기
+- L1962 [KO] 강화(각성) or 특수강화 중 1개 랜덤 표시
+- L1962 [KO] 강화 or 각성강화 (항상 가능 — 무한 강화)
+- L1962 [KO] 각성 강화
+- L1962 [KO] 특수강화 (maxLevel 있는 경우 제한)
+- L1962 [KO] 슬롯2: 보조무기
+- L1962 [KO] 슬롯 미충족 시 미보유 중 랜덤, 충족 시 보유한 것 강화만
+- L1962 [KO] 신규 최대 3개 채우되 보유 강화도 포함
+- L1962 [KO] 슬롯 가득
+- L1962 [KO] 보유한 것만 강화
+- L1962 [KO] 슬롯3: 스탯
+- L1962 [KO] 종 중 2종 랜덤 (만렙 제외). 스탯 슬롯은 최대 4개(HUD 표시 칸 수)까지만 —
+- L1962 [KO] 버그 수정: 슬롯이 4개 꽉 찬 뒤에도 미보유 스탯이 계속
+- L1962 [EN] atkSpd',  name
+- L1962 [EN] cd',      name
+- L1962 [EN] vampire', name
+- L1962 [EN] magnet',  name
+- L1962 [EN] const WEAPON
+- L1962 [EN] Spirit Bell', desc
+- L1962 [EN] Releases a shockwave around the caster.'
+- L1962 [EN] Prayer Beads', desc
+- L1962 [EN] Fires a piercing bead in a straight line.'
+- L1962 [EN] Thunder Drum', desc
+- L1962 [EN] Fires a shockwave in a frontal arc.'
+- L1962 [EN] Goblin Axe', desc
+- L1962 [EN] Throws an axe that flies out and boomerangs back.'
+- L1962 [EN] s Whirlpool', desc
+- L1962 [EN] A tornado flies forward, pulling in enemies.'
+- L1962 [EN] Goblin Fire', desc
+- L1962 [EN] Creates flame fields at random locations.'
+- L1962 [EN] Poison Mist', desc
+- L1962 [EN] Creates a poisonous mist field around the caster.'
+- L1962 [EN] Sacred Water Rite', desc
+- L1962 [EN] Spreads purifying water beneath your feet.'
+- L1962 [EN] Ghost Hand', desc
+- L1962 [EN] Ghostly hands rise from random ground locations.'
+- L1962 [EN] Lightning Field', desc
+- L1962 [EN] Lightning strikes random locations in range.'
+- L1962 [EN] s Scythe', desc
+- L1962 [EN] Slows the movement speed of struck enemies.'
+- L1962 [EN] Ice Amulet', desc
+- L1962 [EN] Briefly freezes enemies in range.'
+- L1962 [EN] Poison Needle', desc
+- L1962 [EN] Inflicts damage-over-time poison.'
+- L1962 [EN] Cursed Doll', desc
+- L1962 [EN] Increases damage taken by enemies in range.'
+- L1962 [EN] Beguiling Talisman', desc
+- L1962 [EN] Charms nearby enemies to fight for you temporarily.
+- L1962 [EN] Bosses immune
+- L1962 [EN] Healing Incense', desc
+- L1962 [EN] Periodically restores a small amount of HP.'
+- L1962 [EN] Spirit Shield', desc
+- L1962 [EN] Periodically grants brief invincibility.'
+- L1962 [EN] Identity Tag', desc
+- L1962 [EN] Passively increases gold and XP gained.'
+- L1962 [EN] Karma Orb', desc
+- L1962 [EN] Passively increases attack power.'
+- L1962 [EN] s Drum', desc
+- L1962 [EN] Periodically boosts attack power temporarily.'
+- L1962 [EN] Purifying Salt', desc
+- L1962 [EN] Scatters salt in all directions, briefly stunning struck enemies.'
+- L1962 [EN] Talisman', desc
+- L1962 [EN] Throws a sealing talisman at the nearest enemy.'
+- L1962 [EN] Special Upgrade', desc
+- L1962 [EN] Follow-up Talisman'
+- L1962 [EN] Divine Sword', desc
+- L1962 [EN] A powerful divine sword that slashes in a frontal arc.'
+- L1962 [EN] every 3s
+- L1962 [EN] Divine Bow', desc
+- L1962 [EN] Fires arrows in a fan. Level up for rapid fire, awaken for multi-shot.'
+- L1962 [EN] Homing arrow that splits on hit every 3s'
+- L1962 [EN] s Staff', desc
+- L1962 [EN] Summons orbs that orbit around you.'
+- L1962 [EN] Outer Orb'
+- L1962 [EN] Soul Reaper
+- L1962 [EN] Scatters spinning scythe effects around you.'
+- L1962 [EN] Whirl scythe spirals outward
+- L1962 [EN] Attack', desc
+- L1962 [EN] Attack power
+- L1962 [EN] Health', desc
+- L1962 [EN] Move Speed', desc
+- L1962 [EN] Move speed
+- L1962 [EN] Attack Speed', desc
+- L1962 [EN] Attack speed
+- L1962 [EN] Cooldown', desc
+- L1962 [EN] Cooldown reduction -6
+- L1962 [EN] Lifesteal', desc
+- L1962 [EN] Heal HP on attack'
+- L1962 [EN] Magnet', desc
+- L1962 [EN] XP pickup range
+- L1962 [EN] function wi18n
+- L1962 [EN] id, field, fallback
+- L1962 [EN] typeof Lang !
+- L1962 [EN] const t
+- L1962 [EN] return t
+- L1962 [EN] return fallback
+- L1962 [EN] const EVOLVED
+- L1962 [EN] evo', name
+- L1962 [EN] const count
+- L1962 [EN] return Array.from
+- L1962 [EN] const ang
+- L1962 [EN] return new Projectile
+- L1962 [EN] player.x, player.y,
+- L1962 [EN] ff4040', glow
+- L1962 [EN] player, enemies
+- L1962 [EN] const baseAng
+- L1962 [EN] target.y-player.y, target.x-player.x
+- L1962 [EN] speed, Math.sin
+- L1962 [EN] sword', baseAng
+- L1962 [EN] true, throwRange
+- L1962 [EN] ffffff', glow
+- L1962 [EN] player.x, y
+- L1962 [EN] t.y-player.y, t.x-player.x
+- L1962 [EN] ffff40', glow
+- L1962 [EN] c060ff', glow
+- L1962 [EN] const result
+- L1962 [EN] ff88', glow
+- L1962 [EN] new Projectile
+- L1962 [EN] return result
+- L1962 [EN] const PROJ
+- L1962 [EN] const CARD
+- L1962 [EN] const EFFECT
+- L1962 [EN] class WeaponInstance
+- L1962 [EN] return MAIN
+- L1962 [EN] get levels
+- L1962 [EN] return this.def.levels
+- L1962 [EN] return this.defId
+- L1962 [EN] get name
+- L1962 [EN] return this.def.name
+- L1962 [EN] get icon
+- L1962 [EN] return this.def.icon
+- L1962 [EN] get maxLevel
+- L1962 [EN] return this.def.maxLevel
+- L1962 [EN] get isMaxLv
+- L1962 [EN] get isMain
+- L1962 [EN] typeof MAIN
+- L1962 [EN] const curAwk
+- L1962 [EN] get curLevel
+- L1962 [EN] const idx
+- L1962 [EN] this.lv - 1, this.maxLevel - 1
+- L1962 [EN] get ascendCdMult
+- L1962 [EN] return Math.pow
+- L1962 [EN] dt, player, enemies
+- L1962 [EN] const cdReduction
+- L1962 [EN] const spdMult
+- L1962 [EN] this.cd -
+- L1962 [EN] const lvl
+- L1962 [EN] const baseCd
+- L1962 [EN] const rawCd
+- L1962 [EN] return this.def.fire.call
+- L1962 [EN] this, player, enemies
+- L1962 [EN] function getLevelUpChoices
+- L1962 [EN] mainWeapon, subWeapons, statSlots, mode
+- L1962 [EN] const subIds
+- L1962 [EN] const mainWeapons
+- L1962 [EN] function shuffle
+- L1962 [EN] return arr.sort
+- L1962 [EN] const mainPool
+- L1962 [EN] const mw of mainWeapons
+- L1962 [EN] upgrade', weapon
+- L1962 [EN] ascend', weapon
+- L1962 [EN] const spec
+- L1962 [EN] const cur
+- L1962 [EN] special', statId
+- L1962 [EN] spec.id, def
+- L1962 [EN] spec, weapon
+- L1962 [EN] const mainResult
+- L1962 [EN] const subResult
+- L1962 [EN] const newSubPool
+- L1962 [EN] sub', weaponId
+- L1962 [EN] const upgrSubPool
+- L1962 [EN] const combined
+- L1962 [EN] newSubPool, ...upgrSubPool
+- L1962 [EN] const pickedIds
+- L1962 [EN] const c of combined
+- L1962 [EN] const upgradeable
+- L2375 [KO] 로 나와서 5번째 이상이 뽑히던 문제.
+- L2375 [KO] 슬롯이 다 찼으면 이미 보유한 스탯의 강화(
+- L2375 [KO] 만 후보로 남김.
+- L2375 [EN] const statPool
+- L2375 [EN] const def of STAT
+- L2375 [EN] const cur
+- L2375 [EN] stat', statId
+- L2375 [EN] else if
+- L2375 [EN] up', statId
+- L2375 [EN] const statResult
+- L2375 [EN] mainResult, sub
+- L2375 [EN] subResult, stat

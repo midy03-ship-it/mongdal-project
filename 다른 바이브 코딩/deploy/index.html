@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>태블릿용 스마트 시간 기록기</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="icon" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <style>
+        * { box-sizing: border-box; font-family: 'Malgun Gothic', sans-serif; }
+        /* [UPDATE 2026-07-26] 아래로 당길 때 브라우저/웹뷰의 "당겨서 새로고침" 제스처가 발동되지 않도록 문서 레벨에서 차단 */
+        html { overscroll-behavior-y: contain; }
+        /* [UPDATE 2026-07-26] html2app.dev 네이티브 래퍼(SwipeRefreshLayout 추정)는 scrollY===0일 때만 새로고침을 트리거함 —
+           overscroll-behavior는 웹 레벨이라 이 네이티브 감지엔 안 먹힘. 대신 페이지가 항상 최소 1px은 스크롤 여지를 갖도록
+           강제해서(body min-height) scrollY가 0에 절대 머물지 않게 함(아래 JS에서 scrollTo(0,1)로 고정).
+        */
+        body { margin: 0; padding: 20px; background-color: #f4f7f6; overscroll-behavior-y: contain; min-height: calc(100vh + 2px); }
+        .app-layout { display: flex; gap: 20px; width: 100%; max-width: 1000px; margin: 0 auto; align-items: flex-start; }
+        .sidebar { flex: 0 0 320px; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
+        .nav-panel { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .nav-panel h2 { margin: 0 0 16px 0; font-size: 18px; }
+        .container { flex: 1; min-width: 0; width: 100%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        @media (max-width: 700px) {
+            .app-layout { flex-direction: column; }
+            .sidebar { flex: 1 1 auto; width: 100%; position: static; }
+        }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type="date"] { width: 100%; padding: 12px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
+        
+        .time-input-box { display: flex; gap: 10px; }
+        .time-display { flex: 2; padding: 12px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; background: #fff; text-align: center; cursor: pointer; }
+        .time-display.active { border-color: #1a73e8; background: #e8f0fe; color: #174ea6; font-weight: bold; }
+        .time-display.disabled { background: #e9ecef; color: #adb5bd; cursor: not-allowed; }
+        .now-btn { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .now-btn:active { background-color: #5a6268; }
+
+        .main-submit-btn { width: 100%; padding: 14px; font-size: 18px; font-weight: bold; background-color: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        .main-submit-btn:active { background-color: #1557b0; }
+        .main-submit-btn.ongoing-mode { background-color: #28a745; }
+        .main-submit-btn.ongoing-mode:active { background-color: #218838; }
+
+        /* 구글 알람 스타일 통합 모달 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; touch-action: none; overscroll-behavior: contain; }
+        .modal-content { background: white; padding: 24px; border-radius: 24px; width: 340px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .modal-title { font-size: 16px; font-weight: 500; margin-bottom: 16px; color: #5f6368; text-align: left; }
+        
+        /* 휠 피커 영역 — 구글 알람시계 스타일: 무한 루프 스크롤 + 상하 페이드 */
+        .alarm-picker { display: flex; justify-content: center; gap: 6px; align-items: center; height: 154px; margin-bottom: 16px; background: #f8f9fa; border-radius: 12px; border: 1px solid #e0e0e0; overflow: hidden; position: relative; }
+        .alarm-picker::before { content: ''; position: absolute; top: 50%; left: 10px; right: 10px; height: 44px; transform: translateY(-50%); background: rgba(26, 115, 232, 0.08); border-top: 1px solid #1a73e8; border-bottom: 1px solid #1a73e8; pointer-events: none; z-index: 2; }
+        .alarm-picker::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(to bottom, #f8f9fa 0%, rgba(248,249,250,0) 28%, rgba(248,249,250,0) 72%, #f8f9fa 100%); }
+
+        .wheel-column { flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; padding: 55px 0; scrollbar-width: none; }
+        .wheel-column::-webkit-scrollbar { display: none; }
+
+        .wheel-item { height: 44px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #9aa0a6; scroll-snap-align: center; cursor: pointer; }
+        .wheel-item.selected { color: #1a73e8; font-size: 26px; font-weight: bold; }
+        .wheel-divider { font-size: 22px; font-weight: bold; color: #3c4043; z-index: 1; position: relative; }
+
+        /* 구글 스타일 입력 전환 버튼 (키패드 토글) */
+        .google-input-toggle { background: transparent; border: none; color: #1a73e8; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: auto; margin-bottom: 10px; }
+        .google-input-toggle:hover { background: #f1f3f4; }
+
+        /* 키패드 컨테이너 */
+        .keypad-container { display: none; background: #f8f9fa; padding: 12px; border-radius: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0; animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .keypad-display-box { display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 12px; }
+        .keypad-display-box select, .keypad-display-box input { padding: 8px; font-size: 18px; border: 1px solid #dadce0; border-radius: 8px; text-align: center; background: white; outline: none; }
+        .keypad-display-box input.active-box { border-color: #1a73e8; background: #e8f0fe; color: #174ea6; font-weight: bold; }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 220px; margin: 0 auto; }
+        .num-btn { padding: 10px; font-size: 18px; font-weight: 500; background: white; border: 1px solid #dadce0; border-radius: 8px; cursor: pointer; color: #3c4043; }
+        .num-btn:active { background: #e8f0fe; color: #1a73e8; }
+
+        .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+        .modal-btns button { padding: 8px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 20px; cursor: pointer; background: transparent; }
+        .btn-cancel { color: #5f6368; }
+        .btn-cancel:hover { background: #f1f3f4; }
+        .btn-confirm { color: #1a73e8; }
+        .btn-confirm:hover { background: #e8f0fe; }
+
+        /* 리스트 스타일 */
+        .summary-box { background: #e9ecef; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; font-size: 18px; }
+        .summary-box span { font-weight: bold; color: #1a73e8; }
+        
+        .history-list { margin-top: 20px; max-height: 220px; overflow-y: auto; border-top: 1px solid #ddd; padding-top: 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #fff; border: 1px solid #eaeaea; border-radius: 8px; margin-bottom: 8px; font-size: 15px; }
+        .history-info { display: flex; flex-direction: column; gap: 2px; }
+        .history-time { font-weight: bold; color: #333; }
+        .history-duration { font-size: 13px; color: #1a73e8; }
+        .history-duration.ongoing { color: #dc3545; font-weight: bold; }
+        
+        .delete-btn { background: transparent; color: #adb5bd; border: none; font-size: 16px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .delete-btn:hover { color: #dc3545; background: #fff5f5; }
+
+        /* 커스텀 달력 */
+        .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .calendar-nav-btn { background: #f1f3f4; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; font-weight: bold; color: #3c4043; cursor: pointer; }
+        .calendar-nav-btn:active { background: #e0e0e0; }
+        .calendar-title { font-size: 17px; font-weight: bold; color: #3c4043; }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+        .calendar-weekdays span { font-size: 12px; color: #9aa0a6; text-align: center; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 16px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3c4043; border-radius: 50%; cursor: pointer; }
+        .calendar-day:active { background: #f1f3f4; }
+        .calendar-day.other-month { color: #dadce0; }
+        .calendar-day.today { border: 1px solid #1a73e8; }
+        .calendar-day.selected { background: #1a73e8; color: white; font-weight: bold; }
+        .calendar-grid { margin-bottom: 0; }
+
+        /* 30일 추이 그래프 */
+        .chart-panel { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .chart-panel-title { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 4px; }
+        .chart-panel-hint { font-size: 11px; color: #9aa0a6; margin-bottom: 8px; }
+        .chart-tooltip { font-size: 13px; color: #1a73e8; font-weight: bold; min-height: 18px; margin-bottom: 4px; }
+        #trendChart { width: 100%; height: 160px; touch-action: none; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+<div class="sidebar">
+    <div class="nav-panel">
+        <h2>⏱️ 시간 기록기</h2>
+        <div class="calendar-header">
+            <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
+            <span class="calendar-title" id="calendarTitle"></span>
+            <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
+        </div>
+        <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+    <div class="chart-panel">
+        <div class="chart-panel-title">최근 사용 시간</div>
+        <div class="chart-panel-hint">두 손가락으로 오므리고/벌려서 확대·축소, 드래그로 이동</div>
+        <div class="chart-tooltip" id="chartTooltip"></div>
+        <canvas id="trendChart"></canvas>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 시작 시간 영역 -->
+    <div class="input-group">
+        <label id="startLabel">2. 시작 시간</label>
+        <div class="time-input-box">
+            <div id="startTimeDisplay" class="time-display" onclick="openModal('start')">시간 선택</div>
+            <button id="startNowBtn" class="now-btn" onclick="setNow('start')">지금</button>
+        </div>
+    </div>
+
+    <!-- 종료 시간 영역 -->
+    <div class="input-group">
+        <label id="endLabel">3. 종료 시간</label>
+        <div class="time-input-box">
+            <div id="endTimeDisplay" class="time-display" onclick="openModal('end')">미입력 가능</div>
+            <button id="endNowBtn" class="now-btn" onclick="setNow('end')">지금</button>
+        </div>
+    </div>
+
+    <button id="mainSubmitBtn" class="main-submit-btn" onclick="handleSubmit()">기록 추가하기</button>
+
+    <div class="summary-box">
+        선택한 날짜 누적 시간: <span id="dailyTotal">0시간 0분</span>
+    </div>
+
+    <div class="history-list" id="historyList"></div>
+</div>
+</div>
+
+<!-- 구글 알람 스타일 통합 모달 -->
+<div class="modal" id="timeModal">
+    <div class="modal-content">
+        <div class="modal-title" id="modalTitle">시간 설정</div>
+        
+        <button class="google-input-toggle" id="toggleModeBtn" onclick="toggleKeypadMode()" title="키패드로 직접 입력">⌨️</button>
+
+        <!-- 휠 피커 영역 -->
+        <div class="alarm-picker" id="wheelPickerArea">
+            <div class="wheel-column" id="ampmWheel" onscroll="syncWheelToKeypad('ampm')">
+                <div class="wheel-item" data-val="오전">오전</div>
+                <div class="wheel-item" data-val="오후">오후</div>
+            </div>
+            <div class="wheel-column" id="hourWheel" onscroll="syncWheelToKeypad('hour')">
+                <script>for(let k=0; k<3; k++) for(let i=1; i<=12; i++) document.write(`<div class="wheel-item" data-val="${i}">${i}</div>`);</script>
+            </div>
+            <div class="wheel-divider">:</div>
+            <div class="wheel-column" id="minuteWheel" onscroll="syncWheelToKeypad('minute')">
+                <script>for(let k=0; k<3; k++) for(let i=0; i<60; i++) { let m=String(i).padStart(2,'0'); document.write(`<div class="wheel-item" data-val="${m}">${m}</div>`); }</script>
+            </div>
+        </div>
+
+        <!-- 키패드 직접 입력 영역 -->
+        <div class="keypad-container" id="keypadArea">
+            <div class="keypad-display-box">
+                <select id="keypadAmpm" onchange="syncKeypadToWheel()">
+                    <option value="오전">오전</option>
+                    <option value="오후">오후</option>
+                </select>
+                <input type="text" id="keypadHour" placeholder="시" maxlength="2" style="width: 55px;" onclick="setActiveField('hour')" readonly>
+                <span>:</span>
+                <input type="text" id="keypadMinute" placeholder="분" maxlength="2" style="width: 55px;" onclick="setActiveField('minute')" readonly class="active-box">
+            </div>
+            <div class="numpad">
+                <button class="num-btn" onclick="pressNum('1')">1</button>
+                <button class="num-btn" onclick="pressNum('2')">2</button>
+                <button class="num-btn" onclick="pressNum('3')">3</button>
+                <button class="num-btn" onclick="pressNum('4')">4</button>
+                <button class="num-btn" onclick="pressNum('5')">5</button>
+                <button class="num-btn" onclick="pressNum('6')">6</button>
+                <button class="num-btn" onclick="pressNum('7')">7</button>
+                <button class="num-btn" onclick="pressNum('8')">8</button>
+                <button class="num-btn" onclick="pressNum('9')">9</button>
+                <button class="num-btn" onclick="pressNum('00')">00</button>
+                <button class="num-btn" onclick="pressNum('0')">0</button>
+                <button class="num-btn" onclick="pressNum('DEL')">⌫</button>
+            </div>
+        </div>
+
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal()">취소</button>
+            <button class="btn-confirm" onclick="confirmTime()">확인</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // [UPDATE 2026-07-26] 네이티브 웹뷰 래퍼(html2app.dev)의 당겨서 새로고침은 scrollY===0을 감지 조건으로 삼는 것으로 보임.
+    // CSS overscroll-behavior는 웹 렌더링 레벨이라 이 감지에는 영향을 못 줘서, scrollY가 0으로 안착하는 즉시 1로 밀어내
+    // "맨 위"라는 조건 자체가 성립하지 않게 만든다. body min-height로 항상 1px 이상 스크롤 여지를 확보해둔 상태(위 CSS 참고).
+    function pinScrollAwayFromRefreshTrigger() {
+        if (window.scrollY <= 0) window.scrollTo(0, 1);
+    }
+    window.addEventListener('load', pinScrollAwayFromRefreshTrigger);
+    window.addEventListener('touchend', pinScrollAwayFromRefreshTrigger, { passive: true });
+    window.addEventListener('scroll', pinScrollAwayFromRefreshTrigger, { passive: true });
+    pinScrollAwayFromRefreshTrigger();
+
+    function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function formatDateDisplay(dateStr) {
+        const [y, m, d] = dateStr.split('-');
+        return `${y}. ${m}. ${d}.`;
+    }
+
+    let selectedDateValue = ymd(new Date());
+    let calendarViewYear, calendarViewMonth;
+
+    let records = JSON.parse(localStorage.getItem('timeRecords')) || [];
+
+    let activeTarget = null; 
+    let startTimeValue = "";
+    let endTimeValue = "";
+    let isKeypadOpen = false;
+    let activeField = 'minute';
+
+    const calendarTitle = document.getElementById('calendarTitle');
+    const calendarGrid = document.getElementById('calendarGrid');
+
+    {
+        const [y, m] = selectedDateValue.split('-').map(Number);
+        calendarViewYear = y;
+        calendarViewMonth = m - 1;
+    }
+
+    function changeCalendarMonth(delta) {
+        calendarViewMonth += delta;
+        if (calendarViewMonth < 0) { calendarViewMonth = 11; calendarViewYear--; }
+        else if (calendarViewMonth > 11) { calendarViewMonth = 0; calendarViewYear++; }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        calendarTitle.innerText = `${calendarViewYear}년 ${calendarViewMonth + 1}월`;
+        calendarGrid.innerHTML = '';
+        const firstDay = new Date(calendarViewYear, calendarViewMonth, 1).getDay();
+        const daysInMonth = new Date(calendarViewYear, calendarViewMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(calendarViewYear, calendarViewMonth, 0).getDate();
+        const todayStr = ymd(new Date());
+
+        const cells = [];
+        for (let i = firstDay - 1; i >= 0; i--) {
+            cells.push({ day: daysInPrevMonth - i, other: true, month: calendarViewMonth - 1, year: calendarViewYear });
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            cells.push({ day: d, other: false, month: calendarViewMonth, year: calendarViewYear });
+        }
+        let nextDay = 1;
+        while (cells.length % 7 !== 0) {
+            cells.push({ day: nextDay++, other: true, month: calendarViewMonth + 1, year: calendarViewYear });
+        }
+
+        cells.forEach(cell => {
+            let y = cell.year, m = cell.month;
+            if (m < 0) { m = 11; y--; }
+            else if (m > 11) { m = 0; y++; }
+            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
+            const div = document.createElement('div');
+            div.className = 'calendar-day'
+                + (cell.other ? ' other-month' : '')
+                + (dateStr === todayStr ? ' today' : '')
+                + (dateStr === selectedDateValue ? ' selected' : '');
+            div.innerText = cell.day;
+            div.onclick = () => selectDate(dateStr);
+            calendarGrid.appendChild(div);
+        });
+    }
+
+    function selectDate(dateStr) {
+        selectedDateValue = dateStr;
+        renderCalendar();
+        updateDisplay();
+    }
+
+    const startTimeDisplay = document.getElementById('startTimeDisplay');
+    const endTimeDisplay = document.getElementById('endTimeDisplay');
+    const startNowBtn = document.getElementById('startNowBtn');
+    const startLabel = document.getElementById('startLabel');
+    const endLabel = document.getElementById('endLabel');
+    const mainSubmitBtn = document.getElementById('mainSubmitBtn');
+    
+    const timeModal = document.getElementById('timeModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const toggleModeBtn = document.getElementById('toggleModeBtn');
+    const wheelPickerArea = document.getElementById('wheelPickerArea');
+    const keypadArea = document.getElementById('keypadArea');
+    
+    const keypadAmpm = document.getElementById('keypadAmpm');
+    const keypadHour = document.getElementById('keypadHour');
+    const keypadMinute = document.getElementById('keypadMinute');
+
+    function openModal(target) {
+        if (target === 'start' && getOngoingRecord()) return;
+        activeTarget = target;
+        modalTitle.innerText = target === 'start' ? '시작 시간 설정' : '종료 시간 설정';
+        
+        isKeypadOpen = false;
+        wheelPickerArea.style.display = 'flex';
+        keypadArea.style.display = 'none';
+        toggleModeBtn.innerHTML = '⌨️';
+        toggleModeBtn.title = '키패드로 직접 입력';
+
+        timeModal.style.display = 'flex';
+
+        const now = new Date();
+        let h = now.getHours();
+        let m = now.getMinutes();
+        let isPm = h >= 12;
+        if (h === 0) h = 12;
+        else if (h > 12) h -= 12;
+
+        setWheelPosition('ampmWheel', isPm ? '오후' : '오전');
+        setWheelPosition('hourWheel', String(h));
+        setWheelPosition('minuteWheel', String(m).padStart(2, '0'));
+        
+        keypadAmpm.value = isPm ? '오후' : '오전';
+        keypadHour.value = String(h);
+        keypadMinute.value = String(m).padStart(2, '0');
+        setActiveField('minute');
+    }
+
+    function closeModal() {
+        timeModal.style.display = 'none';
+    }
+
+    function toggleKeypadMode() {
+        isKeypadOpen = !isKeypadOpen;
+        if (isKeypadOpen) {
+            wheelPickerArea.style.display = 'none';
+            keypadArea.style.display = 'block';
+            toggleModeBtn.innerHTML = '🕒';
+            toggleModeBtn.title = '휠로 선택';
+        } else {
+            wheelPickerArea.style.display = 'flex';
+            keypadArea.style.display = 'none';
+            toggleModeBtn.innerHTML = '⌨️';
+            toggleModeBtn.title = '키패드로 직접 입력';
+            syncKeypadToWheel();
+        }
+    }
+
+    function setActiveField(field) {
+        activeField = field;
+        if (field === 'hour') {
+            keypadHour.classList.add('active-box');
+            keypadMinute.classList.remove('active-box');
+        } else {
+            keypadMinute.classList.add('active-box');
+            keypadHour.classList.remove('active-box');
+        }
+    }
+
+    // [UPDATE 2026-07-26] 구글 알람시계처럼 시/분 휠이 끝없이 도는 느낌을 내기 위한 무한 루프 스크롤
+    const WHEEL_ITEM_H = 44;
+    const WHEEL_LOOP_BLOCK = { hourWheel: 12, minuteWheel: 60 }; // 오전/오후 휠은 원래처럼 안 돈다(실제 구글도 그렇다)
+    const wheelWrapTimers = {};
+    const wheelLastIndex = {};
+
+    function scheduleWheelWrapCheck(wheelId) {
+        if (!(wheelId in WHEEL_LOOP_BLOCK)) return;
+        clearTimeout(wheelWrapTimers[wheelId]);
+        wheelWrapTimers[wheelId] = setTimeout(() => wrapWheelIfNeeded(wheelId), 140);
+    }
+
+    function wrapWheelIfNeeded(wheelId) {
+        const wheel = document.getElementById(wheelId);
+        const block = WHEEL_LOOP_BLOCK[wheelId];
+        const blockPx = block * WHEEL_ITEM_H;
+        const idx = Math.round(wheel.scrollTop / WHEEL_ITEM_H);
+        // 3배로 렌더링된 목록 중 항상 가운데 블록 근처에 머물도록 스크롤 위치를 소리없이 되감는다
+        if (idx < block * 0.5) wheel.scrollTop += blockPx;
+        else if (idx >= block * 2.5) wheel.scrollTop -= blockPx;
+    }
+
+    function hapticTick() {
+        if (navigator.vibrate) navigator.vibrate(8);
+    }
+
+    function syncWheelToKeypad(wheelId) {
+        const val = getSelectedWheelValue(wheelId);
+        if (wheelId === 'ampm') keypadAmpm.value = val;
+        else if (wheelId === 'hour') keypadHour.value = val;
+        else if (wheelId === 'minute') keypadMinute.value = val;
+        updateWheelHighlight(wheelId);
+        scheduleWheelWrapCheck(wheelId);
+    }
+
+    function syncKeypadToWheel() {
+        setWheelPosition('ampmWheel', keypadAmpm.value);
+        setWheelPosition('hourWheel', keypadHour.value || '1');
+        setWheelPosition('minuteWheel', keypadMinute.value.padStart(2, '0') || '00');
+    }
+
+    function pressNum(val) {
+        let target = activeField === 'hour' ? keypadHour : keypadMinute;
+
+        if (val === 'DEL') {
+            target.value = target.value.slice(0, -1);
+        } else {
+            // 항상 최근 입력한 숫자 2자리만 남기고 밀어 넣음 (삭제 없이 덮어쓰기 입력)
+            target.value = (target.value + val).slice(-2);
+        }
+        syncKeypadToWheel();
+    }
+
+    function setWheelPosition(wheelId, value) {
+        const wheel = document.getElementById(wheelId);
+        const items = wheel.querySelectorAll('.wheel-item');
+        const block = WHEEL_LOOP_BLOCK[wheelId];
+        let targetIndex = -1;
+        if (block) {
+            // 무한 루프 목록의 가운데 블록(두 번째 반복 구간)을 시작 위치로 사용
+            for (let i = block; i < block * 2; i++) {
+                if (items[i].dataset.val === value) { targetIndex = i; break; }
+            }
+        } else {
+            items.forEach((item, index) => { if (item.dataset.val === value) targetIndex = index; });
+        }
+        if (targetIndex !== -1) wheel.scrollTop = targetIndex * WHEEL_ITEM_H;
+        updateWheelHighlight(wheelId);
+    }
+
+    function updateWheelHighlight(wheelId) {
+        const wheel = document.getElementById(wheelId);
+        const index = Math.round(wheel.scrollTop / WHEEL_ITEM_H);
+        const items = wheel.querySelectorAll('.wheel-item');
+        items.forEach((item, i) => {
+            if (i === index) item.classList.add('selected');
+            else item.classList.remove('selected');
+        });
+        if (wheelLastIndex[wheelId] !== undefined && wheelLastIndex[wheelId] !== index) hapticTick();
+        wheelLastIndex[wheelId] = index;
+    }
+
+    function getSelectedWheelValue(wheelId) {
+        const wheel = document.getElementById(wheelId);
+        const index = Math.round(wheel.scrollTop / WHEEL_ITEM_H);
+        const items = wheel.querySelectorAll('.wheel-item');
+        return items[index] ? items[index].dataset.val : items[0].dataset.val;
+    }
+
+    function confirmTime() {
+        let ampm, hour, minute;
+
+        if (isKeypadOpen) {
+            ampm = keypadAmpm.value;
+            hour = parseInt(keypadHour.value);
+            minute = parseInt(keypadMinute.value);
+            if (isNaN(hour) || hour < 1 || hour > 12) hour = 12;
+            if (isNaN(minute) || minute < 0 || minute > 59) minute = 0;
+        } else {
+            ampm = getSelectedWheelValue('ampmWheel');
+            hour = parseInt(getSelectedWheelValue('hourWheel'));
+            minute = parseInt(getSelectedWheelValue('minuteWheel'));
+        }
+
+        let h24 = hour;
+        if (ampm === '오후' && h24 < 12) h24 += 12;
+        if (ampm === '오전' && h24 === 12) h24 = 0;
+
+        const timeStr = String(h24).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+        const displayStr = `${ampm} ${hour}:${String(minute).padStart(2, '0')}`;
+
+        if (activeTarget === 'start') {
+            startTimeValue = timeStr;
+            startTimeDisplay.innerText = displayStr;
+            startTimeDisplay.classList.add('active');
+        } else {
+            endTimeValue = timeStr;
+            endTimeDisplay.innerText = displayStr;
+            endTimeDisplay.classList.add('active');
+        }
+        closeModal();
+    }
+
+    function setNow(target) {
+        if (target === 'start' && getOngoingRecord()) return;
+
+        const now = new Date();
+        const h24 = now.getHours();
+        const m = now.getMinutes();
+        const timeStr = String(h24).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        
+        let ampm = h24 >= 12 ? '오후' : '오전';
+        let h12 = h24 % 12;
+        if (h12 === 0) h12 = 12;
+        let mStr = String(m).padStart(2, '0');
+
+        if (target === 'start') {
+            startTimeValue = timeStr;
+            startTimeDisplay.innerText = `${ampm} ${h12}:${mStr}`;
+            startTimeDisplay.classList.add('active');
+        } else {
+            endTimeValue = timeStr;
+            endTimeDisplay.innerText = `${ampm} ${h12}:${mStr}`;
+            endTimeDisplay.classList.add('active');
+        }
+    }
+
+    function getOngoingRecord() {
+        const selectedDate = selectedDateValue;
+        return records.find(item => item.date === selectedDate && item.duration === null);
+    }
+
+    function handleSubmit() {
+        const selectedDate = selectedDateValue;
+        if (!selectedDate) { alert('날짜를 선택해주세요.'); return; }
+
+        const ongoing = getOngoingRecord();
+
+        if (ongoing) {
+            if (!endTimeValue) { alert('진행 중인 기록의 종료 시간을 입력해주세요.'); return; }
+            const duration = timeToMinutes(endTimeValue) - timeToMinutes(ongoing.start);
+            if (duration < 0) { alert('종료 시간이 시작 시간보다 빠를 수 없습니다.'); return; }
+
+            ongoing.end = endTimeValue;
+            ongoing.duration = duration;
+            localStorage.setItem('timeRecords', JSON.stringify(records));
+            resetInputs();
+            updateDisplay();
+        } else {
+            if (!startTimeValue) { alert('시작 시간을 입력해주세요.'); return; }
+            let duration = null;
+            if (endTimeValue) {
+                duration = timeToMinutes(endTimeValue) - timeToMinutes(startTimeValue);
+                if (duration < 0) { alert('종료 시간이 시작 시간보다 빠를 수 없습니다.'); return; }
+            }
+            records.push({ id: Date.now(), date: selectedDate, start: startTimeValue, end: endTimeValue || null, duration });
+            localStorage.setItem('timeRecords', JSON.stringify(records));
+            resetInputs();
+            updateDisplay();
+        }
+    }
+
+    function resetInputs() {
+        startTimeValue = ""; endTimeValue = "";
+        startTimeDisplay.innerText = "시간 선택"; startTimeDisplay.classList.remove('active');
+        endTimeDisplay.innerText = "미입력 가능"; endTimeDisplay.classList.remove('active');
+    }
+
+    function timeToMinutes(timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    function minutesToHoursMinutes(totalMinutes) {
+        return `${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`;
+    }
+
+    function formatDisplayTime(timeStr) {
+        if (!timeStr) return '';
+        const [h24, m] = timeStr.split(':').map(Number);
+        let ampm = h24 >= 12 ? '오후' : '오전';
+        let h12 = h24 % 12;
+        if (h12 === 0) h12 = 12;
+        return `${ampm} ${h12}:${String(m).padStart(2, '0')}`;
+    }
+
+    function deleteRecord(id) {
+        records = records.filter(item => item.id !== id);
+        localStorage.setItem('timeRecords', JSON.stringify(records));
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const selectedDate = selectedDateValue;
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
+
+        let dailyTotalMinutes = 0;
+        records.filter(item => item.date === selectedDate).forEach(item => {
+            if (item.duration !== null) dailyTotalMinutes += item.duration;
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-info">
+                    <span class="history-time">${formatDisplayTime(item.start)} ~ ${item.end ? formatDisplayTime(item.end) : '진행 중'}</span>
+                    <span class="${item.duration !== null ? 'history-duration' : 'history-duration ongoing'}">${item.duration !== null ? `(${minutesToHoursMinutes(item.duration)})` : '🔴 기록 중 (종료 시간 필요)'}</span>
+                </div>
+                <button class="delete-btn" onclick="deleteRecord(${item.id})">✕</button>
+            `;
+            historyList.appendChild(div);
+        });
+
+        document.getElementById('dailyTotal').innerText = minutesToHoursMinutes(dailyTotalMinutes);
+
+        const ongoing = getOngoingRecord();
+        if (ongoing) {
+            startTimeValue = ongoing.start;
+            startTimeDisplay.innerText = formatDisplayTime(ongoing.start) + " (진행중)";
+            startTimeDisplay.classList.add('disabled');
+            startNowBtn.style.display = 'none';
+            startLabel.innerText = "2. 진행 중인 시작 시간 (수정 불가)";
+            mainSubmitBtn.innerText = "종료 시간 기록하기 (완료)";
+            mainSubmitBtn.classList.add('ongoing-mode');
+        } else {
+            startTimeDisplay.classList.remove('disabled');
+            startNowBtn.style.display = 'block';
+            startLabel.innerText = "2. 시작 시간";
+            mainSubmitBtn.innerText = "기록 추가하기";
+            mainSubmitBtn.classList.remove('ongoing-mode');
+            if (!startTimeValue) startTimeDisplay.innerText = "시간 선택";
+        }
+
+        renderChart();
+    }
+
+    /* ---- 최근 30일 추이 그래프 ---- */
+    const trendChart = document.getElementById('trendChart');
+    const chartTooltip = document.getElementById('chartTooltip');
+    const chartCtx = trendChart.getContext('2d');
+    const TOTAL_CHART_DAYS = 30;
+    const MIN_VISIBLE_DAYS = 5;
+    let chartDaysVisible = TOTAL_CHART_DAYS;
+    let chartWindowStart = 0; // 0 = 가장 오래된 날짜부터 보이는 시작 인덱스
+    let chartPointerState = null; // 터치/마우스 드래그·핀치 추적용
+
+    function getLast30DaysData() {
+        const days = [];
+        const base = new Date();
+        base.setHours(0, 0, 0, 0);
+        for (let i = TOTAL_CHART_DAYS - 1; i >= 0; i--) {
+            const d = new Date(base);
+            d.setDate(d.getDate() - i);
+            const dateStr = ymd(d);
+            const total = records
+                .filter(r => r.date === dateStr && r.duration !== null)
+                .reduce((sum, r) => sum + r.duration, 0);
+            days.push({ date: dateStr, minutes: total });
+        }
+        return days;
+    }
+
+    function clampChartWindow() {
+        chartDaysVisible = Math.max(MIN_VISIBLE_DAYS, Math.min(TOTAL_CHART_DAYS, Math.round(chartDaysVisible)));
+        const maxStart = TOTAL_CHART_DAYS - chartDaysVisible;
+        chartWindowStart = Math.max(0, Math.min(maxStart, Math.round(chartWindowStart)));
+    }
+
+    function renderChart() {
+        const dpr = window.devicePixelRatio || 1;
+        const cssWidth = trendChart.clientWidth || 280;
+        const cssHeight = trendChart.clientHeight || 160;
+        trendChart.width = cssWidth * dpr;
+        trendChart.height = cssHeight * dpr;
+        chartCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        chartCtx.clearRect(0, 0, cssWidth, cssHeight);
+
+        clampChartWindow();
+        const allDays = getLast30DaysData();
+        const visibleDays = allDays.slice(chartWindowStart, chartWindowStart + chartDaysVisible);
+        const maxMinutes = Math.max(1, ...visibleDays.map(d => d.minutes));
+
+        const paddingTop = 10, paddingBottom = 24, paddingLeft = 4, paddingRight = 4;
+        const plotHeight = cssHeight - paddingTop - paddingBottom;
+        const plotWidth = cssWidth - paddingLeft - paddingRight;
+        const barSlot = plotWidth / visibleDays.length;
+        const barWidth = Math.max(2, barSlot * 0.6);
+
+        chartCtx.strokeStyle = '#e9ecef';
+        chartCtx.beginPath();
+        chartCtx.moveTo(paddingLeft, paddingTop + plotHeight);
+        chartCtx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+        chartCtx.stroke();
+
+        const todayStr = ymd(new Date());
+        const maxLabels = Math.max(2, Math.floor(plotWidth / 30));
+        const labelStep = Math.max(1, Math.ceil(visibleDays.length / maxLabels));
+
+        visibleDays.forEach((d, idx) => {
+            const barHeight = (d.minutes / maxMinutes) * plotHeight;
+            const x = paddingLeft + idx * barSlot + (barSlot - barWidth) / 2;
+            const y = paddingTop + plotHeight - barHeight;
+            chartCtx.fillStyle = d.date === selectedDateValue ? '#1a73e8' : (d.date === todayStr ? '#8ab4f8' : '#c7d7f5');
+            chartCtx.fillRect(x, y, barWidth, Math.max(1, barHeight));
+
+            const isLastVisible = idx === visibleDays.length - 1;
+            if (idx % labelStep === 0 || isLastVisible) {
+                chartCtx.fillStyle = '#9aa0a6';
+                chartCtx.font = '9px sans-serif';
+                chartCtx.textAlign = 'center';
+                const label = d.date.slice(5).replace('-', '/');
+                chartCtx.fillText(label, x + barWidth / 2, cssHeight - 8);
+            }
+        });
+    }
+
+    function chartXToDayIndex(clientX) {
+        const rect = trendChart.getBoundingClientRect();
+        const relX = clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, relX / rect.width));
+        return chartWindowStart + Math.floor(ratio * chartDaysVisible);
+    }
+
+    function showChartTooltip(clientX) {
+        const allDays = getLast30DaysData();
+        const idx = Math.max(0, Math.min(TOTAL_CHART_DAYS - 1, chartXToDayIndex(clientX)));
+        const d = allDays[idx];
+        if (d) chartTooltip.innerText = `${d.date} : ${minutesToHoursMinutes(d.minutes)}`;
+        return d;
+    }
+
+    function touchDist(t1, t2) {
+        return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    }
+
+    // [UPDATE 2026-07-26] 드래그 도중 브라우저/웹뷰가 스크롤·당겨서새로고침으로 제스처를 가로채가는 문제 —
+    // passive:true였던 탓에 preventDefault가 불가능해 특정 시점에 터치 소유권이 브라우저 쪽으로 넘어가면서
+    // 이후 touchmove가 우리 쪽에 전달되지 않고(=드래그 멈춤) touchend가 탭(클릭)으로 처리되던 버그.
+    // passive:false + preventDefault로 제스처 소유권을 명시적으로 계속 붙잡아둔다.
+    trendChart.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            chartPointerState = { mode: 'pinch', startDist: touchDist(e.touches[0], e.touches[1]), startDays: chartDaysVisible, startWindow: chartWindowStart };
+        } else if (e.touches.length === 1) {
+            e.preventDefault();
+            chartPointerState = { mode: 'pan', startX: e.touches[0].clientX, startWindow: chartWindowStart, moved: false };
+        }
+    }, { passive: false });
+
+    trendChart.addEventListener('touchmove', (e) => {
+        if (!chartPointerState) return;
+        e.preventDefault();
+        if (chartPointerState.mode === 'pinch' && e.touches.length === 2) {
+            const dist = touchDist(e.touches[0], e.touches[1]);
+            const ratio = chartPointerState.startDist / Math.max(1, dist);
+            chartDaysVisible = chartPointerState.startDays * ratio;
+            clampChartWindow();
+            renderChart();
+        } else if (chartPointerState.mode === 'pan' && e.touches.length === 1) {
+            const dx = e.touches[0].clientX - chartPointerState.startX;
+            if (Math.abs(dx) > 3) chartPointerState.moved = true;
+            const dayWidth = trendChart.clientWidth / chartDaysVisible;
+            const dayDelta = -dx / dayWidth;
+            chartWindowStart = chartPointerState.startWindow + dayDelta;
+            clampChartWindow();
+            renderChart();
+            showChartTooltip(e.touches[0].clientX);
+        }
+    }, { passive: false });
+
+    let chartLastMoved = false;
+    trendChart.addEventListener('touchend', (e) => {
+        chartLastMoved = !!(chartPointerState && chartPointerState.moved);
+        chartPointerState = null;
+    });
+
+    trendChart.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        chartDaysVisible += e.deltaY > 0 ? 2 : -2;
+        clampChartWindow();
+        renderChart();
+    }, { passive: false });
+
+    let mouseDragState = null;
+    trendChart.addEventListener('mousedown', (e) => {
+        mouseDragState = { startX: e.clientX, startWindow: chartWindowStart };
+    });
+    trendChart.addEventListener('mousemove', (e) => {
+        if (mouseDragState) {
+            const dx = e.clientX - mouseDragState.startX;
+            const dayWidth = trendChart.clientWidth / chartDaysVisible;
+            chartWindowStart = mouseDragState.startWindow - dx / dayWidth;
+            clampChartWindow();
+            renderChart();
+        }
+        showChartTooltip(e.clientX);
+    });
+    window.addEventListener('mouseup', () => { mouseDragState = null; });
+
+    trendChart.addEventListener('click', (e) => {
+        if (chartLastMoved) { chartLastMoved = false; return; }
+        const d = showChartTooltip(e.clientX);
+        if (d) selectDate(d.date);
+    });
+
+    window.addEventListener('resize', renderChart);
+
+    renderCalendar();
+    updateDisplay();
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+    }
+</script>
+
+</body>
+</html>

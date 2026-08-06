@@ -71,7 +71,7 @@ const BuildingScene = (() => {
             🏛️ ${isEn ? 'Buildings' : '건물'}
           </div>
           <div style="font-size:12px;color:#c8a0e0;">
-            ${_cimg('cheonunseok')} ${(saveData.cheonunseok||0)}
+            ${_cimg('cheonunseok')} ${Format.num(saveData.cheonunseok||0)}
           </div>
         </div>
 
@@ -194,7 +194,7 @@ const BuildingScene = (() => {
           </div>
           ${!isPast && !isCur && l.cost.gold > 0 ? `
           <div style="font-size:10px;color:rgba(200,200,200,0.35);text-align:right;">
-            ${_cimg('gold')}${l.cost.gold.toLocaleString()}<br>${_cimg('cheonunseok')}${l.cost.cheonunseok}
+            ${_cimg('gold')}${Format.num(l.cost.gold)}<br>${_cimg('cheonunseok')}${Format.num(l.cost.cheonunseok)}
           </div>` : ''}
         </div>
       `;
@@ -222,7 +222,7 @@ const BuildingScene = (() => {
             ${b.icon} ${isEn ? (b.nameEn||b.name) : b.name}
           </div>
           <div style="font-size:12px;color:#f0c840;">
-            ${_cimg('gold')}${gold.toLocaleString()} ${_cimg('cheonunseok')}${cheonunseok}
+            ${_cimg('gold')}${Format.num(gold)} ${_cimg('cheonunseok')}${Format.num(cheonunseok)}
           </div>
         </div>
 
@@ -262,7 +262,7 @@ const BuildingScene = (() => {
                 letter-spacing:.05em;
               ">
                 ${isEn?'Upgrade':'강화'} Lv.${lv} → Lv.${lv+1}
-                &nbsp;|&nbsp; ${_cimg('gold')}${nextLvData.cost.gold.toLocaleString()} + ${_cimg('cheonunseok')}${nextLvData.cost.cheonunseok}
+                &nbsp;|&nbsp; ${_cimg('gold')}${Format.num(nextLvData.cost.gold)} + ${_cimg('cheonunseok')}${Format.num(nextLvData.cost.cheonunseok)}
               </button>`
           }
         </div>

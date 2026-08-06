@@ -8,23 +8,29 @@ const ShopScene = (() => {
   // ── 비용 ──
   const GOLD_COST_1   = 1000;
   const GOLD_COST_10  = 10000;
+  const GOLD_COST_100 = 100000; // [UPDATE 2026-08-06] 100회 뽑기 추가 — 10회와 동일 비율(×10)로 스케일
   const GEM_COST_1    = 80;
   const GEM_COST_10   = 800;
+  const GEM_COST_100  = 8000;
 
   // ── 뽑기 풀 ── [UPDATE 2026-07-11] 260711_MTOPC.md 1번: 정성굿(골드)=커먼·언커먼·레어 / 대신굿(다이아)=레어·유니크, 레어는 양쪽에 겹쳐 포함
   const GOLD_FULL_WEIGHTS = [
     { id:'ggeogsoe', rarity:'common',   weight:24 },
-    // [UPDATE 2026-07-17] 도깨비 계열 신규 동료 — 커먼 풀은 꺽쇠와 나눠가짐(합산 비중 유지)
-    { id:'baksu',    rarity:'common',   weight:20 },
     { id:'dochi',    rarity:'uncommon', weight:8  },
     { id:'aram',     rarity:'uncommon', weight:8  },
     { id:'danbi',    rarity:'uncommon', weight:8  },
     { id:'gaon',     rarity:'uncommon', weight:8  },
     { id:'cheolgap', rarity:'uncommon', weight:8  },
     { id:'mugsa',    rarity:'uncommon', weight:8  },
-    { id:'janggu_aebi', rarity:'uncommon', weight:8 },
     { id:'cheonga',  rarity:'rare',     weight:4  },
     { id:'sohee',    rarity:'rare',     weight:4  },
+  ];
+  // [UPDATE 2026-07-17] 도깨비 계열 신규 동료(박수/장구애비) — 원래 GOLD_FULL_WEIGHTS에 무조건 포함돼 있어서
+  // 게임 시작부터 뽑혔던 버그. [UPDATE 2026-07-19] 시즌3 진입(season2Clear) 이후에만 골드 풀에 추가되도록 분리.
+  // [UPDATE 2026-07-19] 등급 재조정: 박수=레어, 장구애비=레전더리(첫 레전더리 동료 — 골드 풀 최상위 희귀도라 가중치 최저)
+  const S3_GOLD_WEIGHTS = [
+    { id:'baksu',       rarity:'rare',      weight:4 },
+    { id:'janggu_aebi', rarity:'legendary', weight:1 },
   ];
   const DIAMOND_FULL_WEIGHTS = [
     { id:'cheonga',  rarity:'rare',   weight:10 },
@@ -36,27 +42,62 @@ const ShopScene = (() => {
   const S2_DIAMOND_WEIGHTS = [
     { id:'haewonmaek', rarity:'rare', weight:10 },
   ];
+  // [UPDATE 2026-07-17] 시즌4 해금(시즌3 클리어) 후 다이아 풀에 추가되는 동료
+  // [UPDATE 2026-07-19] 등급 재조정: 환생동자=유니크, 허무검사=레전더리 — 다이아 풀 최상위 희귀도라 가중치 최저
+  const S4_DIAMOND_WEIGHTS = [
+    { id:'hwansaengdongja', rarity:'unique',    weight:20 },
+    { id:'heomugeomsa',     rarity:'legendary', weight:8  },
+  ];
   // [UPDATE 2026-07-16] 강림차사는 스테이지160 클리어 시 스토리로 확정 지급되는 동료(game.js) — 그 전엔
   // 뽑기 풀에 아예 없어야 하는데 조건 없이 항상 풀에 있어서 스토리 해금 전에도 뽑혀버리던 버그 수정.
   // 해금 이후엔(이미 보유 중) 다른 동료처럼 중복 뽑기 시 파편으로 전환되도록 그때만 풀에 포함.
   const GANGNIM_DIAMOND_WEIGHTS = [
     { id:'gangnim',  rarity:'unique', weight:20 },
   ];
-  function diamondPool() {
-    let pool = [...DIAMOND_FULL_WEIGHTS];
-    if (saveData?.season1Clear) pool = pool.concat(S2_DIAMOND_WEIGHTS);
-    if (Unlock.cleared(saveData, 160)) pool = pool.concat(GANGNIM_DIAMOND_WEIGHTS);
+  // [UPDATE 2026-07-22] 시즌5 해금(시즌4 클리어) 후 다이아 풀에 추가되는 동료
+  const S5_DIAMOND_WEIGHTS = [
+    { id:'baekunseonin',   rarity:'legendary', weight:8  },
+    { id:'maehwageomseon', rarity:'unique',    weight:20 },
+  ];
+  // [UPDATE 2026-07-31] 시즌7(어계) 해금 후 다이아 풀에 추가되는 동료.
+  // 천자는 게임 최초의 미소스 등급이라 레전더리(8)보다도 확실히 낮은 가중치(3)를 준다.
+  // (시즌6은 신규 동료 없이 법칙 시스템이 그 자리를 대신했으므로 S6 풀은 존재하지 않음)
+  const S7_DIAMOND_WEIGHTS = [
+    { id:'mirinae', rarity:'legendary', weight:8 },
+    { id:'cheonja', rarity:'mythos',    weight:3 },
+  ];
+  // [UPDATE 2026-07-19] diamondPool()과 동일 패턴 — 골드 풀도 시즌 게이트 동료를 조건부로 추가
+  function goldPool() {
+    let pool = [...GOLD_FULL_WEIGHTS];
+    if (saveData?.season2Clear) pool = pool.concat(S3_GOLD_WEIGHTS);
     return pool;
   }
+  function diamondPool() {
+    let pool = [...DIAMOND_FULL_WEIGHTS];
+    // [UPDATE 2026-07-18] WORLDBUILDING.md 설계대로 해원맥 해금 시점을 "챕터11 클리어(스테이지110)"로 수정
+    // (이전엔 season1Clear=스테이지100 기준이라 저승나비와 함께 "길잡이" 컨셉인데 스토리보다 1챕터 일찍 풀리고 있었음)
+    if (Unlock.cleared(saveData, 110)) pool = pool.concat(S2_DIAMOND_WEIGHTS);
+    // [UPDATE 2026-07-17] 콘텐츠 배포 플래그(CONFIG.CONTENT_RELEASE) 추가 — 스토리 조건 충족해도 플래그가 꺼져있으면 풀에서 제외
+    if (saveData?.season3Clear && isSeasonReleased(4)) pool = pool.concat(S4_DIAMOND_WEIGHTS);
+    if (Unlock.cleared(saveData, 160)) pool = pool.concat(GANGNIM_DIAMOND_WEIGHTS);
+    if (saveData?.season4Clear && isSeasonReleased(5)) pool = pool.concat(S5_DIAMOND_WEIGHTS);
+    if (saveData?.season6Clear && isSeasonReleased(7)) pool = pool.concat(S7_DIAMOND_WEIGHTS); // [UPDATE 2026-07-31]
+    return pool;
+  }
+  // [UPDATE 2026-07-19] 장구애비(레전더리) 추가로 레전더리 등급 동료가 처음 생겨서, 파편 보상 버킷에도 추가
+  // (없으면 골드풀 레전더리는 직접 뽑기 성공 시 중복전환(+10)으로만 파편을 얻을 수 있어 다른 등급보다 불리했음)
   const GOLD_FRAG_WEIGHTS = [
     { rarity:'common',    weight:45 },
     { rarity:'uncommon',  weight:30 },
     { rarity:'rare',      weight:10 },
+    { rarity:'legendary', weight:2  },
     { rarity:'universal', weight:5  },
   ];
+  // [UPDATE 2026-07-19] 허무검사(레전더리) 추가로 다이아 풀도 레전더리 파편 버킷 추가
   const DIAMOND_FRAG_WEIGHTS = [
     { rarity:'rare',      weight:55 },
     { rarity:'unique',    weight:20 },
+    { rarity:'legendary', weight:5  },
     { rarity:'universal', weight:5  },
   ];
 
@@ -87,7 +128,7 @@ const ShopScene = (() => {
     return fullPool.filter(x => x.rarity === rarity);
   }
   function doPull(isGold) {
-    const fullPool = isGold ? GOLD_FULL_WEIGHTS : diamondPool();
+    const fullPool = isGold ? goldPool() : diamondPool();
     const fragPool = isGold ? GOLD_FRAG_WEIGHTS : DIAMOND_FRAG_WEIGHTS;
     if (Math.random() < 0.2) {
       const picked = weightedRandom(fullPool);
@@ -134,15 +175,16 @@ const ShopScene = (() => {
     saveData.companionStars[id]     = stars;
     saveData.companionAwakening[id] = awk;
   }
+  // [UPDATE 2026-08-06] 100회 뽑기 추가 — 10회(=10+1 보너스)와 동일한 10% 보너스 비율로 100+10.
   function pullN(n, isGold) {
     const cost = isGold
-      ? (n === 1 ? GOLD_COST_1 : GOLD_COST_10)
-      : (n === 1 ? GEM_COST_1  : GEM_COST_10);
+      ? (n === 1 ? GOLD_COST_1 : n === 10 ? GOLD_COST_10 : GOLD_COST_100)
+      : (n === 1 ? GEM_COST_1  : n === 10 ? GEM_COST_10  : GEM_COST_100);
     if (isGold  && (saveData.gold || 0) < cost) return;
     if (!isGold && (saveData.gems || 0) < cost) return;
     if (isGold) saveData.gold -= cost;
     else        saveData.gems -= cost;
-    const count = n === 1 ? 1 : 11;
+    const count = n === 1 ? 1 : n === 10 ? 11 : 110;
     const results = [];
     for (let i = 0; i < count; i++) results.push(applyResult(doPull(isGold)));
     lastResults = results;
@@ -161,8 +203,8 @@ const ShopScene = (() => {
           background:none;border:none;color:rgba(200,160,255,0.7);font-size:22px;cursor:pointer;padding:4px 8px;">←</button>
         <div style="font-size:16px;letter-spacing:.12em;color:#e0c8ff;">${title}</div>
         <div style="font-size:12px;display:flex;gap:10px;">
-          <span style="color:#f0c840;">${_cimg('gold')} ${gold.toLocaleString()}</span>
-          <span style="color:#60b8ff;">💎 ${gems.toLocaleString()}</span>
+          <span style="color:#f0c840;">${_cimg('gold')} ${Format.num(gold)}</span>
+          <span style="color:#60b8ff;">💎 ${Format.num(gems)}</span>
         </div>
       </div>`;
   }
@@ -189,6 +231,17 @@ const ShopScene = (() => {
         color: '#60d8ff',
         bg: 'rgba(60,180,255,0.10)',
         border: 'rgba(80,200,255,0.30)',
+      },
+      // [UPDATE 2026-07-24] 시즌6(원계) 법칙 시스템 — 동료 파편을 규율석으로 교환. 시즌6 해금 전엔 목록엔 보이되
+      // 눌러보면 "시즌6 오픈 필요" 안내만 뜨게(goView에서 게이트 체크).
+      {
+        id: 'lawExchange',
+        icon: '⚖️',
+        label: isEn ? 'Fragment → Rule Stone' : '동료 파편 상점',
+        desc: isEn ? 'Exchange companion fragments for Rule Stones (used for Laws).' : '동료 파편을 규율석(법칙 재화)으로 교환합니다.',
+        color: '#a8b8e8',
+        bg: 'rgba(136,152,200,0.10)',
+        border: 'rgba(168,184,232,0.30)',
       },
       // 추후 카테고리 예시:
       // { id:'blackmarket', icon:'🕵️', label: isEn?'Black Market':'암시장', ... },
@@ -226,12 +279,15 @@ const ShopScene = (() => {
     const allComp = GAME_DATA.companions;
     const frags   = saveData.companionFragments || {};
     const isGold  = activeTab === 'gold';
-    const canGold1  = gold >= GOLD_COST_1;
-    const canGold10 = gold >= GOLD_COST_10;
-    const canGem1   = gems >= GEM_COST_1;
-    const canGem10  = gems >= GEM_COST_10;
-    const can1  = isGold ? canGold1  : canGem1;
-    const can10 = isGold ? canGold10 : canGem10;
+    const canGold1   = gold >= GOLD_COST_1;
+    const canGold10  = gold >= GOLD_COST_10;
+    const canGold100 = gold >= GOLD_COST_100;
+    const canGem1    = gems >= GEM_COST_1;
+    const canGem10   = gems >= GEM_COST_10;
+    const canGem100  = gems >= GEM_COST_100;
+    const can1   = isGold ? canGold1   : canGem1;
+    const can10  = isGold ? canGold10  : canGem10;
+    const can100 = isGold ? canGold100 : canGem100;
 
     el.innerHTML = `
       <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
@@ -261,24 +317,34 @@ const ShopScene = (() => {
                 ? (isEn?'Common~Epic companion fragments & summons (80% frag / 20% full)':'커먼~에픽 동료 파편 · 완전체 (80% 파편 / 20% 완전체)')
                 : (isEn?'Rare~Special companion fragments & summons (80% frag / 20% full)':'레어~스페셜 동료 파편 · 완전체 (80% 파편 / 20% 완전체)')}
             </div>
-            <div style="display:flex;gap:8px;">
+            <!-- [UPDATE 2026-08-06] 100회 뽑기(100+10 보너스) 추가 — 버튼 3개라 flex:1로 균등폭 유지 -->
+            <div style="display:flex;gap:6px;">
               <button onclick="ShopScene.pull(1)" style="
-                flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:bold;
+                flex:1;padding:10px 0;border-radius:10px;font-size:12px;font-weight:bold;
                 cursor:${can1?'pointer':'not-allowed'};font-family:inherit;
                 background:${can1?'rgba(180,100,255,0.25)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${can1?'rgba(200,140,255,0.6)':'rgba(255,255,255,0.1)'};
                 color:${can1?'#e0c8ff':'#555'};">
                 1회<br>
-                <span style="font-size:11px;">${isGold?`${_cimg('gold',13)}${GOLD_COST_1.toLocaleString()}`:`💎${GEM_COST_1}`}</span>
+                <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_1)}`:`💎${Format.num(GEM_COST_1)}`}</span>
               </button>
               <button onclick="ShopScene.pull(10)" style="
-                flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:bold;
+                flex:1;padding:10px 0;border-radius:10px;font-size:12px;font-weight:bold;
                 cursor:${can10?'pointer':'not-allowed'};font-family:inherit;
                 background:${can10?'rgba(255,160,40,0.2)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${can10?'rgba(255,200,80,0.5)':'rgba(255,255,255,0.1)'};
                 color:${can10?'#f0d060':'#555'};">
                 10+1회<br>
-                <span style="font-size:11px;">${isGold?`${_cimg('gold',13)}${GOLD_COST_10.toLocaleString()}`:`💎${GEM_COST_10}`}</span>
+                <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_10)}`:`💎${Format.num(GEM_COST_10)}`}</span>
+              </button>
+              <button onclick="ShopScene.pull(100)" style="
+                flex:1;padding:10px 0;border-radius:10px;font-size:12px;font-weight:bold;
+                cursor:${can100?'pointer':'not-allowed'};font-family:inherit;
+                background:${can100?'rgba(255,80,120,0.2)':'rgba(60,60,60,0.3)'};
+                border:1px solid ${can100?'rgba(255,120,150,0.5)':'rgba(255,255,255,0.1)'};
+                color:${can100?'#ff9ab0':'#555'};">
+                100+10회<br>
+                <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_100)}`:`💎${Format.num(GEM_COST_100)}`}</span>
               </button>
             </div>
           </div>
@@ -405,7 +471,81 @@ const ShopScene = (() => {
   function render(el) {
     if (currentView === 'gacha')    renderGacha(el);
     else if (currentView === 'exchange') renderExchange(el);
+    else if (currentView === 'lawExchange') renderLawExchange(el);
     else                            renderMain(el);
+  }
+
+  // [UPDATE 2026-07-24] 동료 파편 → 규율석 교환 (시즌6 법칙 시스템 재화). 등급별로 보유 파편을 합산해서
+  // 교환비(FRAGMENT_EXCHANGE_RATE)만큼씩 규율석으로 바꿈. 시즌6 해금 전엔 안내만 표시.
+  function renderLawExchange(el) {
+    const isEn = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
+    if (!isSeasonReleased(6)) {
+      el.innerHTML = `
+        <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
+          font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
+          display:flex;flex-direction:column;overflow:hidden;">
+          ${headerHTML(isEn?'⚖️ Fragment Exchange':'⚖️ 동료 파편 상점', "ShopScene.goView('main')")}
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px;text-align:center;">
+            <span style="font-size:40px;">🔒</span>
+            <div style="font-size:14px;color:#a8b8e8;font-weight:700;">${isEn?'Requires Season 6':'시즌6 오픈 필요'}</div>
+            <div style="font-size:11px;color:rgba(200,160,255,0.5);">${isEn?'This shop unlocks once the Primal Realm arrives.':'원계(시즌6)가 열리면 이용할 수 있습니다.'}</div>
+          </div>
+        </div>`;
+      return;
+    }
+    const RATES = CONFIG.LAW.FRAGMENT_EXCHANGE_RATE;
+    const frags = saveData.companionFragments || {};
+    // 등급별 파편 총합 계산 (동료 데이터에서 id→rarity 조회)
+    const byRarity = {};
+    for (const [id, cnt] of Object.entries(frags)) {
+      if (!cnt) continue;
+      const c = GAME_DATA.companions.find(x => x.id === id);
+      if (!c) continue;
+      byRarity[c.rarity] = (byRarity[c.rarity] || 0) + cnt;
+    }
+    // [UPDATE 2026-07-31] 여기서 5단계짜리 지역 RARITY_LABEL을 새로 만들어 모듈 상단의 7단계 맵을 가리고 있었음
+    // (에픽/미소스 파편은 라벨이 undefined로 표시됨). 상단의 _rarityLabel 헬퍼를 그대로 쓰도록 정리.
+    // 아울러 교환비표를 7단계로 넓히면서 "해당 등급 동료가 아직 하나도 없는" 줄까지 보이게 됐으므로,
+    // 실제로 존재하는 등급만 노출한다(에픽 동료가 생기면 자동으로 줄이 늘어남).
+    const _existingRarities = new Set(GAME_DATA.companions.map(c => c.rarity));
+    const _rarityRows = Object.keys(RATES).filter(r => _existingRarities.has(r));
+
+    el.innerHTML = `
+      <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
+        font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
+        display:flex;flex-direction:column;overflow:hidden;">
+        ${headerHTML(isEn?'⚖️ Fragment Exchange':'⚖️ 동료 파편 상점', "ShopScene.goView('main')")}
+        <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:11px;color:rgba(200,160,255,0.5);padding:0 4px;">
+            ${isEn?`Exchange duplicate companion fragments for Rule Stones · Have ${_cimg('gyulyulseok',14)}${Format.num(saveData.gyulyulseok||0)}`
+                  :`중복으로 쌓인 동료 파편을 규율석으로 교환합니다 · 보유 ${_cimg('gyulyulseok',14)}${Format.num(saveData.gyulyulseok||0)}`}
+          </div>
+          ${_rarityRows.map(rarity => {
+            const have = byRarity[rarity] || 0;
+            const rate = RATES[rarity];
+            const canExchangeCount = Math.floor(have / rate);
+            const rc = RARITY_COLOR[rarity] || '#aaa';
+            return `
+              <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;
+                background:rgba(255,255,255,0.04);border:1px solid ${rc}55;border-radius:14px;">
+                <div style="flex:1;">
+                  <div style="font-size:14px;color:${rc};font-weight:700;">${_rarityLabel(rarity, isEn)}</div>
+                  <div style="font-size:10px;color:#5a4a3a;margin-top:2px;">
+                    ${isEn?`Have ${Format.num(have)} · ${rate} → ${_cimg('gyulyulseok',10)}1`:`보유 ${Format.num(have)}개 · ${rate}개당 ${_cimg('gyulyulseok',10)}1개`}
+                  </div>
+                </div>
+                <button onclick="ShopScene.exchangeFragmentsForLaw('${rarity}')"
+                  style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;
+                  cursor:${canExchangeCount>0?'pointer':'not-allowed'};font-family:inherit;
+                  background:${canExchangeCount>0?'rgba(136,152,200,0.35)':'rgba(60,60,60,0.3)'};
+                  border:1px solid ${canExchangeCount>0?'#a8b8e8':'rgba(255,255,255,0.1)'};
+                  color:${canExchangeCount>0?'#e8dcc8':'#555'};">
+                  ${isEn?'Exchange':'전부 교환'} ${canExchangeCount>0?`(+${canExchangeCount})`:''}
+                </button>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
   }
 
   function resultRow(r, allComp) {
@@ -457,6 +597,32 @@ const ShopScene = (() => {
     Save.save(saveData);
     render(document.getElementById('app'));
   }
+
+  // [UPDATE 2026-07-24] 등급별 동료 파편을 규율석으로 일괄 교환 — 어떤 동료 파편인지는 안 가리고
+  // 해당 등급 파편들에서 순서대로 소비(등급 내에서는 완전히 상호교환 가능한 재화 취급).
+  function exchangeFragmentsForLaw(rarity) {
+    saveData = Save.load();
+    if (!isSeasonReleased(6)) return;
+    const rate = CONFIG.LAW.FRAGMENT_EXCHANGE_RATE[rarity];
+    if (!rate) return;
+    const frags = saveData.companionFragments || {};
+    const ids = GAME_DATA.companions.filter(c => c.rarity === rarity).map(c => c.id);
+    let total = ids.reduce((sum, id) => sum + (frags[id] || 0), 0);
+    const units = Math.floor(total / rate);
+    if (units <= 0) return;
+    let toConsume = units * rate;
+    for (const id of ids) {
+      if (toConsume <= 0) break;
+      const have = frags[id] || 0;
+      const take = Math.min(have, toConsume);
+      frags[id] = have - take;
+      toConsume -= take;
+    }
+    saveData.companionFragments = frags;
+    saveData.gyulyulseok = (saveData.gyulyulseok || 0) + units;
+    Save.save(saveData);
+    render(document.getElementById('app'));
+  }
   function pull(n) {
     pullN(n, activeTab === 'gold');
   }
@@ -469,5 +635,5 @@ const ShopScene = (() => {
   }
   function exit() {}
 
-  return { enter, exit, goView, setTab, pull, exchange };
+  return { enter, exit, goView, setTab, pull, exchange, exchangeFragmentsForLaw };
 })();

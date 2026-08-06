@@ -38,6 +38,9 @@ function _drawTranscendGlow(ctx, sx, sy, rank, t, mult) {
 class Projectile {
   constructor(x, y, vx, vy, dmg, cfg) {
     this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    // [UPDATE 2026-07-26] 보스가 만드는 투사체는 플레이어를 노려야 하므로 별도 플래그로 표시 —
+    // 없으면 game.js의 충돌판정 루프가 항상 enemies만 순회해서 보스 원거리 패턴이 플레이어에게 전혀 안 맞던 버그가 있었음
+    this.hostile = cfg.hostile || false;
     this.damage  = dmg;
     this.dead    = false;
     this.pierce  = cfg.pierce  || 0;
@@ -52,6 +55,9 @@ class Projectile {
     this.aoe     = cfg.aoe     || 0;
     this.baseAng    = cfg.baseAng;       // 고정 공격 방향 (없으면 진행방향 사용)
     this.pierceAll  = cfg.pierceAll||false; // 범위 내 모든 적 관통 타격
+    // [UPDATE 2026-07-24] 장판형 이펙트를 위→아래 클립 리빌로 그려서 "쾅" 내려찍는 느낌을 주는 연출(매화검선 궁극기 등)
+    this.wipeReveal    = cfg.wipeReveal || false;
+    this.wipeRevealDur = cfg.wipeRevealDur || 0.12;
     this.drawScaleX = cfg.drawScaleX||1; // 도트 이미지 가로 배율
     this.drawScaleY = cfg.drawScaleY||1; // 도트 이미지 세로 배율
     // 이미지 소스 키: 동료 전용 type(companion_*)이 주인공 무기 이미지를 재사용할 때 사용.
@@ -147,8 +153,15 @@ class Projectile {
 
   hitEnemy(enemy) {
     if(enemy.dead) return false;
-    const d=Math.hypot(enemy.x-this.x,enemy.y-this.y);
-    if(d>this.radius+enemy.size) return false;
+    // [UPDATE 2026-07-31] 성능: 이 함수는 "투사체 수 × 적 수"만큼 매 프레임 호출되는 최대 핫패스다.
+    // 원계(적 900마리 이상)에서 투사체 100개면 프레임당 9만 번 — 기존엔 그 첫 줄이 Math.hypot이었다.
+    // ① 사각 범위로 먼저 쳐내고(대부분 여기서 끝) ② 제곱거리로 비교해 sqrt를 아예 제거.
+    const rr = this.radius + enemy.size;
+    const dx = enemy.x - this.x;
+    if (dx > rr || dx < -rr) return false;
+    const dy = enemy.y - this.y;
+    if (dy > rr || dy < -rr) return false;
+    if (dx*dx + dy*dy > rr*rr) return false;
     let dmg=this.damage*(enemy._markedDmgMult||1);
     // 치명타 판정
     const p=window._player;
@@ -165,12 +178,10 @@ class Projectile {
     }
     // [UPDATE 2026-07-10] 무기별 데미지 미터용: 누적 총데미지 + 최근 3초 로그(부드러운 DPS 계산용)
     // 동료 공격은 srcType이 companion_*이라 무기 목록에 안 잡혀 자동 제외됨
-    if(typeof window!=='undefined'){
-      const _dk=this._srcType||this.type;
-      if(!window._dpsTotal) window._dpsTotal={};
-      window._dpsTotal[_dk]=(window._dpsTotal[_dk]||0)+actualDmg;
-      if(!window._dpsLog) window._dpsLog=[];
-      window._dpsLog.push({t:window._gameElapsed||0, k:_dk, d:actualDmg});
+    // [UPDATE 2026-07-31] 성능: 히트 1건마다 {t,k,d} 객체를 배열에 push하던 것을 시간 버킷 누적으로 교체.
+    // 적이 900마리인 구간에선 초당 수천 건이 쌓여 GC 부담 + 매 프레임 전체 재합산까지 겹쳤음(_trackDps 주석 참고).
+    if(typeof window!=='undefined' && window._trackDps){
+      window._trackDps(this._srcType||this.type, actualDmg);
     }
     if(isCrit&&typeof showFloatingText==='function'){
       showFloatingText(enemy.x,enemy.y,'💥'+actualDmg,'#ffdd00');
@@ -178,6 +189,10 @@ class Projectile {
     if(p&&p._vampire>0&&!p._healBlocked){
       const heal=Math.max(1,Math.floor(actualDmg*p._vampire));
       p.hp=Math.min(p.hp+heal,p.maxHp);
+    }
+    // [UPDATE 2026-07-17] 명(命) 1~3단계 — 크리티컬 시 HP 회복
+    if(isCrit&&p&&p._myeongCritHeal>0&&!p._healBlocked){
+      p.hp=Math.min(p.hp+p._myeongCritHeal,p.maxHp);
     }
     // [UPDATE 2026-07-11] 일반 hitEnemy() 경로에서는 dotDmg가 전혀 처리 안 되던 버그 수정 (기존엔 _bounce 전용 경로에서만 적용됨)
     if(this.dotDmg){
@@ -188,7 +203,9 @@ class Projectile {
     // [UPDATE 2026-07-13] 정화의 소금(salt_scatter) — 맞은 적 잠시 정지
     if(this.stunDur){ enemy._stunned=Math.max(enemy._stunned||0,this.stunDur); }
     this.pierced++;
-    if(this.pierced>this.pierce) this.dead=true;
+    // [UPDATE 2026-07-23] pierceAll(범위 내 모든 적 관통)이 생성자에만 있고 실제로는 한 번도 안 읽히던 버그 —
+    // 근접/궤도형 무기(영혼낫/무당지팡이)가 적 1명 맞으면 그대로 죽어버리던 원인. pierceAll이면 소멸 안 시킴.
+    if(this.pierced>this.pierce && !this.pierceAll) this.dead=true;
     return true;
   }
 
@@ -254,11 +271,26 @@ class Projectile {
       ctx.save();
       ctx.translate(sx,sy);
       const _prog=1-Math.max(0,this.life/this.maxLife);
-      const _fs=0.85+_prog*0.3;
+      // [UPDATE 2026-07-24] wipeReveal 이펙트는 전체 수명(1.5초) 내내 서서히 커지는 기존 _fs 애니메이션과 겹쳐서
+      // "쾅 내려찍기"가 아니라 "그냥 천천히 커지는" 것처럼 보였음 — wipeReveal일 땐 크기를 고정하고 클립 리빌만으로 모션을 표현
+      const _fs=this.wipeReveal?1.0:(0.85+_prog*0.3);
       ctx.globalAlpha=Math.min(1,this.life*3)*0.88;
       const _fw=this.aoe*2.2*_fs;
       const _fh=_fw*(this._weaponImg.naturalHeight/this._weaponImg.naturalWidth);
-      ctx.drawImage(this._weaponImg,-_fw/2,-_fh/2,_fw,_fh);
+      if(this.wipeReveal){
+        // 실제로 이미지를 아래로 이동시키는 게 아니라, 위→아래로 노출 영역(clip)을 빠르게 넓혀서
+        // "쾅" 하고 내려찍히는 것처럼 보이게 함
+        const _elapsed=this.maxLife-this.life;
+        const _rp=Math.min(1,_elapsed/this.wipeRevealDur);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-_fw/2,-_fh/2,_fw,_fh*_rp);
+        ctx.clip();
+        ctx.drawImage(this._weaponImg,-_fw/2,-_fh/2,_fw,_fh);
+        ctx.restore();
+      } else {
+        ctx.drawImage(this._weaponImg,-_fw/2,-_fh/2,_fw,_fh);
+      }
       ctx.restore();
       return;
     }
@@ -268,7 +300,8 @@ class Projectile {
       // scythe_sub: 새 이미지(저승낫 이미지.png)는 이미 오른쪽 기준 → 보정 없음
       // 이미지 원본 방향 보정: bow는 세로(위쪽)로 그려진 원본 → +90도
       // staff 날아가는 오브도 이미지가 위쪽 기준이므로 +90도 보정
-      const _imgRotOffset = (this._srcType==='bow'||this._srcType==='staff') ? Math.PI/2
+      // [UPDATE 2026-07-24] 허무검사 궁극기(c_heomugeomsa_ult)도 위쪽 기준으로 그려진 세로 검광이라 동일 보정 필요
+      const _imgRotOffset = (this._srcType==='bow'||this._srcType==='staff'||this._srcType==='c_heomugeomsa_ult') ? Math.PI/2
                           : (this.type==='scythe') ? Math.PI : 0;
       // 장판형 이펙트(도깨비불/독안개/동료폭탄/성수) 전용 스케일·밝기·페이드 계산
       const _isFire = this.type==='goblin_fire';
@@ -460,10 +493,29 @@ class Projectile {
 }
 
 // ── 헬퍼: 가장 가까운 적 ──
+// [UPDATE 2026-07-19] 최적화: 대부분 호출부가 n=1~5인데 매번 전체 생존 적을 정렬(O(m log m))하고 있었음
+// — 무기 발사마다(talisman 등 기본 무기 포함) 호출되는 핫패스라 적이 많이 쌓이는 던전에서 렉의 주 원인.
+// 상위 n개만 유지하는 부분선택(O(m·n))으로 대체 — 반환 결과(오름차순 정렬된 상위 n개)는 기존과 동일.
+// [UPDATE 2026-07-31] 성능: Math.hypot → 제곱거리 비교로 교체.
+// d는 정렬/비교에만 쓰이고 실제 거리값이 밖으로 나가지 않으므로 sqrt가 불필요하다.
+// Math.hypot은 오버플로 방지 처리 때문에 단순 곱셈 대비 수 배 느린데,
+// 원계(챕터51~60)는 적이 동시에 800~960마리라 호출당 수백~수천 번씩 돌던 구간이었음.
 function findNearestEnemies(px,py,enemies,n) {
-  return enemies.filter(e=>!e.dead)
-    .sort((a,b)=>Math.hypot(a.x-px,a.y-py)-Math.hypot(b.x-px,b.y-py))
-    .slice(0,n);
+  const top = []; // 거리 오름차순 유지, 길이 항상 <= n이라 정렬 비용이 사실상 무시할 수준
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.dead) continue;
+    const dx = e.x - px, dy = e.y - py;
+    const d = dx*dx + dy*dy; // 제곱거리 — 대소 관계가 실거리와 동일해서 정렬 결과가 바뀌지 않음
+    if (top.length < n) {
+      top.push({ e, d });
+      top.sort((a,b) => a.d - b.d);
+    } else if (n > 0 && d < top[n-1].d) {
+      top[n-1] = { e, d };
+      top.sort((a,b) => a.d - b.d);
+    }
+  }
+  return top.map(x => x.e);
 }
 
 // ══════════════════════════════════════════
@@ -499,7 +551,7 @@ const MAIN_WEAPON_DEFS = {
       const t8Pierce=(this._transcendRank||0)>=8?1:0; // [UPDATE 2026-07-08] 초월 8성: 전 발사체 관통 +1
       // 일반 부적 수: lv + (각성 있으면 awk+1 추가)
       const count=this.lv+(awk>0?awk+1:0);
-      const _cx=player.x+8, _cy=player.y-30;
+      const _cx=player.x+8, _cy=player.weaponAnchorY(30);
 
       // ── 초기화 ──
       if(!this._mainCd) this._mainCd=0;
@@ -519,7 +571,7 @@ const MAIN_WEAPON_DEFS = {
           const q=this._tadakQueue.splice(i,1)[0];
           q.targets.forEach(t=>{
             const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
-            projs.push(new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
+            projs.push(new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
               {pierce:lvl.pierce+t8Pierce,radius:lvl.radius,life:lvl.life,type:'talisman',
                _homing:true,_homingVeryWeak:true, // [UPDATE 2026-07-10]
                color:'#e04040',glow:'rgba(220,60,40,.5)'}));
@@ -569,7 +621,7 @@ const MAIN_WEAPON_DEFS = {
         if(!targets.length) targets.push({x:player.x,y:player.y-1});
         targets.forEach(e=>{
           const dx=e.x-player.x,dy=e.y-player.y,d=Math.hypot(dx,dy)||1;
-          projs.push(new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
+          projs.push(new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,dmg,
             {pierce:lvl.pierce+t8Pierce,radius:lvl.radius,life:lvl.life,type:'talisman', // [UPDATE 2026-07-10] 메인 발사에 초월8성 관통+1 누락돼있던 것 수정
              _homing:true,_homingVeryWeak:true, // [UPDATE 2026-07-10] 부적도 투척 무기라 아주 약한 유도 부여 (신궁과 동일)
              color:'#e04040',glow:'rgba(220,60,40,.5)'}));
@@ -620,7 +672,7 @@ const MAIN_WEAPON_DEFS = {
         const _spd=lvl.range/0.25;
         for(let i=0;i<bonus;i++){
           const ang=baseAng+angleStep*i;
-          const _ap=new Projectile(player.x,player.y-30,
+          const _ap=new Projectile(player.x,player.weaponAnchorY(30),
             Math.cos(ang)*_spd,Math.sin(ang)*_spd,
             Math.floor(lvl.damage*(player.totalAtk/100)*0.3),
             {radius:8,life:1.25,type:'sword',
@@ -629,7 +681,7 @@ const MAIN_WEAPON_DEFS = {
              throwHitWidth:60,drawScaleX:7.92,drawScaleY:27.32,
              _maxAlpha:0.18,
              color:'#d8d8ff',glow:'rgba(180,180,255,.08)'});
-          _ap._originX=player.x; _ap._originY=player.y-30;
+          _ap._originX=player.x; _ap._originY=player.weaponAnchorY(30);
           projs.push(_ap);
         }
       }
@@ -666,7 +718,7 @@ const MAIN_WEAPON_DEFS = {
         for(const b of this._bladeQueue){
           b.delay-=dt;
           if(b.delay>0){ _stillQueued.push(b); continue; }
-          const _mp=new Projectile(player.x,player.y-30,
+          const _mp=new Projectile(player.x,player.weaponAnchorY(30),
             Math.cos(b.ang)*_spd,Math.sin(b.ang)*_spd,
             b.dmg,
             {radius:8,life:0.6,type:'sword',
@@ -674,7 +726,7 @@ const MAIN_WEAPON_DEFS = {
              throwSword:true,throwRange:lvl.range,throwHideTime:0.2,throwFadeDur:0.15,
              throwHitWidth:t8HitWidth,drawScaleX:2.77,drawScaleY:2.28,
              color:'#c0e0ff',glow:'rgba(180,220,255,.6)'});
-          _mp._originX=player.x; _mp._originY=player.y-30;
+          _mp._originX=player.x; _mp._originY=player.weaponAnchorY(30);
           projs.push(_mp);
         }
         this._bladeQueue=_stillQueued;
@@ -722,7 +774,7 @@ const MAIN_WEAPON_DEFS = {
         const arr=[];
         for(let i=0;i<count;i++){
           const ang=count===1?baseAng:baseAng-spread/2+spread/(count-1)*i;
-          arr.push(new Projectile(player.x,player.y-30,
+          arr.push(new Projectile(player.x,player.weaponAnchorY(30),
             Math.cos(ang)*lvl.speed,Math.sin(ang)*lvl.speed,dmg,
             {pierce:1,radius:lvl.radius,life:_synLife,type:'bow',
              _homing:true,_homingWeak:t8Homing,_homingVeryWeak:!t8Homing,
@@ -747,7 +799,7 @@ const MAIN_WEAPON_DEFS = {
         const tgt=findNearestEnemies(player.x,player.y,enemies,1)[0];
         if(tgt){
           const dx=tgt.x-player.x,dy=tgt.y-player.y,d=Math.hypot(dx,dy)||1;
-          projs.push(new Projectile(player.x,player.y-30,
+          projs.push(new Projectile(player.x,player.weaponAnchorY(30),
             (dx/d)*lvl.speed,(dy/d)*lvl.speed,
             Math.floor(lvl.damage*(player.totalAtk/100)),
             {pierce:99,radius:lvl.radius,life:lvl.life+0.5,type:'bow',
@@ -804,7 +856,7 @@ const MAIN_WEAPON_DEFS = {
       // 외부 오브 전용 각도: 쿨감만큼 추가 가속 (cdr=0.6이면 1.6배 빠름)
       this._outerAngle=(this._outerAngle||0)+lvl.rotSpeed*0.016*spdScale*(1+cdr);
 
-      const _cx=player.x+8, _cy=player.y-30;
+      const _cx=player.x+8, _cy=player.weaponAnchorY(30);
       const dmg=Math.floor(lvl.damage*(player.totalAtk/100)*(this._overAwkDmg||1)*(this._transcendMult||1)*(this._synClashMult||1)); // [UPDATE 2026-07-08/11] 초월·상극 배율
       const projs=[];
 
@@ -822,7 +874,7 @@ const MAIN_WEAPON_DEFS = {
         projs.push(new Projectile(
           _cx+Math.cos(ang)*lvl.orbRadius,
           _cy+Math.sin(ang)*lvl.orbRadius,0,0,dmg,
-          {orb:true,radius:lvl.hitRadius,life:0.08,type:'staff',color:'#a080ff',glow:'rgba(150,100,255,.6)'}));
+          {orb:true,radius:lvl.hitRadius,life:0.08,type:'staff',pierceAll:true,color:'#a080ff',glow:'rgba(150,100,255,.6)'})); // [UPDATE 2026-07-23] 궤도 오브 — 스치는 모든 적 타격
       }
 
       // [UPDATE 2026-07-08] 초월 8성: 내부 궤도 오브가 스친 자리에 잔류 데미지 장판 생성 (0.3초마다 1개)
@@ -849,7 +901,7 @@ const MAIN_WEAPON_DEFS = {
           projs.push(new Projectile(
             _cx+Math.cos(ang)*outerRadius,
             _cy+Math.sin(ang)*outerRadius,0,0,dmg,
-            {orb:true,radius:lvl.hitRadius+2,life:0.08,type:'staff',color:'#e0c0ff',glow:'rgba(220,170,255,.9)'}));
+            {orb:true,radius:lvl.hitRadius+2,life:0.08,type:'staff',pierceAll:true,color:'#e0c0ff',glow:'rgba(220,170,255,.9)'})); // [UPDATE 2026-07-23] 외부 궤도 오브 — 스치는 모든 적 타격
         }
       }
 
@@ -906,7 +958,7 @@ const MAIN_WEAPON_DEFS = {
       const spdScale=player.totalSpd/100;
       const dt=0.016;
       const projs=[];
-      const _cx=player.x, _cy=player.y-30;
+      const _cx=player.x, _cy=player.weaponAnchorY(30);
       if(this._scytheCd===undefined) this._scytheCd=0;
       if(this._whirlActive===undefined) this._whirlActive=[];
       if(this._whirlSpawnCd===undefined) this._whirlSpawnCd=0;
@@ -933,7 +985,7 @@ const MAIN_WEAPON_DEFS = {
             Math.cos(ang)*spd,Math.sin(ang)*spd,
             dmg,
             {radius:Math.round(lvl.hitRadius*scaleBase),life:scytheLife,type:'scythe', // [UPDATE 2026-07-08] 판정도 비주얼 크기에 비례 (기존엔 그림만 커지고 히트박스 고정)
-             drawScaleX:scaleBase,drawScaleY:scaleBase,
+             drawScaleX:scaleBase,drawScaleY:scaleBase,pierceAll:true, // [UPDATE 2026-07-23] 근접 낫 — 스치는 모든 적 타격(적 1명 맞고 사라지던 버그 수정)
              color:'#60d080',glow:'rgba(80,200,100,.5)'});
           p._selfSpin=Math.PI*0.4;
           // [UPDATE 2026-07-08] 초월 8성: 소멸 시 잔상 폭발 (스팸 방지로 배치당 1개만 표시)
@@ -1017,7 +1069,7 @@ const SUB_WEAPON_DEFS = {
       const lvl=this.levels[this.lv-1];
       const t=findNearestEnemies(player.x,player.y,enemies,1)[0]||{x:player.x,y:player.y-1};
       const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
-      return [new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,
+      return [new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,
         Math.floor(lvl.damage*(player.totalAtk/100)),
         {pierce:lvl.pierce,radius:lvl.radius,life:lvl.life,type:'bead',color:'#a060e0',glow:'rgba(140,80,220,.5)'})];
     },
@@ -1072,7 +1124,7 @@ const SUB_WEAPON_DEFS = {
         this._axeStates.push({theta:Math.PI/2, ang:AXE_ANGS[i], spinAng:0});
       }
       const omega=lvl.speed/lvl.range;
-      const cx=player.x, cy=player.y-30;
+      const cx=player.x, cy=player.weaponAnchorY(30);
       const projs=[];
       for(const ax of this._axeStates){
         ax.theta+=omega*dt;
@@ -1105,15 +1157,22 @@ const SUB_WEAPON_DEFS = {
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
-      const t=findNearestEnemies(player.x,player.y,enemies,1)[0]||{x:player.x,y:player.y-1};
-      const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
-      const p=new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,
-        Math.floor(lvl.damage*(player.totalAtk/100)),
-        {pierce:99,radius:lvl.radius,life:lvl.travelTime+lvl.stayTime,
-         type:'water_jet',color:'#40c0ff',glow:'rgba(60,180,255,.6)'});
-      p._tornado=true; p._travelTime=lvl.travelTime; p._stayTime=lvl.stayTime;
-      p._pullRange=lvl.pullRange; p._pullForce=lvl.pullForce; p._elapsed=0;
-      return [p];
+      // [UPDATE 2026-07-26] 히든 시너지: 청아×드라고(용용 조합) — 회오리 생성 개수 2배 (game.js player._waterJetDoubleBoost 참고)
+      const _count = player._waterJetDoubleBoost ? 2 : 1;
+      const _targets = findNearestEnemies(player.x,player.y,enemies,_count);
+      const projs=[];
+      for(let i=0;i<_count;i++){
+        const t=_targets[i]||_targets[0]||{x:player.x,y:player.y-1};
+        const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
+        const p=new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,
+          Math.floor(lvl.damage*(player.totalAtk/100)),
+          {pierce:99,radius:lvl.radius,life:lvl.travelTime+lvl.stayTime,
+           type:'water_jet',color:'#40c0ff',glow:'rgba(60,180,255,.6)'});
+        p._tornado=true; p._travelTime=lvl.travelTime; p._stayTime=lvl.stayTime;
+        p._pullRange=lvl.pullRange; p._pullForce=lvl.pullForce; p._elapsed=0;
+        projs.push(p);
+      }
+      return projs;
     },
   },
   goblin_fire:{
@@ -1132,7 +1191,7 @@ const SUB_WEAPON_DEFS = {
       // [UPDATE 2026-07-17] 히든 시너지(도깨비 동료+펫 동시 장착, game.js 참고): 지속시간·크기 2배
       const _boost=player._dokkaebiFireBoost?2:1;
       const _radius=lvl.radius*_boost, _life=lvl.life*_boost;
-      return Array.from({length:lvl.count},()=>{
+      const projs = Array.from({length:lvl.count},()=>{
         const ang=Math.random()*Math.PI*2;
         const dist=Math.random()*spawnR;
         const tx=player.x+Math.cos(ang)*dist;
@@ -1141,6 +1200,19 @@ const SUB_WEAPON_DEFS = {
           Math.floor(lvl.damage*(player.totalAtk/100)),
           {aoe:_radius,radius:_radius,life:_life,dot:true,type:'goblin_fire',color:'#ff6020',glow:'rgba(255,80,20,.6)',_fireBoosted:_boost>1});
       });
+      // [UPDATE 2026-07-26] 히든 시너지: 도깨비 대잔치 — 동료 3종+펫 3종 풀장착 시 화면 전체에 작은 도깨비불 추가 산발
+      if(player._dokkaebiFullSetBoost){
+        for(let i=0;i<6;i++){
+          const ang=Math.random()*Math.PI*2;
+          const dist=200+Math.random()*500;
+          const tx=player.x+Math.cos(ang)*dist;
+          const ty=player.y+Math.sin(ang)*dist;
+          projs.push(new Projectile(tx,ty,0,0,
+            Math.floor(lvl.damage*(player.totalAtk/100)*0.5),
+            {aoe:_radius*0.6,radius:_radius*0.6,life:_life*0.6,dot:true,type:'goblin_fire',color:'#ff6020',glow:'rgba(255,80,20,.6)'}));
+        }
+      }
+      return projs;
     },
   },
 
@@ -1204,7 +1276,7 @@ const SUB_WEAPON_DEFS = {
         // [UPDATE 2026-07-13] 파티클마다 도달 거리를 40~100% 범위로 랜덤화 — 일정한 원형이 아니라 흩뿌려지는 모양으로
         const dist=lvl.scatterRadius*(0.4+Math.random()*0.6);
         const speed=dist/life;
-        projs.push(new Projectile(player.x,player.y-20,Math.cos(ang)*speed,Math.sin(ang)*speed,
+        projs.push(new Projectile(player.x,player.weaponAnchorY(20),Math.cos(ang)*speed,Math.sin(ang)*speed,
           dmg,{radius:4,life,type:'salt_scatter',stunDur:lvl.stunDur,
             color:'#ffffff',glow:'rgba(255,255,255,.85)'}));
       }
@@ -1224,14 +1296,17 @@ const SUB_WEAPON_DEFS = {
     ],
     fire(player,enemies){
       const lvl=this.levels[this.lv-1];
+      // [UPDATE 2026-07-26] 히든 시너지: 환생동자×영혼불씨(영혼 조합) — 크기(실제 판정 radius 포함) 확대 (game.js player._ghostHandSizeBoost 참고)
+      // 사용자 피드백으로 기존 1.4배에서 50% 더 키움(1.4 × 1.5 = 2.1배)
+      const _boost = player._ghostHandSizeBoost ? 2.1 : 1;
       const _targets=findNearestEnemies(player.x,player.y,enemies,lvl.count);
       return Array.from({length:lvl.count},(_,i)=>{
         const t=_targets[i]||enemies.filter(e=>!e.dead)[0]||player;
         const p=new Projectile(
           t.x+(Math.random()-0.5)*20,t.y+(Math.random()-0.5)*20,0,0,
           Math.floor(lvl.damage*(player.totalAtk/100)),
-          {radius:lvl.radius,life:lvl.life,type:'ghost_hand',
-           drawScaleX:2.5,drawScaleY:2.5,
+          {radius:lvl.radius*_boost,life:lvl.life,type:'ghost_hand',
+           drawScaleX:2.5*_boost,drawScaleY:2.5*_boost,
            color:'#c0ffc0',glow:'rgba(150,255,150,.5)'});
         p._ghostHand=true;
         return p;
@@ -1289,10 +1364,12 @@ const SUB_WEAPON_DEFS = {
       const lvl=this.levels[this.lv-1];
       const t=findNearestEnemies(player.x,player.y,enemies,1)[0]||{x:player.x,y:player.y-1};
       const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
-      return [new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,
+      return [new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,
         Math.floor(lvl.damage*(player.totalAtk/100)),
         {radius:lvl.radius,life:lvl.life,slow:lvl.slow,slowDur:lvl.slowDur,
          pierce:999,_bounce:true,_initLife:2.0,
+         // [UPDATE 2026-07-26] 히든 시너지: (해원맥/강림차사)×(저승나비/상사화) — 튕길 때마다 작은 조각 분열 (game.js player._reaperSplitBoost, 실제 분열은 game.js chainHit 처리부에서)
+         _splitOnBounce:!!player._reaperSplitBoost,
          type:'scythe_sub',color:'#204040',glow:'rgba(30,80,60,.6)'})];
     },
   },
@@ -1328,7 +1405,7 @@ const SUB_WEAPON_DEFS = {
       const lvl=this.levels[this.lv-1];
       const t=findNearestEnemies(player.x,player.y,enemies,1)[0]||{x:player.x,y:player.y-1};
       const dx=t.x-player.x,dy=t.y-player.y,d=Math.hypot(dx,dy)||1;
-      return [new Projectile(player.x,player.y-30,(dx/d)*lvl.speed,(dy/d)*lvl.speed,
+      return [new Projectile(player.x,player.weaponAnchorY(30),(dx/d)*lvl.speed,(dy/d)*lvl.speed,
         Math.floor(lvl.damage*(player.totalAtk/100)),
         {radius:lvl.radius,life:lvl.life,
          dotDmg:lvl.dotDmg,dotTick:lvl.dotTick,dotDur:lvl.dotDur,
@@ -1385,7 +1462,7 @@ const SUB_WEAPON_DEFS = {
     ],
     fire(player){
       const lvl=this.levels[this.lv-1];
-      if(!player._healBlocked) player.hp=Math.min(player.maxHp,player.hp+lvl.heal);
+      if(!player._healBlocked){ player.hp=Math.min(player.maxHp,player.hp+lvl.heal); player._lawHealAccum=(player._lawHealAccum||0)+lvl.heal; } // [UPDATE 2026-07-24] 흡수의 법칙 트리거용
       return [];
     },
   },
@@ -1872,8 +1949,9 @@ function hasTranscend8(weaponId, rank) {
 //  인게임 스탯 강화 정의 (패시브 슬롯 최대 4개)
 // [UPDATE 2026-07-06] 쿨감 통합 재계산: 스탯(쿨타임) + 펫 효과를 합산해 상한 60% 적용
 // [UPDATE 2026-07-15] 260715_MTOPC.md 11번: _cdrAtkSpd 제거 — "공격속도"는 이제 totalSpd 경로로 분리되어 이 풀과 무관
+// [UPDATE 2026-07-22] 선술 스킬트리 도력_쿨감(_cdrSeonsul) 합산 추가
 function recalcCdReduction(p) {
-  p._cdReduction = Math.min(0.6, (p._cdrCd||0) + (p._cdrPet||0));
+  p._cdReduction = Math.min(0.6, (p._cdrCd||0) + (p._cdrPet||0) + (p._cdrSeonsul||0) + (p._cdrSpecialty||0));
 }
 
 // ══════════════════════════════════════════
@@ -1973,7 +2051,7 @@ const _DELETED_EVOLVED = {  // 참고용 보관 (실제 사용 안 함)
       const baseAng = target
         ? Math.atan2(target.y-player.y, target.x-player.x)
         : (player.facing>=0 ? 0 : Math.PI);
-      const _cy = player.y-30;
+      const _cy = player.weaponAnchorY(30);
       const _speed = 110/0.28;
       return [-28, 0, 28].map(deg => {
         const ang = baseAng + deg*Math.PI/180;
@@ -2016,7 +2094,7 @@ const _DELETED_EVOLVED = {  // 참고용 보관 (실제 사용 안 함)
     fire(player) {
       const count = 4;
       this._angle = (this._angle||0) + 2.6*0.016;
-      const _cx = player.x+8, _cy = player.y-30;
+      const _cx = player.x+8, _cy = player.weaponAnchorY(30);
       return Array.from({length:count}, (_,i) => {
         const ang = this._angle + (i/count)*Math.PI*2;
         return new Projectile(
@@ -2039,7 +2117,7 @@ const _DELETED_EVOLVED = {  // 참고용 보관 (실제 사용 안 함)
     fire(player) {
       this._angle = (this._angle||0) + 3.5*0.016;
       this._trailTimer = (this._trailTimer||0) + 0.016;
-      const _cx = player.x+8, _cy = player.y-30;
+      const _cx = player.x+8, _cy = player.weaponAnchorY(30);
       const result = [0, Math.PI].map(offset => {
         const ang = this._angle+offset;
         return new Projectile(
@@ -2147,6 +2225,26 @@ const EFFECT_IMGS = {
   'c_haewonmaek_ult': '__IMG_companion_effects_c_haewonmaek_ult__',
   'c_gangnim_atk':    '__IMG_companion_effects_c_gangnim_atk__',
   'c_gangnim_ult':    '__IMG_companion_effects_c_gangnim_ult__',
+  // [UPDATE 2026-07-17] 시즌3(도깨비 계열) 동료 이펙트 — 그동안 빠져있어서 폴백 도형으로만 그려지던 것
+  'c_baksu_atk':        '__IMG_companion_effects_c_baksu_atk__',
+  'c_baksu_ult':        '__IMG_companion_effects_c_baksu_ult__',
+  'c_janggu_aebi_atk':  '__IMG_companion_effects_c_janggu_aebi_atk__',
+  'c_janggu_aebi_ult':  '__IMG_companion_effects_c_janggu_aebi_ult__',
+  // [UPDATE 2026-07-17] 시즌4(귀허계) 동료 이펙트
+  'c_hwansaengdongja_atk': '__IMG_companion_effects_c_hwansaengdongja_atk__',
+  'c_hwansaengdongja_ult': '__IMG_companion_effects_c_hwansaengdongja_ult__',
+  'c_heomugeomsa_atk':     '__IMG_companion_effects_c_heomugeomsa_atk__',
+  'c_heomugeomsa_ult':     '__IMG_companion_effects_c_heomugeomsa_ult__',
+  // [UPDATE 2026-07-24] 시즌5(선계) 영입 동료 — 백운선인/매화검선
+  'c_baekunseonin_atk':    '__IMG_companion_effects_c_baekunseonin_atk__',
+  'c_baekunseonin_ult':    '__IMG_companion_effects_c_baekunseonin_ult__',
+  'c_maehwageomseon_atk':  '__IMG_companion_effects_c_maehwageomseon_atk__',
+  'c_maehwageomseon_ult':  '__IMG_companion_effects_c_maehwageomseon_ult__',
+  // [UPDATE 2026-07-31] 시즌7(어계) 영입 동료 — 미리내(별빛/황금 태극), 천자(촉수 폭발/보라 소용돌이)
+  'c_mirinae_atk':         '__IMG_companion_effects_c_mirinae_atk__',
+  'c_mirinae_ult':         '__IMG_companion_effects_c_mirinae_ult__',
+  'c_cheonja_atk':         '__IMG_companion_effects_c_cheonja_atk__',
+  'c_cheonja_ult':         '__IMG_companion_effects_c_cheonja_ult__',
 };
 
 
