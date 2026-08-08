@@ -98,7 +98,7 @@ const VaultScene = (() => {
     const laws = saveData.laws || {};
     const slots = saveData.lawSlots || [null, null, null];
     const gi = saveData.gyulyulseok || 0;
-    const KIND_LABEL = { plain: isEn?'Plain':'일반', conditional: isEn?'Conditional':'조건형' };
+    const KIND_LABEL = { plain: Lang.t('vault','kindPlain'), conditional: Lang.t('vault','kindConditional') };
     const CAT_COLOR = { passive:'#78c8a0', active:'#e0a860' };
     const isPassiveTab = lawSubTab === 'passive';
 
@@ -109,14 +109,14 @@ const VaultScene = (() => {
           background:${isPassiveTab?'rgba(120,200,160,0.18)':'rgba(255,255,255,0.04)'};
           border:1px solid ${isPassiveTab?'rgba(120,200,160,0.6)':'rgba(255,255,255,0.1)'};
           color:${isPassiveTab?'#78c8a0':'#8a7a6a'};">
-          ${isEn?'Passive (auto — no slot needed)':'패시브 (슬롯 불필요, 보유만 해도 적용)'}
+          ${Lang.t('vault','subTabPassive')}
         </button>
         <button onclick="VaultScene.setLawSubTab('active')" style="
           flex:1;padding:7px 0;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;
           background:${!isPassiveTab?'rgba(224,168,96,0.18)':'rgba(255,255,255,0.04)'};
           border:1px solid ${!isPassiveTab?'rgba(224,168,96,0.6)':'rgba(255,255,255,0.1)'};
           color:${!isPassiveTab?'#e0a860':'#8a7a6a'};">
-          ${isEn?'Active (equip 3 slots)':'액티브 (3슬롯 장착)'}
+          ${Lang.t('vault','subTabActive')}
         </button>
       </div>`;
 
@@ -134,7 +134,7 @@ const VaultScene = (() => {
               <img src="${img}" style="width:30px;height:30px;object-fit:contain;image-rendering:pixelated;">
               <span style="font-size:8px;color:#d0a0ff;margin-top:2px;text-align:center;padding:0 2px;">${isEn?(def.nameEn||def.name):def.name}</span>
               <span style="position:absolute;top:2px;right:4px;font-size:8px;color:#888;">✕</span>
-            ` : `<span style="font-size:20px;color:#5a4a6a;">⚖️</span><span style="font-size:8px;color:#5a4a6a;">${isEn?'Empty':'빈 슬롯'}</span>`}
+            ` : `<span style="font-size:20px;color:#5a4a6a;">⚖️</span><span style="font-size:8px;color:#5a4a6a;">${Lang.t('vault','emptySlot')}</span>`}
           </div>`;
         }).join('')}
       </div>`;
@@ -160,10 +160,10 @@ const VaultScene = (() => {
           ${!isOwned?'opacity:0.65;':''}">
           <div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">
             <span style="font-size:8px;padding:1px 5px;border-radius:5px;background:${cc}22;border:1px solid ${cc};color:${cc};">
-              ${def.category==='passive'?(isEn?'Passive':'패시브'):(isEn?'Active':'액티브')}
+              ${def.category==='passive'?Lang.t('vault','passive'):Lang.t('vault','active')}
             </span>
             <span style="font-size:8px;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,0.06);color:#999;">${KIND_LABEL[def.kind]}</span>
-            ${isOwned && def.category==='passive' ? `<span style="font-size:8px;padding:1px 5px;border-radius:5px;background:rgba(120,200,160,0.15);border:1px solid #78c8a0;color:#78c8a0;">${isEn?'✓ Active':'✓ 적용 중'}</span>` : ''}
+            ${isOwned && def.category==='passive' ? `<span style="font-size:8px;padding:1px 5px;border-radius:5px;background:rgba(120,200,160,0.15);border:1px solid #78c8a0;color:#78c8a0;">${Lang.t('vault','appliedBadge')}</span>` : ''}
           </div>
           <div style="font-size:26px;line-height:1;margin:4px 0;display:flex;align-items:center;justify-content:center;">
             ${img ? `<img src="${img}" style="width:30px;height:30px;object-fit:contain;image-rendering:pixelated;filter:${isOwned?'none':'grayscale(1)'};">` : '⚖️'}
@@ -171,7 +171,7 @@ const VaultScene = (() => {
           <div style="font-size:11px;color:${isOwned?'#e8dcc8':'#665'};font-weight:600;">${isEn?(def.nameEn||def.name):def.name}</div>
           <div style="font-size:9px;color:#8a7a6a;margin:3px 0 6px;line-height:1.4;">${isEn?def.descEn:def.descKo}</div>
           <div style="font-size:10px;color:${isOwned?'#f0d080':'#5a4a3a'};font-weight:700;margin-bottom:6px;">
-            ${isOwned ? (isMax?(isEn?'MAX':'만렙'):`Lv.${lv}`) : (isEn?'Locked':'미해금')}
+            ${isOwned ? (isMax?Lang.t('vault','maxLabel'):`Lv.${lv}`) : Lang.t('vault','locked')}
           </div>
           ${!isOwned ? `
             <button onclick="VaultScene.unlockLaw('${def.id}')" style="
@@ -180,7 +180,7 @@ const VaultScene = (() => {
               background:${canUnlock?'rgba(160,96,224,0.25)':'rgba(60,60,60,0.3)'};
               border:1px solid ${canUnlock?'#a060e0':'rgba(255,255,255,0.1)'};
               color:${canUnlock?'#d0a0ff':'#666'};">
-              ${_cimg('gyulyulseok',10)} ${Format.num(unlockCost)} ${isEn?'Unlock':'해금'}
+              ${_cimg('gyulyulseok',10)} ${Format.num(unlockCost)} ${Lang.t('vault','unlock')}
             </button>` : `
             <div style="display:flex;flex-direction:column;gap:4px;">
               ${!isMax ? `<button onclick="VaultScene.upgradeLaw('${def.id}')" style="
@@ -189,7 +189,7 @@ const VaultScene = (() => {
                 background:${canUpgrade?'rgba(240,208,128,0.18)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${canUpgrade?'#f0d080':'rgba(255,255,255,0.1)'};
                 color:${canUpgrade?'#f0d080':'#666'};">
-                ${_cimg('gyulyulseok',10)} ${Format.num(upgCost)} ${isEn?'Enhance':'강화'}
+                ${_cimg('gyulyulseok',10)} ${Format.num(upgCost)} ${Lang.t('vault','enhance')}
               </button>` : ''}
               ${def.category==='active' ? (!isEquipped ? `<button onclick="VaultScene.equipLaw('${def.id}')" style="
                 width:100%;padding:5px 0;border-radius:7px;font-size:10px;font-weight:700;font-family:inherit;
@@ -197,8 +197,8 @@ const VaultScene = (() => {
                 background:${canEquip?'rgba(100,160,220,0.2)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${canEquip?'rgba(100,160,220,0.5)':'rgba(255,255,255,0.1)'};
                 color:${canEquip?'#80b8f0':'#666'};">
-                ${isEn?'Equip':'장착'}
-              </button>` : `<div style="font-size:9px;color:#d0a0ff;padding:3px 0;">${isEn?'✓ Equipped':'✓ 장착 중'}</div>`) : ''}
+                ${Lang.t('vault','equip')}
+              </button>` : `<div style="font-size:9px;color:#d0a0ff;padding:3px 0;">${Lang.t('vault','equippedBadge')}</div>`) : ''}
             </div>`}
         </div>`;
     }).join('');
@@ -206,7 +206,7 @@ const VaultScene = (() => {
     return `
       ${subTabBar}
       <div style="font-size:10px;color:rgba(200,160,255,0.5);text-align:center;margin-bottom:2px;">
-        ${isEn?`Have ${_cimg('gyulyulseok',12)}${Format.num(gi)}`:`보유 ${_cimg('gyulyulseok',12)}${Format.num(gi)}`}
+        ${Lang.t('vault','have').replace('{icon}',_cimg('gyulyulseok',12)).replace('{n}',Format.num(gi))}
       </div>
       ${slotBar}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${cards}</div>`;

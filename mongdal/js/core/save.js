@@ -247,7 +247,7 @@ const Save = (() => {
   // ═══════════════════════════════════════════════════
   // [UPDATE 2026-07-31] 0.3.1.4에서 갱신이 멈춰 있어 내보낸 코드가 전부 잘못된 버전을 표시하고 있었음.
   // 코드베이스 전체에서 게임 버전을 담는 곳이 여기뿐이라, 릴리즈할 때 이 상수도 같이 올릴 것.
-  const SAVE_CODE_GAME_VERSION = '1.1.0'; // [UPDATE 2026-08-06] 파트2 오픈 — 릴리즈마다 갱신
+  const SAVE_CODE_GAME_VERSION = '1.1.1'; // [UPDATE 2026-08-08] 파트2 안정화 — 릴리즈마다 갱신
 
   function _detectDevice() {
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? 'mobile' : 'pc';

@@ -82,7 +82,7 @@ const CharacterScene = (() => {
         <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
           background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
           <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
-            ${Lang.getCurrent()==='en'?'Element Relations (colored = deployed)':'오행 상생상극 (색상 = 편성 중)'}
+            ${Lang.t('character','elementRelations')}
           </div>
           ${elementPentagramSVG(_activeCompEls, null, 150)}
         </div>

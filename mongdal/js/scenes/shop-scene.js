@@ -102,16 +102,8 @@ const ShopScene = (() => {
   ];
 
   // [UPDATE 2026-07-11] 7단계 등급 라벨/색상 추가
-  const RARITY_LABEL = {
-    common:'커먼', uncommon:'언커먼', rare:'레어', unique:'유니크',
-    epic:'에픽', legendary:'레전더리', mythos:'미소스', special:'★스페셜', universal:'만능'
-  };
-  // [UPDATE 2026-07-12] 영어 모드에서도 한글 등급 라벨이 그대로 보이던 버그 수정 — 영어 라벨 추가
-  const RARITY_LABEL_EN = {
-    common:'Common', uncommon:'Uncommon', rare:'Rare', unique:'Unique',
-    epic:'Epic', legendary:'Legendary', mythos:'Mythos', special:'★Special', universal:'Universal'
-  };
-  const _rarityLabel = (rarity, isEn) => (isEn ? RARITY_LABEL_EN : RARITY_LABEL)[rarity] || '';
+  // [UPDATE 2026-08-06] 텍스트 중앙화 — character.js와 동일한 rarity_* 키를 그대로 재사용(중복 정의 제거)
+  const _rarityLabel = (rarity) => Lang.t('character', 'rarity_' + rarity) || '';
   const RARITY_COLOR = {
     common:'#aaa', uncommon:'#60a060', rare:'#4a90d9', unique:'#a040e0',
     epic:'#c060d0', legendary:'#e8a020', mythos:'#ff4060', special:'#ffb020', universal:'#60c8ff'
@@ -211,14 +203,13 @@ const ShopScene = (() => {
 
   // ── 메인 허브 ──
   function renderMain(el) {
-    const isEn = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
     // 상점 카테고리 목록 — 추후 항목 추가 시 여기에만 추가
     const SHOP_CATEGORIES = [
       {
         id: 'gacha',
         icon: '🎪',
-        label: isEn ? 'Companion Gacha' : '동료 뽑기',
-        desc: isEn ? 'Spend Gold or Diamonds to get companion fragments and summons.' : '골드 또는 다이아로 동료 파편/완전체를 획득합니다.',
+        label: Lang.t('shop','cat_gacha_label'),
+        desc: Lang.t('shop','cat_gacha_desc'),
         color: '#c080ff',
         bg: 'rgba(180,100,255,0.12)',
         border: 'rgba(200,140,255,0.35)',
@@ -226,8 +217,8 @@ const ShopScene = (() => {
       {
         id: 'exchange',
         icon: '🔄',
-        label: isEn ? 'Currency Exchange' : '재화 교환',
-        desc: isEn ? 'Exchange Diamonds for various resources.' : '다이아몬드로 각종 재화를 교환합니다.',
+        label: Lang.t('shop','cat_exchange_label'),
+        desc: Lang.t('shop','cat_exchange_desc'),
         color: '#60d8ff',
         bg: 'rgba(60,180,255,0.10)',
         border: 'rgba(80,200,255,0.30)',
@@ -237,8 +228,8 @@ const ShopScene = (() => {
       {
         id: 'lawExchange',
         icon: '⚖️',
-        label: isEn ? 'Fragment → Rule Stone' : '동료 파편 상점',
-        desc: isEn ? 'Exchange companion fragments for Rule Stones (used for Laws).' : '동료 파편을 규율석(법칙 재화)으로 교환합니다.',
+        label: Lang.t('shop','cat_lawExchange_label'),
+        desc: Lang.t('shop','cat_lawExchange_desc'),
         color: '#a8b8e8',
         bg: 'rgba(136,152,200,0.10)',
         border: 'rgba(168,184,232,0.30)',
@@ -251,7 +242,7 @@ const ShopScene = (() => {
       <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
-        ${headerHTML(isEn?'🏪 Shop':'🏪 상점', "SceneManager.go('lobby')")}
+        ${headerHTML('🏪 '+Lang.t('shop','mainTitle'), "SceneManager.go('lobby')")}
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
           ${SHOP_CATEGORIES.map(cat => `
             <button onclick="ShopScene.goView('${cat.id}')" style="
@@ -293,11 +284,11 @@ const ShopScene = (() => {
       <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
-        ${headerHTML(isEn?'🎪 Companion Gacha':'🎪 동료 뽑기', "ShopScene.goView('main')")}
+        ${headerHTML('🎪 '+Lang.t('shop','gachaTitle'), "ShopScene.goView('main')")}
 
         <!-- 탭 -->
         <div style="display:flex;border-bottom:1px solid rgba(200,160,255,0.15);flex-shrink:0;">
-          ${[[`gold`,isEn?`${_cimg('gold',14)} Gold Gacha`:`${_cimg('gold',14)} 골드 뽑기`],[`diamond`,isEn?'💎 Diamond Gacha':'💎 다이아 뽑기']].map(([tab,label]) => `
+          ${[[`gold`,`${_cimg('gold',14)} ${Lang.t('shop','goldGachaTab')}`],[`diamond`,`💎 ${Lang.t('shop','diamondGachaTab')}`]].map(([tab,label]) => `
             <button onclick="ShopScene.setTab('${tab}')" style="
               flex:1;padding:10px 0;border:none;font-size:13px;cursor:pointer;
               font-family:inherit;letter-spacing:.05em;
@@ -313,9 +304,7 @@ const ShopScene = (() => {
           <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(200,160,255,0.15);
             border-radius:14px;padding:14px;margin-bottom:14px;">
             <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:8px;">
-              ${isGold
-                ? (isEn?'Common~Epic companion fragments & summons (80% frag / 20% full)':'커먼~에픽 동료 파편 · 완전체 (80% 파편 / 20% 완전체)')
-                : (isEn?'Rare~Special companion fragments & summons (80% frag / 20% full)':'레어~스페셜 동료 파편 · 완전체 (80% 파편 / 20% 완전체)')}
+              ${isGold ? Lang.t('shop','goldPoolDesc') : Lang.t('shop','diamondPoolDesc')}
             </div>
             <!-- [UPDATE 2026-08-06] 100회 뽑기(100+10 보너스) 추가 — 버튼 3개라 flex:1로 균등폭 유지 -->
             <div style="display:flex;gap:6px;">
@@ -325,7 +314,7 @@ const ShopScene = (() => {
                 background:${can1?'rgba(180,100,255,0.25)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${can1?'rgba(200,140,255,0.6)':'rgba(255,255,255,0.1)'};
                 color:${can1?'#e0c8ff':'#555'};">
-                1회<br>
+                ${Lang.t('shop','pull1')}<br>
                 <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_1)}`:`💎${Format.num(GEM_COST_1)}`}</span>
               </button>
               <button onclick="ShopScene.pull(10)" style="
@@ -334,7 +323,7 @@ const ShopScene = (() => {
                 background:${can10?'rgba(255,160,40,0.2)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${can10?'rgba(255,200,80,0.5)':'rgba(255,255,255,0.1)'};
                 color:${can10?'#f0d060':'#555'};">
-                10+1회<br>
+                ${Lang.t('shop','pull10')}<br>
                 <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_10)}`:`💎${Format.num(GEM_COST_10)}`}</span>
               </button>
               <button onclick="ShopScene.pull(100)" style="
@@ -343,7 +332,7 @@ const ShopScene = (() => {
                 background:${can100?'rgba(255,80,120,0.2)':'rgba(60,60,60,0.3)'};
                 border:1px solid ${can100?'rgba(255,120,150,0.5)':'rgba(255,255,255,0.1)'};
                 color:${can100?'#ff9ab0':'#555'};">
-                100+10회<br>
+                ${Lang.t('shop','pull100')}<br>
                 <span style="font-size:10px;">${isGold?`${_cimg('gold',13)}${Format.num(GOLD_COST_100)}`:`💎${Format.num(GEM_COST_100)}`}</span>
               </button>
             </div>
@@ -354,7 +343,7 @@ const ShopScene = (() => {
             <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(200,160,255,0.15);
               border-radius:14px;padding:12px;margin-bottom:14px;">
               <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:8px;">
-                ══ ${isEn?`Results (${lastResults.length})`:`뽑기 결과 (${lastResults.length}개)`} ══
+                ══ ${Lang.t('shop','resultsHeader').replace('{n}',lastResults.length)} ══
               </div>
               <div class="scroll-pan-y" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
                 ${lastResults.map(r => resultRow(r, allComp)).join('')}
@@ -364,14 +353,14 @@ const ShopScene = (() => {
           <!-- 파편 현황 -->
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(200,160,255,0.1);
             border-radius:14px;padding:12px;">
-            <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:10px;">── ${isEn?'Fragment Inventory':'파편 보유 현황'}</div>
+            <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:10px;">── ${Lang.t('shop','fragInventory')}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;
               padding:6px 8px;background:rgba(96,200,255,0.08);border-radius:8px;
               border:1px solid rgba(96,200,255,0.2);">
               <span style="font-size:18px;">✨</span>
               <div style="flex:1;">
-                <div style="font-size:11px;color:#60c8ff;font-weight:bold;">${isEn?'Universal Fragment':'만능 파편'}</div>
-                <div style="font-size:10px;color:rgba(96,200,255,0.6);">${isEn?'5 = 1 Companion Star':'5개 = 동료 별 1개'}</div>
+                <div style="font-size:11px;color:#60c8ff;font-weight:bold;">${Lang.t('shop','universalFrag')}</div>
+                <div style="font-size:10px;color:rgba(96,200,255,0.6);">${Lang.t('shop','universalFragDesc')}</div>
               </div>
               <div style="font-size:14px;color:#60c8ff;font-weight:bold;">${uniFrags}개</div>
             </div>
@@ -387,17 +376,17 @@ const ShopScene = (() => {
                   <div style="width:6px;height:36px;border-radius:3px;background:${rc};flex-shrink:0;"></div>
                   <div style="flex:1;min-width:0;">
                     <div style="font-size:10px;color:${rc};font-weight:bold;margin-bottom:2px;">
-                      ${isEn?(c.nameEn||c.name):c.name} <span style="color:#888;font-weight:normal;">${_rarityLabel(c.rarity,isEn)}</span>
+                      ${isEn?(c.nameEn||c.name):c.name} <span style="color:#888;font-weight:normal;">${_rarityLabel(c.rarity)}</span>
                     </div>
                     ${!isOwned
                       ? `<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
                            <div style="height:100%;width:${pct}%;background:${rc};border-radius:3px;transition:width .3s;"></div>
                          </div>`
-                      : `<div style="font-size:9px;color:rgba(200,160,255,0.5);">${isEn?'Owned':'보유중'}</div>`}
+                      : `<div style="font-size:9px;color:rgba(200,160,255,0.5);">${Lang.t('shop','owned')}</div>`}
                   </div>
                   <div style="text-align:right;flex-shrink:0;">
                     <div style="font-size:12px;color:${rc};font-weight:bold;">${f}${!isOwned?'/10':''}</div>
-                    ${!isOwned && f >= 10 ? `<div style="font-size:9px;color:#80e8a0;">${isEn?'Can Summon':'소환 가능'}</div>` : ''}
+                    ${!isOwned && f >= 10 ? `<div style="font-size:9px;color:#80e8a0;">${Lang.t('shop','canSummon')}</div>` : ''}
                   </div>
                 </div>`;
             }).join('')}
@@ -408,38 +397,38 @@ const ShopScene = (() => {
 
   // ── 재화 교환 ──
   function renderExchange(el) {
-    const isEn = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
     // [UPDATE 2026-07-16] 재화 교환 비율 전면 개편 — 기존엔 다이아 2~5개로 재화 겨우 1개를 주는 구조라
     // "다이아로 재화를 대량 교환"이라는 취지와 반대였음(사용자 지적). 다이아 1개 = 재화 10~50개로 재설계,
     // 흔한(파밍 쉬운) 재화일수록 많이, 희귀한 재화일수록 적게 주도록 티어링. 누락돼있던 태극석/차원석/
     // 영혼석/혼돈석/순리석도 교환 목록에 추가.
+    // [UPDATE 2026-08-06] 이름 텍스트는 lang.js(shop.item_*)로 이관 — 여기엔 언어 무관 데이터만 남김.
     const EXCHANGE_ITEMS = [
-      { icon:'🪙', spriteKey:'gold',           name:'골드',     nameEn:'Gold',               key:'gold',              cost:1, amount:500 },
-      { icon:'🔧', spriteKey:'ganghwaseok',    name:'강화석',   nameEn:'Enhance Stone',      key:'ganghwaseok',       cost:1, amount:50  },
-      { icon:'☁️', spriteKey:'cheonunseok',    name:'천운석',   nameEn:'Sky Stone',          key:'cheonunseok',       cost:1, amount:40  },
-      { icon:'🍇', spriteKey:'cheonryeonggwa', name:'천령과',   nameEn:'Spirit Fruit',       key:'cheonryeonggwa',    cost:1, amount:35  },
-      { icon:'🔷', spriteKey:'taegeukseok',    name:'태극석',   nameEn:'Taeguk Stone',       key:'taegeukseok',       cost:1, amount:20  },
-      { icon:'🌀', spriteKey:'chaewonseok',    name:'차원석',   nameEn:'Dimension Stone',    key:'chaewonseok',       cost:1, amount:20  },
+      { icon:'🪙', spriteKey:'gold',           nameKey:'item_gold',           key:'gold',              cost:1, amount:500 },
+      { icon:'🔧', spriteKey:'ganghwaseok',    nameKey:'item_ganghwaseok',    key:'ganghwaseok',       cost:1, amount:50  },
+      { icon:'☁️', spriteKey:'cheonunseok',    nameKey:'item_cheonunseok',    key:'cheonunseok',       cost:1, amount:40  },
+      { icon:'🍇', spriteKey:'cheonryeonggwa', nameKey:'item_cheonryeonggwa', key:'cheonryeonggwa',    cost:1, amount:35  },
+      { icon:'🔷', spriteKey:'taegeukseok',    nameKey:'item_taegeukseok',    key:'taegeukseok',       cost:1, amount:20  },
+      { icon:'🌀', spriteKey:'chaewonseok',    nameKey:'item_chaewonseok',    key:'chaewonseok',       cost:1, amount:20  },
       // [UPDATE 2026-07-17] 전용 아이콘 반입
-      { icon:'🌪️', spriteKey:'hondonseok', name:'혼돈석',       nameEn:'Chaos Stone',        key:'hondonseok',        cost:1, amount:15  },
-      { icon:'🌊', spriteKey:'sullriseok', name:'순리석',        nameEn:'Sunri Stone',        key:'sullriseok',        cost:1, amount:15  },
+      { icon:'🌪️', spriteKey:'hondonseok', nameKey:'item_hondonseok',        key:'hondonseok',        cost:1, amount:15  },
+      { icon:'🌊', spriteKey:'sullriseok', nameKey:'item_sullriseok',         key:'sullriseok',        cost:1, amount:15  },
       // [UPDATE 2026-07-17] yeongonseok(유령 재화) → soulStones로 통합
-      { icon:'💜', name:'영혼석',               nameEn:'Soul Stone',                         key:'soulStones',        cost:1, amount:10  },
-      { icon:'✨', name:'만능파편',              nameEn:'Universal Fragment',                 key:'universalFragments',cost:1, amount:5   },
+      { icon:'💜', nameKey:'item_soulStones',           key:'soulStones',        cost:1, amount:10  },
+      { icon:'✨', nameKey:'item_universalFragments',   key:'universalFragments',cost:1, amount:5   },
     ];
 
     el.innerHTML = `
       <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
-        ${headerHTML(isEn?'🔄 Currency Exchange':'🔄 재화 교환', "ShopScene.goView('main')")}
+        ${headerHTML('🔄 '+Lang.t('shop','exchangeTitle'), "ShopScene.goView('main')")}
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
           <div style="font-size:11px;color:rgba(200,160,255,0.5);padding:0 4px;">
-            ${isEn?`💎 Exchange Diamonds for resources · Have 💎 ${saveData.gems||0}`:`💎 다이아몬드로 재화를 교환합니다 · 보유 💎 ${saveData.gems||0}`}
+            ${Lang.t('shop','exchangeIntroTpl').replace('{n}',saveData.gems||0)}
           </div>
           ${EXCHANGE_ITEMS.map(item => {
             const canBuy = (saveData.gems||0) >= item.cost;
-            const dispName = isEn ? item.nameEn : item.name;
+            const dispName = Lang.t('shop', item.nameKey);
             return `
               <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;
                 background:rgba(255,255,255,0.04);border:1px solid rgba(200,160,255,0.15);
@@ -450,7 +439,7 @@ const ShopScene = (() => {
                 <div style="flex:1;">
                   <div style="font-size:14px;color:#e8dcc8;font-weight:700;">${dispName}</div>
                   <div style="font-size:10px;color:#5a4a3a;margin-top:2px;">
-                    ${item.key==='gold'?`${_cimg('gold',12)} +500`:`×${item.amount} ${isEn?'each':'획득'}`}
+                    ${item.key==='gold'?`${_cimg('gold',12)} +500`:`×${item.amount} ${Lang.t('shop','exchangeEach')}`}
                   </div>
                 </div>
                 <button onclick="ShopScene.exchange('${item.key}',${item.cost},${item.amount})"
@@ -478,17 +467,16 @@ const ShopScene = (() => {
   // [UPDATE 2026-07-24] 동료 파편 → 규율석 교환 (시즌6 법칙 시스템 재화). 등급별로 보유 파편을 합산해서
   // 교환비(FRAGMENT_EXCHANGE_RATE)만큼씩 규율석으로 바꿈. 시즌6 해금 전엔 안내만 표시.
   function renderLawExchange(el) {
-    const isEn = (typeof Lang!=='undefined'&&Lang.getCurrent&&Lang.getCurrent()==='en');
     if (!isSeasonReleased(6)) {
       el.innerHTML = `
         <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
           font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
           display:flex;flex-direction:column;overflow:hidden;">
-          ${headerHTML(isEn?'⚖️ Fragment Exchange':'⚖️ 동료 파편 상점', "ShopScene.goView('main')")}
+          ${headerHTML('⚖️ '+Lang.t('shop','lawExchangeTitle'), "ShopScene.goView('main')")}
           <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px;text-align:center;">
             <span style="font-size:40px;">🔒</span>
-            <div style="font-size:14px;color:#a8b8e8;font-weight:700;">${isEn?'Requires Season 6':'시즌6 오픈 필요'}</div>
-            <div style="font-size:11px;color:rgba(200,160,255,0.5);">${isEn?'This shop unlocks once the Primal Realm arrives.':'원계(시즌6)가 열리면 이용할 수 있습니다.'}</div>
+            <div style="font-size:14px;color:#a8b8e8;font-weight:700;">${Lang.t('shop','lawExchangeLockedTitle')}</div>
+            <div style="font-size:11px;color:rgba(200,160,255,0.5);">${Lang.t('shop','lawExchangeLockedDesc')}</div>
           </div>
         </div>`;
       return;
@@ -514,11 +502,10 @@ const ShopScene = (() => {
       <div style="height:844px;background:linear-gradient(180deg,#080614 0%,#10091a 100%);
         font-family:'Noto Serif KR','Apple SD Gothic Neo',serif;color:#e8d8ff;
         display:flex;flex-direction:column;overflow:hidden;">
-        ${headerHTML(isEn?'⚖️ Fragment Exchange':'⚖️ 동료 파편 상점', "ShopScene.goView('main')")}
+        ${headerHTML('⚖️ '+Lang.t('shop','lawExchangeTitle'), "ShopScene.goView('main')")}
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
           <div style="font-size:11px;color:rgba(200,160,255,0.5);padding:0 4px;">
-            ${isEn?`Exchange duplicate companion fragments for Rule Stones · Have ${_cimg('gyulyulseok',14)}${Format.num(saveData.gyulyulseok||0)}`
-                  :`중복으로 쌓인 동료 파편을 규율석으로 교환합니다 · 보유 ${_cimg('gyulyulseok',14)}${Format.num(saveData.gyulyulseok||0)}`}
+            ${Lang.t('shop','lawExchangeIntroTpl').replace('{icon}',_cimg('gyulyulseok',14)).replace('{n}',Format.num(saveData.gyulyulseok||0))}
           </div>
           ${_rarityRows.map(rarity => {
             const have = byRarity[rarity] || 0;
@@ -529,9 +516,9 @@ const ShopScene = (() => {
               <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;
                 background:rgba(255,255,255,0.04);border:1px solid ${rc}55;border-radius:14px;">
                 <div style="flex:1;">
-                  <div style="font-size:14px;color:${rc};font-weight:700;">${_rarityLabel(rarity, isEn)}</div>
+                  <div style="font-size:14px;color:${rc};font-weight:700;">${_rarityLabel(rarity)}</div>
                   <div style="font-size:10px;color:#5a4a3a;margin-top:2px;">
-                    ${isEn?`Have ${Format.num(have)} · ${rate} → ${_cimg('gyulyulseok',10)}1`:`보유 ${Format.num(have)}개 · ${rate}개당 ${_cimg('gyulyulseok',10)}1개`}
+                    ${Lang.t('shop','lawHaveRateTpl').replace('{have}',Format.num(have)).replace('{rate}',rate).replace('{icon}',_cimg('gyulyulseok',10))}
                   </div>
                 </div>
                 <button onclick="ShopScene.exchangeFragmentsForLaw('${rarity}')"
@@ -540,7 +527,7 @@ const ShopScene = (() => {
                   background:${canExchangeCount>0?'rgba(136,152,200,0.35)':'rgba(60,60,60,0.3)'};
                   border:1px solid ${canExchangeCount>0?'#a8b8e8':'rgba(255,255,255,0.1)'};
                   color:${canExchangeCount>0?'#e8dcc8':'#555'};">
-                  ${isEn?'Exchange':'전부 교환'} ${canExchangeCount>0?`(+${canExchangeCount})`:''}
+                  ${Lang.t('shop','exchangeBtn')} ${canExchangeCount>0?`(+${canExchangeCount})`:''}
                 </button>
               </div>`;
           }).join('')}
@@ -553,7 +540,7 @@ const ShopScene = (() => {
     if (r.type === 'universal_frag') {
       return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
         <span style="font-size:16px;">✨</span>
-        <span style="font-size:11px;color:#60c8ff;">${isEn?'Universal Fragment':'만능 파편'} ×${r.amount}</span>
+        <span style="font-size:11px;color:#60c8ff;">${Lang.t('shop','universalFrag')} ×${r.amount}</span>
       </div>`;
     }
     const c  = allComp.find(x => x.id === r.id);
@@ -563,20 +550,20 @@ const ShopScene = (() => {
       return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
         <span style="font-size:18px;">💫</span>
         <span style="font-size:12px;color:${rc};font-weight:bold;">
-          ${name} ${isEn?'Summoned!':'완전체!'}
-          ${r.converted ? `<span style="font-size:9px;color:#888;">${isEn?'(Dupe→Frag×10)':'(중복→파편×10)'}</span>` : '🎉'}
+          ${name} ${Lang.t('shop','summoned')}
+          ${r.converted ? `<span style="font-size:9px;color:#888;">${Lang.t('shop','dupeToFrag')}</span>` : '🎉'}
         </span>
         <span style="font-size:9px;padding:1px 5px;border-radius:6px;
           background:${rc}22;border:1px solid ${rc};color:${rc};">
-          ${_rarityLabel(r.rarity,isEn)}
+          ${_rarityLabel(r.rarity)}
         </span>
       </div>`;
     }
     return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
       <span style="font-size:14px;">🎴</span>
-      <span style="font-size:11px;color:${rc};">${name} ${isEn?'Frag':'파편'} ×${r.amount}</span>
+      <span style="font-size:11px;color:${rc};">${name} ${Lang.t('shop','frag')} ×${r.amount}</span>
       <span style="font-size:9px;padding:1px 4px;border-radius:5px;
-        background:${rc}18;border:1px solid ${rc}55;color:${rc};">${_rarityLabel(r.rarity,isEn)}</span>
+        background:${rc}18;border:1px solid ${rc}55;color:${rc};">${_rarityLabel(r.rarity)}</span>
     </div>`;
   }
 

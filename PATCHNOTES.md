@@ -1,5 +1,17 @@
 # 몽달퇴마록 패치노트
 
+## v1.1.1 — 파트2 안정화 (2026-08-08)
+
+### Bug Fixes / 버그 수정
+- **Part 2's auto-progress kept getting interrupted.** Since Part 2 runs on a completely separate fresh save, the "first clear ever" and "slot unlocked" popups from Stages 1/5/10/15/20/25/30/110/160 fired all over again — even though every Part 2 player already saw them in Part 1 — kicking auto/semi-auto/auto-retry mode back to the lobby at every one of those stages. These milestone popups are now skipped for Part 2; the story-critical ones at Stage 100/200/300/400/500/600/700/800 still trigger as always.
+  **파트2 자동진행이 계속 끊기던 문제를 수정했습니다.** 파트2가 완전 별도의 신규 세이브로 동작하다 보니, 스테이지 1/5/10/15/20/25/30/110/160의 "생애 첫 클리어"·"슬롯 해금" 안내 팝업이 파트1에서 이미 다 본 내용임에도 다시 떠서, 자동/반자동/자동재도전 모드가 매번 로비로 튕겨나갔습니다. 이제 파트2에서는 이 마일스톤 팝업들을 건너뛰며, 스토리 진행상 중요한 100/200/300/400/500/600/700/800 스테이지의 시즌엔딩 트리거는 그대로 유지됩니다.
+- **A few UI labels stayed in Korean regardless of language setting.** Notably the Shop's gacha pull-count buttons (1-pull / 10-pull / 100-pull). Found and fixed while centralizing more screens' text (Building, Dungeon, Character, Pet, Vault, Shop) into the shared text system for easier future editing.
+  **언어 설정과 무관하게 한국어로 고정 표시되던 일부 UI 라벨을 수정했습니다.** 대표적으로 상점의 뽑기 횟수 버튼(1회/10회/100회)입니다. 건물·던전·캐릭터·펫·금고·상점 화면의 텍스트를 공용 텍스트 시스템으로 옮기는 작업 중 함께 발견해 수정했습니다.
+
+### In Progress / 진행 중
+- Part 2's season-ending cutscenes are being reworked for Baksu's perspective (Part 1's endings are all written from Aegissi's viewpoint, which doesn't fit a character who already knows the full truth). Not yet included in this patch.
+  파트2 시즌 엔딩 컷씬을 박수 시점으로 새로 다듬는 작업을 진행 중입니다(파트1 엔딩은 전부 애기씨 시점이라, 이미 모든 사실을 아는 박수에게는 맞지 않습니다). 이번 패치에는 아직 포함되지 않았습니다.
+
 ## v1.1.0 — 파트2 오픈 (2026-08-06)
 
 ### Story / 스토리

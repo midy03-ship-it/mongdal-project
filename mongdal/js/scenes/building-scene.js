@@ -8,14 +8,14 @@ const BuildingScene = (() => {
   }
 
   function effectDesc(eff) {
-    if (!eff) return Lang.getCurrent()==='en' ? 'No effect yet' : '효과 없음';
+    if (!eff) return Lang.t('building','noEffectYet');
     switch (eff.type) {
       case 'weapon_discount':
       case 'companion_discount':
       case 'slot_discount':
-        return (Lang.getCurrent()==='en' ? 'Upgrade cost -' : '강화 비용 -') + eff.pct + '%';
+        return Lang.t('building','costDiscountPrefix') + eff.pct + '%';
       case 'dungeon_income':
-        return (Lang.getCurrent()==='en' ? 'Dungeon income +' : '던전 수익 +') + eff.pct + '%';
+        return Lang.t('building','dungeonIncomePrefix') + eff.pct + '%';
       default:
         return '';
     }
@@ -68,7 +68,7 @@ const BuildingScene = (() => {
             font-size:22px;cursor:pointer;padding:4px 8px;
           ">←</button>
           <div style="font-size:17px;letter-spacing:.15em;color:#e0c8ff;">
-            🏛️ ${isEn ? 'Buildings' : '건물'}
+            🏛️ ${Lang.t('building','title')}
           </div>
           <div style="font-size:12px;color:#c8a0e0;">
             ${_cimg('cheonunseok')} ${Format.num(saveData.cheonunseok||0)}
@@ -79,7 +79,7 @@ const BuildingScene = (() => {
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
           ${buildings.length === 0
             ? `<div style="text-align:center;color:rgba(200,160,255,0.4);margin-top:60px;font-size:14px;">
-                ${isEn ? 'No buildings unlocked yet.' : '아직 해금된 건물이 없습니다.'}
+                ${Lang.t('building','noBuildingsUnlocked')}
                </div>`
             : buildings.map(b => buildingCard(b, isEn)).join('')
           }
@@ -124,7 +124,7 @@ const BuildingScene = (() => {
             </div>
             <div style="font-size:11px;color:rgba(200,160,255,0.5);margin-bottom:2px;">${isEn ? (b.roleEn||b.role) : b.role}</div>
             <div style="font-size:11px;color:rgba(200,200,200,0.6);">
-              ${curEff ? effectDesc(curEff) : (isEn ? 'No effect' : '효과 없음')}
+              ${curEff ? effectDesc(curEff) : Lang.t('building','noEffectYet')}
             </div>
           </div>
         </div>
@@ -134,14 +134,14 @@ const BuildingScene = (() => {
             font-family:inherit;cursor:pointer;
             background:rgba(200,160,255,0.12);border:1px solid rgba(200,160,255,0.35);
             color:#d0b8f0;
-          ">${isEn ? 'Enter' : '건물 가기'}</button>
+          ">${Lang.t('building','goBuilding')}</button>
           <button onclick="BuildingScene.selectBuilding('${b.id}')" style="
             flex:1;padding:9px 0;border-radius:10px;font-size:13px;font-weight:600;
             font-family:inherit;cursor:pointer;
             background:${isMax ? 'rgba(80,80,80,0.2)' : 'rgba(200,160,40,0.2)'};
             border:1px solid ${isMax ? 'rgba(255,255,255,0.1)' : 'rgba(240,200,64,0.4)'};
             color:${isMax ? 'rgba(255,255,255,0.25)' : '#f0c840'};
-          ">${isMax ? (isEn ? '✨ MAX' : '✨ 최대') : (isEn ? 'Upgrade' : '강화')}</button>
+          ">${isMax ? Lang.t('building','maxShort') : Lang.t('building','upgradeBtn')}</button>
         </div>
       </div>
     `;
@@ -234,7 +234,7 @@ const BuildingScene = (() => {
             border-radius:12px;padding:14px 16px;margin-bottom:16px;
           ">
             <div style="font-size:12px;color:rgba(200,160,255,0.5);margin-bottom:4px;">
-              ${isEn ? 'Role' : '역할'}
+              ${Lang.t('building','role')}
             </div>
             <div style="font-size:13px;color:#d0b8f0;">${isEn ? (b.roleEn||b.role) : b.role}</div>
             <div style="font-size:11px;color:rgba(200,160,255,0.4);margin-top:6px;">${isEn ? (b.descEn||b.desc) : b.desc}</div>
@@ -243,7 +243,7 @@ const BuildingScene = (() => {
           <!-- 레벨 단계 -->
           <div style="margin-bottom:16px;">
             <div style="font-size:11px;color:rgba(200,160,255,0.5);letter-spacing:.1em;margin-bottom:8px;">
-              ${isEn ? 'UPGRADE LEVELS' : '강화 단계'}
+              ${Lang.t('building','upgradeLevelsHeader')}
             </div>
             ${levelsHtml}
           </div>
@@ -251,7 +251,7 @@ const BuildingScene = (() => {
           <!-- 강화 버튼 -->
           ${isMax
             ? `<div style="text-align:center;padding:14px;color:rgba(200,160,255,0.4);font-size:13px;">
-                ${isEn ? '✨ Max Level' : '✨ 최대 강화 완료'}
+                ${Lang.t('building','maxCompleteDetail')}
                </div>`
             : `<button onclick="BuildingScene.upgrade('${buildingId}')" style="
                 width:100%;padding:14px;border-radius:12px;font-size:14px;
@@ -261,7 +261,7 @@ const BuildingScene = (() => {
                 color:${canUpgrade?'#f0c840':'rgba(255,255,255,0.25)'};
                 letter-spacing:.05em;
               ">
-                ${isEn?'Upgrade':'강화'} Lv.${lv} → Lv.${lv+1}
+                ${Lang.t('building','upgradeBtn')} Lv.${lv} → Lv.${lv+1}
                 &nbsp;|&nbsp; ${_cimg('gold')}${Format.num(nextLvData.cost.gold)} + ${_cimg('cheonunseok')}${Format.num(nextLvData.cost.cheonunseok)}
               </button>`
           }

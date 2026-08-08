@@ -104,7 +104,7 @@ const PetScene = (() => {
         <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;
           background:rgba(0,0,0,0.15);border-bottom:1px solid rgba(212,160,23,0.15);">
           <div style="font-size:9px;color:#8a7a6a;margin-bottom:2px;">
-            ${isEn?'Element Relations (colored = deployed)':'오행 상생상극 (색상 = 편성 중)'}
+            ${Lang.t('character','elementRelations')}
           </div>
           ${elementPentagramSVG(_activePetEls, null, 150)}
         </div>
@@ -157,7 +157,7 @@ const PetScene = (() => {
                     ${isActive ? `<div class="active-badge">${Lang.t('pet','active')}</div>` : ''}
                     ${isOwned ? `<div style="position:absolute;bottom:0;right:0;font-size:9px;
                       background:${rc}33;border:1px solid ${rc};color:${rc};
-                      border-radius:4px;padding:1px 4px;">${isMax?'MAX':Lang.getCurrent()==='en'?`Lv.${lv}`:lv+'강'}</div>` : ''}
+                      border-radius:4px;padding:1px 4px;">${isMax?Lang.t('pet','maxLabel'):Lang.t('pet','lvLabel').replace('{n}',lv)}</div>` : ''}
                     ${isOwned ? `<div style="position:absolute;top:2px;right:2px;
                       font-size:9px;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:4px;color:${rc};">
                       ${rl}
@@ -176,11 +176,11 @@ const PetScene = (() => {
                         _storyLocked ? `
                         <div style="text-align:center;font-size:9px;color:#806080;padding:4px 0;
                           border:1px solid #444;border-radius:5px;background:rgba(60,40,70,0.3);">
-                          🔒 ${isEn?`Clear Chapter ${Math.ceil(pd.storyUnlock/10)}`:`챕터${Math.ceil(pd.storyUnlock/10)} 클리어 시 해금`}
+                          🔒 ${Lang.t('pet','clearChapterToUnlock').replace('{n}',Math.ceil(pd.storyUnlock/10))}
                         </div>` : _s2Locked ? `
                         <div style="text-align:center;font-size:9px;color:#607090;padding:4px 0;
                           border:1px solid #444;border-radius:5px;background:rgba(40,50,70,0.3);">
-                          🔒 ${isEn?`Unlock Season ${_seasonLockNum}`:`시즌${_seasonLockNum} 해금 필요`}
+                          🔒 ${Lang.t('pet','unlockSeasonRequired').replace('{n}',_seasonLockNum)}
                         </div>` : `
                         <button onclick="PetScene.unlockPet('${pd.id}')" style="
                           width:100%;padding:4px 0;border-radius:5px;font-size:10px;font-weight:bold;
@@ -188,14 +188,14 @@ const PetScene = (() => {
                           border:1px solid ${canUnlock?'#50c878':'#444'};
                           color:${canUnlock?'#80e8a0':'#666'};
                           cursor:${canUnlock?'pointer':'default'};">
-                          ${_cimg('cheonryeonggwa')}${Format.num(unlockCost)} ${isEn?'Unlock':'해금'}
+                          ${_cimg('cheonryeonggwa')}${Format.num(unlockCost)} ${Lang.t('pet','unlock')}
                         </button>`) : ''}
                       ${isOwned && !isActive ? `
                         <button onclick="event.stopPropagation();PetScene.addPet('${pd.id}')" style="
                           width:100%;padding:3px 0;border-radius:5px;font-size:10px;
                           background:rgba(100,160,220,0.2);border:1px solid rgba(100,160,220,0.5);
                           color:#80b8f0;cursor:pointer;">
-                          ${isEn?'Deploy':'편성'}
+                          ${Lang.t('pet','deploy')}
                         </button>` : ''}
                       ${isOwned && !isMax ? `
                         <button onclick="event.stopPropagation();PetScene.upgradePet('${pd.id}')" style="
@@ -204,7 +204,7 @@ const PetScene = (() => {
                           border:1px solid ${canUpgrade?'rgba(240,200,64,0.5)':'#444'};
                           color:${canUpgrade?'#f0d060':'#666'};
                           cursor:${canUpgrade?'pointer':'default'};">
-                          ${_cimg('gold')}${Format.num(upgCost.gold)} ${_cimg('cheonryeonggwa')}${Format.num(upgCost.cheonryeonggwa)} ${isEn?'Upgrade':'강화'}
+                          ${_cimg('gold')}${Format.num(upgCost.gold)} ${_cimg('cheonryeonggwa')}${Format.num(upgCost.cheonryeonggwa)} ${Lang.t('pet','upgrade')}
                         </button>` : ''}
                       ${isOwned && isMax ? `
                         <div style="text-align:center;font-size:10px;color:#c060d0;padding:3px 0;">✨MAX</div>

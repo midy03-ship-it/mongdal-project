@@ -108,7 +108,6 @@ const DungeonScene = (() => {
 
   function render(el) {
     const unlocked = Unlock.getUnlocked(saveData);
-    const isEn = Lang.getCurrent() === 'en';
     const gold = saveData.gold || 0;
     const gems = saveData.gems || 0;
     const L = (k) => Lang.t('dungeon', k);
@@ -133,7 +132,7 @@ const DungeonScene = (() => {
             background:none;border:none;color:rgba(200,160,255,0.7);
             font-size:22px;cursor:pointer;padding:4px 8px;">←</button>
           <div style="font-size:17px;letter-spacing:.15em;color:#e0c8ff;">
-            ⛩️ ${isEn ? 'Dungeon' : '던전'}
+            ⛩️ ${L('title')}
           </div>
           <div style="font-size:12px;color:#f0c840;">${_cimg('gold')}${Format.num(gold)} 💎${gems}</div>
         </div>
@@ -161,15 +160,15 @@ const DungeonScene = (() => {
         </div>
 
         <!-- [UPDATE 2026-07-16] 260716_MTOPC.md 2번②③⑤: 던전강화 프레스티지 -->
-        ${unlocked.has('dungeon_infinite') ? dungeonUpgradeCard(isEn) : ''}
+        ${unlocked.has('dungeon_infinite') ? dungeonUpgradeCard() : ''}
 
         <!-- 던전 목록 -->
         <div class="scroll-pan-y" style="flex:1;overflow-y:auto;padding:12px 16px 40px;display:flex;flex-direction:column;gap:12px;">
           ${availableDungeons.length === 0
             ? `<div style="text-align:center;color:rgba(200,160,255,0.4);margin-top:60px;font-size:14px;">
-                ${isEn ? 'No dungeons unlocked yet.\nClear Stage 5 to unlock.' : '스테이지 5 클리어 시\n강화석 던전이 해금됩니다.'}
+                ${L('noDungeonsUnlocked')}
                </div>`
-            : availableDungeons.map(d => dungeonCard(d, isEn)).join('')
+            : availableDungeons.map(d => dungeonCard(d)).join('')
           }
         </div>
       </div>
@@ -186,7 +185,7 @@ const DungeonScene = (() => {
     };
   }
 
-  function dungeonUpgradeCard(isEn) {
+  function dungeonUpgradeCard() {
     const lv = saveData.dungeonUpgradeLv || 0;
     const cost = _dungeonUpgradeCost(lv);
     const gold = saveData.gold || 0;
@@ -196,9 +195,9 @@ const DungeonScene = (() => {
     const power = computeBattlePower(saveData);
     const rating = battlePowerRatingFor(power, lv);
     const ratingInfo = {
-      safe:   { label: isEn?'Safe':'적정',     color:'#60e080' },
-      risky:  { label: isEn?'Risky':'위험',    color:'#f0c040' },
-      danger: { label: isEn?'Very Risky':'매우위험', color:'#ff6060' },
+      safe:   { label: Lang.t('dungeon','ratingSafe'),   color:'#60e080' },
+      risky:  { label: Lang.t('dungeon','ratingRisky'),  color:'#f0c040' },
+      danger: { label: Lang.t('dungeon','ratingDanger'), color:'#ff6060' },
     }[rating];
 
     return `
@@ -209,17 +208,15 @@ const DungeonScene = (() => {
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="font-size:14px;color:#e0c0ff;font-weight:700;">
-            🔮 ${isEn?'Dungeon Enhancement':'던전강화'} Lv.${lv}
+            🔮 ${Lang.t('dungeon','upgradeTitle')} Lv.${lv}
           </div>
           <div style="font-size:11px;padding:3px 8px;border-radius:8px;
             background:${ratingInfo.color}22;border:1px solid ${ratingInfo.color}88;color:${ratingInfo.color};">
-            ${isEn?'Power':'전투력'} ${power} · ${ratingInfo.label}
+            ${Lang.t('dungeon','power')} ${power} · ${ratingInfo.label}
           </div>
         </div>
         <div style="font-size:11px;color:rgba(220,200,255,0.6);margin-bottom:10px;">
-          ${isEn
-            ? `Infinite Dungeon runs start from kill ${Format.num(startKills)} (monsters scale accordingly).`
-            : `무한던전 진입 시 ${Format.num(startKills)}킬 지점부터 시작합니다 (몬스터 배율도 그 기준).`}
+          ${Lang.t('dungeon','startFromKillTpl').replace('{n}',Format.num(startKills))}
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="DungeonScene.downgradeDungeon()" ${lv<=0?'disabled':''} style="
@@ -238,8 +235,9 @@ const DungeonScene = (() => {
           ">${_cimg('gold')}${Format.num(cost.gold)} ${_cimg('cheonunseok')}${Format.num(cost.cheonunseok)} → Lv.${lv+1}</button>
         </div>
         ${lv>0 ? `<div style="font-size:9px;color:rgba(220,200,255,0.4);margin-top:6px;text-align:center;">
-          ${isEn ? `Lv down refunds ${Format.num(_dungeonUpgradeCost(lv-1).gold)} Gold + ${Format.num(_dungeonUpgradeCost(lv-1).cheonunseok)} Sky Stone`
-                 : `레벨 다운 시 ${Format.num(_dungeonUpgradeCost(lv-1).gold)}골드 + ${Format.num(_dungeonUpgradeCost(lv-1).cheonunseok)}천운석 환급`}
+          ${Lang.t('dungeon','downgradeRefundTpl')
+            .replace('{gold}',Format.num(_dungeonUpgradeCost(lv-1).gold))
+            .replace('{stone}',Format.num(_dungeonUpgradeCost(lv-1).cheonunseok))}
         </div>` : ''}
       </div>`;
   }
@@ -267,23 +265,23 @@ const DungeonScene = (() => {
     render(document.getElementById('app'));
   }
 
-  function dungeonCard(d, isEn) {
-    const nameKey = d.id;
-    const name = isEn ? Lang.t('dungeon', nameKey) || d.id : Lang.t('dungeon', nameKey) || d.id;
+  function dungeonCard(d) {
+    const name = Lang.t('dungeon', d.id) || d.id;
     const record = saveData[d.id + 'Record'];
     const recordText = record
-      ? (Math.floor(record/60) + (isEn?'m ':' 분 ') + (record%60) + (isEn?'s':'초'))
-      : (isEn ? 'No record' : '기록 없음');
+      ? Lang.t('dungeon','recordTimeTpl').replace('{m}',Math.floor(record/60)).replace('{s}',record%60)
+      : Lang.t('dungeon','noRecordText');
 
+    // [UPDATE 2026-08-06] 텍스트 중앙화 — desc_<id> 키로 이관
     const descMap = {
-      ganghwaseok:    isEn ? 'Enhancement stones drop instead of gold.' : '골드 대신 강화석이 드랍됩니다.',
-      infinite:       isEn ? 'Endless gold farming dungeon.' : '골드 파밍용 무한 모드 던전.',
-      bossrush:       isEn ? 'Challenge 10 bosses for diamonds.' : '보스 10마리 연속 도전, 다이아 획득.',
-      cheonunseok:    isEn ? 'Heavenly stones drop instead of gold.' : '골드 대신 천운석이 드랍됩니다.',
-      cheonryeonggwa: isEn ? 'Spirit fruits drop instead of gold.' : '골드 대신 천령과가 드랍됩니다.',
-      taegeukseok:    isEn ? 'Taeguk stones drop instead of gold.' : '골드 대신 태극석이 드랍됩니다.',
-      hondonseok:     isEn ? 'Chaos stones drop instead of gold.' : '골드 대신 혼돈석이 드랍됩니다.',
-      sullriseok:     isEn ? 'Sunri stones drop instead of gold.' : '골드 대신 순리석이 드랍됩니다.',
+      ganghwaseok:    Lang.t('dungeon','desc_ganghwaseok'),
+      infinite:       Lang.t('dungeon','desc_infinite'),
+      bossrush:       Lang.t('dungeon','desc_bossrush'),
+      cheonunseok:    Lang.t('dungeon','desc_cheonunseok'),
+      cheonryeonggwa: Lang.t('dungeon','desc_cheonryeonggwa'),
+      taegeukseok:    Lang.t('dungeon','desc_taegeukseok'),
+      hondonseok:     Lang.t('dungeon','desc_hondonseok'),
+      sullriseok:     Lang.t('dungeon','desc_sullriseok'),
     };
 
     return `
@@ -308,14 +306,14 @@ const DungeonScene = (() => {
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;font-size:10px;color:#555;">
-            ${isEn?'Best:':'최고:'}
+            ${Lang.t('dungeon','bestLabel')}
             <span style="color:${d.color};">${recordText}</span>
           </div>
           <button onclick="DungeonScene.startDungeon('${d.id}')" style="
             padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;
             font-family:inherit;border-radius:10px;
             background:${d.color}22;border:1px solid ${d.color};color:${d.color};
-          ">${isEn?'Enter':'입장'}</button>
+          ">${Lang.t('dungeon','enterPlain')}</button>
         </div>
       </div>
     `;

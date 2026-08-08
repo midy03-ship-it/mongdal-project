@@ -4071,6 +4071,9 @@ const GameScene = (() => {
     // showResultScreen()에서도 참조할 수 있도록 window에 노출 — 자동재도전으로 같은 마일스톤 스테이지를 반복
     // 파밍할 때마다 매번 로비로 튕기던 문제 수정용
     window._wasStageClearedBefore = _wasStageClearedBefore;
+    // [UPDATE 2026-08-08] 파트2는 완전 별도 신규 세이브라 최초클리어/슬롯해금 안내가 매 마일스톤(1/5/10/15/20/25/30/110/160)마다
+    // 다시 걸려서 자동진행이 계속 로비로 튕겨나가던 문제 — 파트1에서 이미 다 겪은 튜토리얼성 팝업이라 파트2는 전부 스킵.
+    const _isPart2Profile = (typeof Save !== 'undefined' && Save.getActiveProfile && Save.getActiveProfile() === 'part2');
     if(gameMode==='normal'&&victory){
       const prevCleared = saveData.clearedStages || [];
       // [UPDATE 2026-08-06] 버그 수정: wasFirst가 레거시 clearedStages(노말 이상 전용)만 보고 있어서,
@@ -4082,7 +4085,7 @@ const GameScene = (() => {
                      && (saveData.clearedStagesHard||[]).length === 0;
       // 레거시 clearedStages는 노말 이상 클리어만 기록 (이지 클리어가 노말로 보이는 버그 방지)
       if (difficulty !== 'easy') saveData.clearedStages=[...new Set([...prevCleared,stageId])];
-      if(wasFirst) saveData._showFirstClearDialogue = true;
+      if(wasFirst && !_isPart2Profile) saveData._showFirstClearDialogue = true;
       // 난이도별 클리어 기록
       if (!saveData.clearedStagesEasy)   saveData.clearedStagesEasy   = [];
       if (!saveData.clearedStagesNormal) saveData.clearedStagesNormal = [];
@@ -4090,20 +4093,20 @@ const GameScene = (() => {
       if (difficulty === 'easy'   && !saveData.clearedStagesEasy.includes(stageId)) {
         saveData.clearedStagesEasy.push(stageId);
         // [UPDATE 2026-07-11] 260711_MTOPC.md 3번: 이지 챕터5 클리어 → 이지 2슬롯 해금 알림
-        if (stageId === 50) saveData._showSlotUnlock = 'easy2';
+        if (stageId === 50 && !_isPart2Profile) saveData._showSlotUnlock = 'easy2';
       }
       if (difficulty === 'normal' && !saveData.clearedStagesNormal.includes(stageId)) {
         saveData.clearedStagesNormal.push(stageId);
         if (!saveData.clearedStagesEasy.includes(stageId)) saveData.clearedStagesEasy.push(stageId);
         // 처음 노말 클리어 → 슬롯 해금 알림
-        if (saveData.clearedStagesNormal.length === 1) saveData._showSlotUnlock = 'normal';
+        if (saveData.clearedStagesNormal.length === 1 && !_isPart2Profile) saveData._showSlotUnlock = 'normal';
       }
       if (difficulty === 'hard'   && !saveData.clearedStagesHard.includes(stageId)) {
         saveData.clearedStagesHard.push(stageId);
         if (!saveData.clearedStagesNormal.includes(stageId)) saveData.clearedStagesNormal.push(stageId);
         if (!saveData.clearedStagesEasy.includes(stageId))   saveData.clearedStagesEasy.push(stageId);
         // 처음 하드 클리어 → 슬롯 해금 알림
-        if (saveData.clearedStagesHard.length === 1) saveData._showSlotUnlock = 'hard';
+        if (saveData.clearedStagesHard.length === 1 && !_isPart2Profile) saveData._showSlotUnlock = 'hard';
       }
       // 챕터 클리어 체크
       const si2 = getStageInfo(stageId);
@@ -4263,9 +4266,12 @@ const GameScene = (() => {
     // 오래전에 다 해금한 스테이지를 자동재도전으로 반복 파밍해도 매번 로비로 튕겨나가 파밍 기능이 무력화되던 문제.
     // 시즌 엔딩과 직결된 100/200/300/400은 안전하게 항상 유지, 건물/동료 해금 안내(1/5/10/15/20/25/30/110/160)는
     // 최초 클리어(!_wasStageClearedBefore)일 때만 강제.
+    // [UPDATE 2026-08-08] 파트2(완전 별도 신규 세이브)는 건물/동료 해금 안내용 마일스톤(FIRST_ONLY)을 파트1에서
+    // 이미 다 봤으므로 강제하지 않음 — 시즌엔딩 직결 100/200/300/400 등(ALWAYS)은 파트2도 그대로 유지.
+    const _isPart2Profile2 = (typeof Save !== 'undefined' && Save.getActiveProfile && Save.getActiveProfile() === 'part2');
     const _isFirstTimeMilestone =
       LOBBY_CHANGE_STAGES_ALWAYS.includes(stageId) ||
-      (LOBBY_CHANGE_STAGES_FIRST_ONLY.includes(stageId) && !window._wasStageClearedBefore);
+      (!_isPart2Profile2 && LOBBY_CHANGE_STAGES_FIRST_ONLY.includes(stageId) && !window._wasStageClearedBefore);
 
     // ── 타이틀 ──
     const title =
